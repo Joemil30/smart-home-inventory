@@ -82,7 +82,9 @@ For a whole bag at once, flip on **⚡ Rapid add** and pick the shelf: now every
 
 ## Deliberately not here yet
 
-Shopping lists, store routing, receipt scanning, cloud sync. The data model already holds all four — they bolt on, they don't rewrite. Live on the core loop for two weeks first; you'll know exactly which one you actually want.
+Shopping lists, store routing, cloud sync. The data model already holds them — they bolt on, they don't rewrite. Live on the core loop for two weeks first; you'll know exactly which one you actually want.
+
+(Receipt scanning is now built: Scan tab → **🧾 Scan a receipt** photographs a receipt and adds the whole trip in one AI call.)
 
 ## Files
 

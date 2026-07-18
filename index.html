@@ -521,6 +521,28 @@ async function visionMatch(b64, mime, mode) {
   return out.found || [];
 }
 
+/* Receipt import — the whole shopping trip in ONE model call, which is the
+   most quota-friendly way to bulk-add. Expand the cryptic receipt shorthand
+   into readable names and tag a category (which is what auto-sets the
+   expiry date downstream — no dates ever get typed or photographed). */
+async function visionReceipt(b64, mime) {
+  const prompt = `This is a photo of a grocery store receipt. List only the actual food and grocery PRODUCTS purchased.
+
+Expand common receipt abbreviations into clear names (e.g. "KS ORG WHL MLK" -> "Kirkland Organic Whole Milk", "BNLS CHKN BRST" -> "Boneless Chicken Breast", "GRND BF 93/7" -> "Ground Beef 93/7").
+
+IGNORE everything that is not a purchasable food/household product: store name and address, phone, date/time, cashier, member number, subtotal, tax, total, tender, change, cash, card, savings, coupons, discounts, and bag fees.
+
+For each product pick the best category from this list:
+${CATS.join(', ')}
+
+Give the quantity if the receipt shows one (else 1).`;
+  const schema = { type: 'OBJECT', properties: { found: { type: 'ARRAY', items: { type: 'OBJECT', properties: {
+    name: { type: 'STRING' }, cat: { type: 'STRING' }, count: { type: 'INTEGER' }
+  }, required: ['name', 'cat'] } } }, required: ['found'] };
+  const out = await G.gen([{ text: prompt }, { inline_data: { mime_type: mime, data: b64 } }], schema);
+  return out.found || [];
+}
+
 async function suggestRecipes() {
   const live = S.items.filter(i => !i.deleted);
   const staples = S.household.staples || [];
@@ -1104,8 +1126,10 @@ function viewScan(app) {
     <div class="note" id="hint" style="text-align:center;margin-bottom:14px"></div>
     <div id="rapidlist"></div>
     <button class="btn cold" data-a="photo">📷 Shoot a whole shelf</button>
+    <button class="btn ghost" data-a="receipt" style="margin-top:8px">🧾 Scan a receipt</button>
     <button class="btn ghost" data-a="manual" style="margin-top:8px">Type one in</button>
     <input type="file" accept="image/*" capture="environment" id="pick" class="hide">
+    <input type="file" accept="image/*" id="rcpt" class="hide">
   </div>`);
   app.appendChild(wrap);
 
@@ -1123,6 +1147,8 @@ function viewScan(app) {
   wrap.querySelector('[data-a=manual]').onclick = () => manualSheet();
   wrap.querySelector('#pick').onchange = e => e.target.files[0] && photoFlow(e.target.files[0]);
   wrap.querySelector('[data-a=photo]').onclick = () => wrap.querySelector('#pick').click();
+  wrap.querySelector('#rcpt').onchange = e => e.target.files[0] && receiptFlow(e.target.files[0]);
+  wrap.querySelector('[data-a=receipt]').onclick = () => wrap.querySelector('#rcpt').click();
 
   paintRapidList(wrap.querySelector('#rapidlist'));
   initAudio();
@@ -1393,6 +1419,59 @@ async function photoFlow(file) {
   }
 }
 
+/* Add a batch of receipt items. sel 'auto' sends each to its natural shelf
+   by category (milk->fridge, rice->pantry, frozen->freezer); otherwise all
+   to the chosen shelf. Each gets its expiry auto-estimated in addItem. */
+async function addReceiptItems(items, sel) {
+  let n = 0;
+  for (const f of items) {
+    const cat = CATS.includes(f.cat) ? f.cat : 'other';
+    const loc = sel === 'auto' ? defaultLoc(cat) : sel;
+    await addItem({ name: f.name, cat, loc, qty: f.count || 1 });
+    n++;
+  }
+  return n;
+}
+
+async function receiptFlow(file) {
+  const dlg = document.getElementById('dlg');
+  dlg.innerHTML = `<h1 style="margin:0 0 12px"><span class="spin"></span> Reading receipt…</h1>
+    <p class="note">Pulling the items off your receipt — one photo, the whole trip.</p>`;
+  dlg.showModal();
+  try {
+    const { b64, mime } = await toB64(file);
+    const found = await visionReceipt(b64, mime);
+    if (!found.length) {
+      dlg.innerHTML = `<h1 style="margin:0 0 10px">Nothing readable</h1>
+        <p class="note" style="margin-bottom:14px">Couldn't pull items off that photo. Try a flatter, brighter shot of the whole receipt.</p>
+        <button class="btn ghost" onclick="document.getElementById('dlg').close()">Close</button>`;
+      return;
+    }
+    dlg.innerHTML = `<div class="eyebrow">From your receipt</div>
+      <h1 style="margin:6px 0 6px">Found ${found.length}</h1>
+      <p class="note" style="margin:0 0 12px">Untick anything that isn't food. <b>Expiry dates are set automatically by type</b> — no typing.</p>
+      ${found.map((f, i) => `<label style="display:flex;gap:10px;align-items:center;margin-bottom:9px;font-family:var(--mono);font-size:13px">
+        <input type="checkbox" checked data-i="${i}" style="width:19px;height:19px;flex:0 0 auto">
+        <span style="flex:1;min-width:0">${esc(f.name)} <span style="color:var(--vapor-dim)">×${f.count || 1}</span></span>
+        <span class="tag">${esc(CAT_LABEL(CATS.includes(f.cat) ? f.cat : 'other'))}</span></label>`).join('')}
+      <label style="margin-top:6px"><span class="lbl">Put them on</span><select id="loc">
+        <option value="auto" selected>Auto — by food type</option>
+        ${S.household.locations.map(l => `<option value="${l.id}">${esc(l.name)}</option>`).join('')}</select></label>
+      <button class="btn cold" data-a="go">Add to inventory</button>
+      <button class="btn ghost" data-a="c" style="margin-top:8px;border:none;color:var(--vapor)">Cancel</button>`;
+    dlg.querySelector('[data-a=go]').onclick = async () => {
+      const picks = [...dlg.querySelectorAll('input:checked')].map(c => found[+c.dataset.i]);
+      const n = await addReceiptItems(picks, dlg.querySelector('#loc').value);
+      dlg.close(); render();
+      toast(`${n} added from receipt`);
+    };
+    dlg.querySelector('[data-a=c]').onclick = () => dlg.close();
+  } catch (e) {
+    dlg.innerHTML = `<h1 style="margin:0 0 10px">Couldn't read it</h1><div class="warn" style="margin-bottom:14px">${esc(e.message)}</div>
+      <button class="btn ghost" onclick="document.getElementById('dlg').close()">Close</button>`;
+  }
+}
+
 function manualSheet() {
   const dlg = document.getElementById('dlg');
   dlg.innerHTML = `<div class="eyebrow">Add by hand</div><h1 style="margin:6px 0 14px">What is it</h1>
@@ -1562,7 +1641,7 @@ function viewSet(app) {
 
   app.appendChild(el(`<h2 style="margin:22px 0 10px">Later</h2>`));
   app.appendChild(el(`<div class="card"><div class="note">
-    Shopping lists, store routing and receipt scanning are deliberately not here yet.
+    Shopping lists and store routing aren't here yet.
     The data model already holds them — they bolt on, they don't rewrite.</div></div>`));
 
   const exp = el(`<button class="btn ghost" style="margin-top:16px">Export everything (JSON)</button>`);
