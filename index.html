@@ -345,6 +345,25 @@ function estimateExpiry(cat, locId, opened) {
   return today() + d * DAY;
 }
 
+/* The few categories where the PRINTED date really matters and the guess
+   can be badly wrong (milk bought today might be 4 days or 14). These are
+   the only items we ever nudge the user to verify — everything else, the
+   category estimate is plenty. */
+const HIGH_RISK = new Set(['dairy-milk','dairy-cheese-soft','dairy-yogurt','meat-raw','poultry-raw','fish-raw','deli-meat','produce-leafy','produce-berry','leftovers']);
+const isHighRisk = cat => HIGH_RISK.has(cat);
+
+/* Parse a date the vision model spotted on a package ("2026-08-12"), and
+   only trust it if it lands in a sane window — guards against misreads. */
+function parseExpiry(s) {
+  if (!s) return null;
+  const t = Date.parse(String(s).trim());
+  if (isNaN(t)) return null;
+  const d = new Date(t); d.setHours(0, 0, 0, 0);
+  const now = today();
+  if (d.getTime() < now - 7 * DAY || d.getTime() > now + 1095 * DAY) return null;
+  return d.getTime();
+}
+
 /* Freshness as temperature. Fresh things are cold. Dying things warm up.
    This is the single idea the whole interface is built on. */
 function freshness(item) {
@@ -394,7 +413,7 @@ async function saveItem(it) {
   if (i > -1) S.items[i] = it; else S.items.push(it);
 }
 
-async function addItem({ name, cat, loc, qty = 1, barcode = null, packSize = null, brand = '', image = null }) {
+async function addItem({ name, cat, loc, qty = 1, barcode = null, packSize = null, brand = '', image = null, expires = null, dateConfirmed = false }) {
   const mode = packSize ? 'pack' : unitModeFor(cat);
   const it = {
     id: uid(), name, brand, cat, loc, barcode, image,
@@ -402,7 +421,9 @@ async function addItem({ name, cat, loc, qty = 1, barcode = null, packSize = nul
     qty: mode === 'level' ? null : qty,
     level: mode === 'level' ? 4 : null,
     packSize, unitsLeft: packSize || null,
-    opened: false, added: today(), expires: estimateExpiry(cat, loc, false),
+    opened: false, added: today(),
+    expires: expires || estimateExpiry(cat, loc, false),
+    dateConfirmed: !!expires || dateConfirmed,   // real printed date -> trusted, not a guess
     by: S.who?.name || '?', deleted: false,
   };
   await saveItem(it);
@@ -513,9 +534,9 @@ async function visionMatch(b64, mime, mode) {
   const known = live.map(i => `${i.id}|${i.name}${i.brand ? ' (' + i.brand + ')' : ''}`).join('\n');
   const prompt = mode === 'deplete'
     ? `These are ingredients laid out on a counter, about to be cooked.\n\nMy inventory (id|name):\n${known}\n\nReturn ONLY items you can actually see. Match to inventory ids where possible. If you see something not in my inventory, set id to null and give the name. Estimate visible count.`
-    : `Identify the food items in this photo (groceries just brought home).\n\nMy existing inventory, for matching known products:\n${known}\n\nFor anything new, name it plainly ("Roma tomatoes", "Ground beef 1lb") and pick the best category from:\n${CATS.join(', ')}\n\nCount what you see.`;
+    : `Identify the food items in this photo (groceries just brought home).\n\nMy existing inventory, for matching known products:\n${known}\n\nFor anything new, name it plainly ("Roma tomatoes", "Ground beef 1lb") and pick the best category from:\n${CATS.join(', ')}\n\nCount what you see.\n\nIf a printed expiration / "best by" / "use by" / "sell by" date is clearly legible on an item, read it and return it in "expiry" as YYYY-MM-DD. If you can't read a date for an item, omit "expiry" — do NOT guess one.`;
   const schema = { type: 'OBJECT', properties: { found: { type: 'ARRAY', items: { type: 'OBJECT', properties: {
-    id: { type: 'STRING' }, name: { type: 'STRING' }, cat: { type: 'STRING' }, count: { type: 'INTEGER' }
+    id: { type: 'STRING' }, name: { type: 'STRING' }, cat: { type: 'STRING' }, count: { type: 'INTEGER' }, expiry: { type: 'STRING' }
   }, required: ['name', 'count'] } } }, required: ['found'] };
   const out = await G.gen([{ text: prompt }, { inline_data: { mime_type: mime, data: b64 } }], schema);
   return out.found || [];
@@ -535,9 +556,9 @@ IGNORE everything that is not a purchasable food/household product: store name a
 For each product pick the best category from this list:
 ${CATS.join(', ')}
 
-Give the quantity if the receipt shows one (else 1).`;
+Give the quantity if the receipt shows one (else 1). If a printed expiration or "best by" date appears for an item, return it in "expiry" as YYYY-MM-DD; otherwise omit it (do not guess).`;
   const schema = { type: 'OBJECT', properties: { found: { type: 'ARRAY', items: { type: 'OBJECT', properties: {
-    name: { type: 'STRING' }, cat: { type: 'STRING' }, count: { type: 'INTEGER' }
+    name: { type: 'STRING' }, cat: { type: 'STRING' }, count: { type: 'INTEGER' }, expiry: { type: 'STRING' }
   }, required: ['name', 'cat'] } } }, required: ['found'] };
   const out = await G.gen([{ text: prompt }, { inline_data: { mime_type: mime, data: b64 } }], schema);
   return out.found || [];
@@ -717,17 +738,33 @@ async function addOne(it) {
   toast(`${it.name} — one more`, async () => { await saveItem(before); });
 }
 
+/* Strategy C: your nose beats the guess. One tap pushes the date out and
+   marks it confirmed, so it stops nagging you. */
+async function extendItem(it, days) {
+  const before = JSON.parse(JSON.stringify(it));
+  it.expires = (it.expires || today()) + days * DAY;
+  it.dateConfirmed = true;
+  await saveItem(it);
+  await logAction('still good', it.name);
+  toast(`${it.name} — good to ${fmtDate(it.expires).replace('EXP ', '')}`, async () => { await saveItem(before); });
+}
+
 function itemSheet(it) {
   const dlg = document.getElementById('dlg');
   const f = freshness(it);
+  const estimate = isHighRisk(it.cat) && !it.dateConfirmed;
   dlg.innerHTML = `
     <div style="display:flex;gap:12px;align-items:center;margin-bottom:14px">
       ${bigPicHtml(it)}
       <div style="min-width:0">
         <div class="eyebrow">${esc(locName(it.loc))} · ${esc(it.cat)}</div>
         <h1 style="margin:3px 0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(it.name)}</h1>
-        <div class="stamp" style="--rail:${f.rail};font-size:12px">${f.label}${it.brand ? ' · ' + esc(it.brand) : ''}</div>
+        <div class="stamp" style="--rail:${f.rail};font-size:12px">${f.label}${estimate ? ' · <span style="color:var(--thaw)">est</span>' : ''}${it.brand ? ' · ' + esc(it.brand) : ''}</div>
       </div>
+    </div>
+    <div class="row" style="margin-bottom:8px">
+      <button class="btn ghost" data-a="ext3">Still good · +3d</button>
+      <button class="btn ghost" data-a="ext7">Still good · +1wk</button>
     </div>
     <button class="btn ghost" data-a="move" style="margin-bottom:8px;font-weight:600">📍 Move to another shelf</button>
     <button class="btn ghost" data-a="photo" style="margin-bottom:8px">📷 Change photo</button>
@@ -743,6 +780,8 @@ function itemSheet(it) {
     <button class="btn cold" data-a="gone">All gone</button>
     <button class="btn ghost" data-a="close" style="margin-top:8px;border:none;color:var(--vapor)">Close</button>`;
   const go = async fn => { await fn(); dlg.close(); render(); };
+  dlg.querySelector('[data-a=ext3]').onclick = () => go(() => extendItem(it, 3));
+  dlg.querySelector('[data-a=ext7]').onclick = () => go(() => extendItem(it, 7));
   dlg.querySelector('[data-a=plus]').onclick = () => go(() => addOne(it));
   dlg.querySelector('[data-a=open]')?.addEventListener('click', () => go(() => markOpened(it)));
   dlg.querySelector('[data-a=gone]').onclick = () => go(async () => {
@@ -787,6 +826,7 @@ function dateSheet(it) {
   dlg.querySelector('[data-a=save]').onclick = async () => {
     it.expires = new Date(dlg.querySelector('#dv').value + 'T00:00').getTime();
     it.dateOverride = true;
+    it.dateConfirmed = true;
     await saveItem(it); dlg.close(); render();
   };
   dlg.querySelector('[data-a=close]').onclick = () => dlg.close();
@@ -922,6 +962,26 @@ function viewSoon(app) {
   const live = S.items.filter(i => !i.deleted);
   const soon = live.filter(i => freshness(i).left <= 7).sort((a, b) => a.expires - b.expires);
   const wasted = S.items.filter(i => i.wasted);
+
+  /* Food scorecard — the family motivator. Rescued = eaten/used before it
+     went bad; wasted = logged as thrown out; streak = days since the last
+     waste. All computed from the log we already keep. */
+  const rescued = S.items.filter(i => i.deleted && !i.wasted).length;
+  const wastedN = wasted.length;
+  const rescuedPct = (rescued + wastedN) ? Math.round(rescued / (rescued + wastedN) * 100) : null;
+  const lastWaste = wasted.reduce((m, i) => Math.max(m, i.wastedAt || 0), 0);
+  const streak = lastWaste ? Math.floor((Date.now() - lastWaste) / DAY) : null;
+  if (rescued + wastedN > 0) {
+    app.appendChild(el(`<div class="card">
+      <div class="eyebrow" style="margin-bottom:10px">Food scorecard</div>
+      <div style="display:flex;text-align:center">
+        <div style="flex:1"><div class="code" style="font-size:23px;color:var(--fresh)">${rescued}</div><div class="tag">RESCUED</div></div>
+        <div style="flex:1"><div class="code" style="font-size:23px;color:var(--spoil)">${wastedN}</div><div class="tag">WASTED</div></div>
+        <div style="flex:1"><div class="code" style="font-size:23px">${streak !== null ? '🔥' + streak : '✨'}</div><div class="tag">${streak !== null ? 'DAY STREAK' : 'ZERO WASTE'}</div></div>
+      </div>
+      ${rescuedPct !== null ? `<div class="note" style="text-align:center;margin-top:11px">You've eaten <b>${rescuedPct}%</b> of what came in before it went bad.</div>` : ''}
+    </div>`));
+  }
 
   if (!soon.length) {
     app.appendChild(el(`<div class="empty"><div class="big">Nothing dying</div>
@@ -1401,8 +1461,10 @@ async function photoFlow(file) {
       const picks = [...dlg.querySelectorAll('input:checked')].map(c => found[+c.dataset.i]);
       if (mode === 'add') {
         const loc = dlg.querySelector('#loc').value;
-        for (const f of picks) await addItem({ name: f.name, cat: CATS.includes(f.cat) ? f.cat : 'other', loc, qty: f.count || 1 });
+        const added = [];
+        for (const f of picks) added.push(await addItem({ name: f.name, cat: CATS.includes(f.cat) ? f.cat : 'other', loc, qty: f.count || 1, expires: parseExpiry(f.expiry) }));
         toast(`${picks.length} put away in ${locName(loc)}`);
+        if (verifyNudge(added)) return;   // risky items to check — nudge takes over the sheet
       } else {
         for (const f of picks) {
           const it = f.id && S.items.find(i => i.id === f.id && !i.deleted);
@@ -1419,18 +1481,49 @@ async function photoFlow(file) {
   }
 }
 
+/* Strategy A: after a bulk import, flag ONLY the high-risk items whose date
+   is still a guess (no printed date was read). A few native date pickers,
+   pre-filled with the estimate, or one tap to trust them all. This is the
+   "reduce 30 chores to 4, and even those are optional" moment. */
+function verifyNudge(items) {
+  const need = (items || []).filter(i => i && !i.deleted && isHighRisk(i.cat) && !i.dateConfirmed);
+  if (!need.length) return false;
+  const dlg = document.getElementById('dlg');
+  const iso = ts => new Date(ts).toISOString().slice(0, 10);
+  dlg.innerHTML = `<div class="eyebrow">Worth a quick check</div>
+    <h1 style="margin:6px 0 6px">${need.length} perishable${need.length > 1 ? 's' : ''}</h1>
+    <p class="note" style="margin:0 0 14px">These spoil fast and no printed date was visible, so the date below is a guess. Glance at the package and fix any that are off — or just trust them.</p>
+    ${need.map((i, k) => `<label style="display:block;margin-bottom:12px">
+      <span class="lbl">${esc(i.name)}</span>
+      <input type="date" data-k="${k}" value="${iso(i.expires)}"></label>`).join('')}
+    <button class="btn cold" data-a="save">Save dates</button>
+    <button class="btn ghost" data-a="trust" style="margin-top:8px">Trust the estimates</button>`;
+  dlg.querySelector('[data-a=save]').onclick = async () => {
+    for (const inp of dlg.querySelectorAll('input[type=date]')) {
+      const i = need[+inp.dataset.k];
+      const ts = parseExpiry(inp.value);
+      if (ts && ts !== i.expires) { i.expires = ts; }
+      i.dateConfirmed = true;
+      await saveItem(i);
+    }
+    dlg.close(); render(); toast('Dates set');
+  };
+  dlg.querySelector('[data-a=trust]').onclick = () => { dlg.close(); render(); };
+  if (!dlg.open) dlg.showModal();
+  return true;
+}
+
 /* Add a batch of receipt items. sel 'auto' sends each to its natural shelf
    by category (milk->fridge, rice->pantry, frozen->freezer); otherwise all
    to the chosen shelf. Each gets its expiry auto-estimated in addItem. */
 async function addReceiptItems(items, sel) {
-  let n = 0;
+  const added = [];
   for (const f of items) {
     const cat = CATS.includes(f.cat) ? f.cat : 'other';
     const loc = sel === 'auto' ? defaultLoc(cat) : sel;
-    await addItem({ name: f.name, cat, loc, qty: f.count || 1 });
-    n++;
+    added.push(await addItem({ name: f.name, cat, loc, qty: f.count || 1, expires: parseExpiry(f.expiry) }));
   }
-  return n;
+  return added;
 }
 
 async function receiptFlow(file) {
@@ -1461,9 +1554,9 @@ async function receiptFlow(file) {
       <button class="btn ghost" data-a="c" style="margin-top:8px;border:none;color:var(--vapor)">Cancel</button>`;
     dlg.querySelector('[data-a=go]').onclick = async () => {
       const picks = [...dlg.querySelectorAll('input:checked')].map(c => found[+c.dataset.i]);
-      const n = await addReceiptItems(picks, dlg.querySelector('#loc').value);
-      dlg.close(); render();
-      toast(`${n} added from receipt`);
+      const added = await addReceiptItems(picks, dlg.querySelector('#loc').value);
+      toast(`${added.length} added from receipt`);
+      if (!verifyNudge(added)) { dlg.close(); render(); }   // nudge replaces the sheet when there's something risky to check
     };
     dlg.querySelector('[data-a=c]').onclick = () => dlg.close();
   } catch (e) {
