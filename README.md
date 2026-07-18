@@ -59,6 +59,8 @@ No model name is hardcoded anywhere. Google killed `gemini-2.0-flash` in June 20
 
 **Putting groceries away** — Scan tab, "Putting away." Barcode the packaged half. Unknown code (hi, Kirkland) → it asks once, remembers forever. The unbarcoded half goes in by photo — shoot the whole counter at once.
 
+For a whole bag at once, flip on **⚡ Rapid add** and pick the shelf: now every known scan drops straight onto that shelf with a beep and a line in a running tally (undo any of them, or the whole run) — no dialog per item. Only unknown codes stop to ask. Every scan flashes the reticle green and beeps, so it's obvious it landed even on iPhone, where there's no vibration. Scanning a dim shelf like the downstairs freezer? A **🔦 flashlight** toggle appears on the scanner where the camera supports it (Android; iOS Safari doesn't expose it).
+
 **Eating** — the `−` button on any row. One tap.
 
 **Binning** — Scan tab, flip to "Trash / used up," scan the empty wrapper as it goes in the bin. Same gesture as putting it away, opposite sign. This is the one habit that keeps the whole thing honest.

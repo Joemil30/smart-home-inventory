@@ -119,6 +119,15 @@ label .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-tran
 .reticle::after{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:var(--cold);
   box-shadow:0 0 10px var(--cold);animation:sweep 2.6s ease-in-out infinite}
 @keyframes sweep{0%,100%{top:6%}50%{top:94%}}
+/* scan confirmation flash — on iOS this and the beep ARE the feedback (no vibration) */
+.reticle{transition:background .12s ease,border-color .12s ease}
+.reticle.hit{border-color:var(--chill);background:rgba(127,212,193,.16)}
+.reticle.miss{border-color:var(--spoil);background:rgba(224,82,82,.18)}
+/* torch toggle, only revealed when the camera track actually supports it */
+.torchbtn{position:absolute;top:10px;right:10px;width:40px;height:40px;border-radius:50%;
+  background:rgba(10,14,19,.55);border:1px solid var(--rime-hi);display:grid;place-items:center;
+  font-size:18px;backdrop-filter:blur(6px);z-index:2}
+.torchbtn[aria-pressed="true"]{background:var(--frost)}
 @media (prefers-reduced-motion:reduce){.reticle::after{animation:none}*{transition:none!important}}
 
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--nav-h) + 20px);z-index:60;
@@ -862,6 +871,57 @@ function cookDeduct(r) {
 /* ---------------- view: scan ---------------- */
 let stream = null, scanLoop = null, detector = null, zxingReader = null, zxingLoading = null;
 let lastScan = { code: '', t: 0 };
+let rapidLog = [];          // session-only: items added during the current rapid run
+let audioCtx = null;
+
+/* WebAudio, created inside the tab-tap gesture so iOS lets it make sound.
+   No asset to load — the beep is synthesised, so it works offline too. */
+function initAudio() {
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  } catch (e) {}
+}
+function beep(ok = true) {
+  if (!audioCtx || audioCtx.state !== 'running') return;
+  try {
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain(), t = audioCtx.currentTime;
+    o.type = 'sine'; o.frequency.value = ok ? 880 : 240;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.12, t + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+    o.connect(g).connect(audioCtx.destination);
+    o.start(t); o.stop(t + 0.13);
+  } catch (e) {}
+}
+
+/* Scan confirmation. iOS Safari has no Vibration API, so on iPhone the
+   green reticle flash and the beep ARE the feedback — without them a scan
+   on an iPhone is completely silent. Vibration still fires on Android. */
+function scanFeedback(ok = true) {
+  navigator.vibrate?.(ok ? 40 : [50, 40, 50]);
+  beep(ok);
+  const r = document.querySelector('.reticle');
+  if (r) { r.classList.add(ok ? 'hit' : 'miss'); setTimeout(() => r.classList.remove('hit', 'miss'), 360); }
+}
+
+/* Torch/flashlight for dim shelves (the downstairs freezer). Only some
+   cameras expose it — Android Chrome yes, iOS Safari doesn't support the
+   web torch constraint — so the button stays hidden unless the live track
+   reports the capability. Degrades to nothing where it's absent. */
+function setupTorch() {
+  const btn = document.getElementById('torch');
+  const track = stream?.getVideoTracks?.()[0];
+  if (!btn || !track) return;
+  const caps = track.getCapabilities?.();
+  if (!caps || !caps.torch) return;
+  btn.classList.remove('hide');
+  let on = false;
+  btn.onclick = async () => {
+    try { await track.applyConstraints({ advanced: [{ torch: !on }] }); on = !on; btn.setAttribute('aria-pressed', on); }
+    catch (e) { toast('Flashlight not available on this camera'); }
+  };
+}
 
 async function stopCam() {
   cancelAnimationFrame(scanLoop);
@@ -891,13 +951,22 @@ function loadZXing() {
 
 function viewScan(app) {
   const mode = S.cfg.scanMode || 'in';
+  const rapid = mode === 'in' && !!S.cfg.rapid;
+  const rapidLoc = S.cfg.rapidLoc || defaultLoc('other');
   const wrap = el(`<div>
     <div class="chips">
       <button class="chip" data-m="in" aria-pressed="${mode === 'in'}">Putting away</button>
       <button class="chip" data-m="out" aria-pressed="${mode === 'out'}">Trash / used up</button>
     </div>
-    <div id="scanwrap"><video id="video" playsinline muted></video><div class="reticle"></div></div>
+    ${mode === 'in' ? `<div class="chips" style="padding-bottom:8px">
+      <button class="chip" data-a="rapid" aria-pressed="${rapid}">⚡ Rapid add</button>
+      ${rapid ? `<select id="rloc" style="width:auto;flex:1;min-width:0;font-size:11px;padding:7px 10px">${S.household.locations.map(l =>
+        `<option value="${l.id}" ${l.id === rapidLoc ? 'selected' : ''}>${esc(l.name)}</option>`).join('')}</select>` : ''}
+    </div>` : ''}
+    <div id="scanwrap"><video id="video" playsinline muted></video><div class="reticle"></div>
+      <button id="torch" class="torchbtn hide" aria-label="Toggle flashlight" aria-pressed="false">🔦</button></div>
     <div class="note" id="hint" style="text-align:center;margin-bottom:14px"></div>
+    <div id="rapidlist"></div>
     <button class="btn cold" data-a="photo">📷 Shoot a whole shelf</button>
     <button class="btn ghost" data-a="manual" style="margin-top:8px">Type one in</button>
     <input type="file" accept="image/*" capture="environment" id="pick" class="hide">
@@ -905,15 +974,53 @@ function viewScan(app) {
   app.appendChild(wrap);
 
   wrap.querySelector('#hint').innerHTML = mode === 'in'
-    ? `Barcode for packaged. <b>Photo for everything else</b> — one shot takes a whole shelf.`
+    ? (rapid
+        ? `<b style="color:var(--cold)">Rapid on.</b> Scan → beep → it's on <b>${esc(locName(rapidLoc))}</b>. Unknown codes still ask once.`
+        : `Barcode for packaged. <b>Photo for everything else</b> — one shot takes a whole shelf.`)
     : `<b style="color:var(--thaw)">Scan the empty wrapper as you bin it.</b> Same gesture, opposite direction.`;
 
   wrap.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { S.cfg.scanMode = b.dataset.m; saveCfg(); render(); });
+  const rq = wrap.querySelector('[data-a=rapid]');
+  if (rq) rq.onclick = () => { S.cfg.rapid = !S.cfg.rapid; saveCfg(); render(); };
+  const rl = wrap.querySelector('#rloc');
+  if (rl) rl.onchange = e => { S.cfg.rapidLoc = e.target.value; saveCfg(); render(); };
   wrap.querySelector('[data-a=manual]').onclick = () => manualSheet();
   wrap.querySelector('#pick').onchange = e => e.target.files[0] && photoFlow(e.target.files[0]);
   wrap.querySelector('[data-a=photo]').onclick = () => wrap.querySelector('#pick').click();
 
+  paintRapidList(wrap.querySelector('#rapidlist'));
+  initAudio();
   startCam(wrap.querySelector('#video'), mode);
+}
+
+/* The running tally of a rapid run — so a 20-item Costco bag reads as one
+   list you can eyeball, not 20 dialogs you had to babysit. Session-only. */
+function paintRapidList(box) {
+  if (!box) return;
+  box.innerHTML = '';
+  if (!rapidLog.length) return;
+  const card = el(`<div class="card" style="margin-bottom:14px">
+    <div class="eyebrow" style="margin-bottom:8px">Added this run · ${rapidLog.length}</div>
+    <div id="rl-items"></div>
+    <button class="btn ghost" data-a="done" style="margin-top:8px">Done — clear list</button></div>`);
+  const list = card.querySelector('#rl-items');
+  rapidLog.slice(0, 12).forEach(r => {
+    const row = el(`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;font-family:var(--mono);font-size:12px">
+      <span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.name)}</span>
+      <span class="code" style="color:var(--vapor-dim);font-size:10px">${esc(locName(r.loc))}</span>
+      <button data-x="${r.id}" aria-label="Remove ${esc(r.name)}" style="width:30px;height:30px;flex:0 0 auto;border:1px solid var(--rime-hi);border-radius:7px;color:var(--vapor)">×</button></div>`);
+    row.querySelector('[data-x]').onclick = async () => {
+      const cur = S.items.find(x => x.id === r.id);
+      if (cur) { cur.deleted = true; await saveItem(cur); }
+      rapidLog = rapidLog.filter(x => x.id !== r.id);
+      paintRapidList(box);
+      toast(`${r.name} removed`);
+    };
+    list.appendChild(row);
+  });
+  if (rapidLog.length > 12) list.appendChild(el(`<div class="note" style="padding-top:6px">+${rapidLog.length - 12} more</div>`));
+  card.querySelector('[data-a=done]').onclick = () => { rapidLog = []; render(); };
+  box.appendChild(card);
 }
 
 async function startCam(video, mode) {
@@ -927,6 +1034,7 @@ async function startNative(video, mode) {
     detector = detector || new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128'] });
     stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
     video.srcObject = stream; await video.play();
+    setupTorch();
     let last = 0, busy = false;
     const tick = async () => {
       if (!stream) return;
@@ -934,7 +1042,7 @@ async function startNative(video, mode) {
         busy = true;
         try {
           const codes = await detector.detect(video);
-          if (codes[0]) { last = Date.now(); navigator.vibrate?.(40); await onCode(codes[0].rawValue, mode); }
+          if (codes[0]) { last = Date.now(); await onCode(codes[0].rawValue, mode); }
         } catch (e) {}
         busy = false;
       }
@@ -963,9 +1071,10 @@ async function startZXing(video, mode) {
     ]);
     zxingReader = new ZXing.BrowserMultiFormatReader(hints, 300);
     await zxingReader.decodeFromConstraints({ video: { facingMode: 'environment' } }, video, (result) => {
-      if (result) { navigator.vibrate?.(40); onCode(result.getText(), mode); }
+      if (result) onCode(result.getText(), mode);
     });
     stream = video.srcObject;
+    setupTorch();
   } catch (e) { camError(); }
 }
 
@@ -983,13 +1092,40 @@ async function onCode(code, mode) {
   lastScan = { code, t: now };
   if (mode === 'out') {
     const it = S.items.find(i => !i.deleted && i.barcode === code);
-    if (!it) return toast(`Scanned ${code} — not in your inventory`);
+    if (!it) { scanFeedback(false); return toast(`Scanned ${code} — not in your inventory`); }
+    scanFeedback(true);
     await deplete(it, 'binned');
     return;
   }
   const p = await lookupBarcode(code);
+  scanFeedback(true);   // a code was read; known or not, the scan itself worked
+  // Rapid: a known product goes straight onto the chosen shelf — no dialog,
+  // just the beep and a line in the running list. Unknown codes still must
+  // be identified once, so they fall through to the ask-once sheet.
+  if (S.cfg.rapid && p) {
+    const loc = S.cfg.rapidLoc || defaultLoc(p.cat);
+    const packSize = S.catalog.find(c => c.id === code)?.packSize || p.packSize || null;
+    const it = await addItem({ name: p.name, brand: p.brand, cat: p.cat, loc, qty: 1, barcode: code, packSize });
+    await learnProduct({ ...p, id: code, packSize, lastLoc: loc });
+    rapidPush(it);
+    return;
+  }
   if (p) { confirmAdd(p, code); }
   else { unknownSheet(code); }
+}
+
+/* Add to the running rapid tally and repaint it in place — deliberately
+   WITHOUT a full render(), which would tear down and restart the camera
+   between every scan. Each add still gets its own 6-second undo toast. */
+function rapidPush(it) {
+  rapidLog = rapidLog.filter(r => r.id !== it.id);
+  rapidLog.unshift({ id: it.id, name: it.name, loc: it.loc });
+  paintRapidList(document.getElementById('rapidlist'));
+  toast(`${it.name} → ${locName(it.loc)}`, async () => {
+    const cur = S.items.find(x => x.id === it.id);
+    if (cur) { cur.deleted = true; await saveItem(cur); }
+    rapidLog = rapidLog.filter(r => r.id !== it.id);
+  });
 }
 
 function confirmAdd(p, code) {
