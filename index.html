@@ -83,6 +83,7 @@ nav button[aria-current="page"]{color:var(--cold)}
   border:1px solid var(--rime);display:grid;place-items:center}
 .item .thumb img{width:100%;height:100%;object-fit:cover;display:block}
 .item .thumb .ph{font-family:var(--mono);font-size:17px;font-weight:600;color:var(--vapor-dim);text-transform:uppercase}
+.item .thumb .emoji{font-size:25px;line-height:1}
 .item .body{flex:1;min-width:0}
 .item .nm{font-family:var(--mono);font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .item .meta{display:flex;gap:8px;align-items:baseline;margin-top:3px}
@@ -171,7 +172,6 @@ dialog::backdrop{background:rgba(28,24,19,.42);backdrop-filter:blur(3px)}
 <header>
   <h1 id="title">Cold Room</h1>
   <button id="searchBtn" class="hide" aria-label="Search everything you have">🔎</button>
-  <button class="who" id="whoBtn"><span id="whoEmoji">👤</span></button>
 </header>
 
 <main id="app"></main>
@@ -561,17 +561,100 @@ const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '
 
 const firstLetter = n => esc((String(n || '?').trim()[0] || '?'));
 
+/* Auto thumbnails without any photography: a food emoji chosen from the
+   item's name (specific), then its category (fallback). So produce/deli/
+   hand-added items still get a recognisable icon for free. */
+const NAME_EMOJI = [
+  [/\bmilk\b/, '🥛'], [/egg/, '🥚'], [/cheese|cheddar|parmes|gouda|mozzarel/, '🧀'], [/butter|margarin/, '🧈'],
+  [/yog[hu]rt/, '🥛'], [/bread|loaf|bagel|\bbun|baguette|brioche/, '🍞'], [/tortilla|wrap|pita/, '🌯'],
+  [/chicken|poultry|turkey|wing/, '🍗'], [/bacon|\bham\b|salami|prosciutto|sausage|deli/, '🥓'],
+  [/beef|steak|\bmeat|pork|lamb|mince|ground/, '🥩'], [/fish|salmon|tuna|shrimp|prawn|seafood|cod/, '🐟'],
+  [/banana/, '🍌'], [/apple/, '🍎'], [/orange|mandarin|clementine|citrus/, '🍊'], [/lemon/, '🍋'],
+  [/strawb|blueb|raspb|black ?berr|\bberr/, '🍓'], [/grape/, '🍇'], [/avocado/, '🥑'], [/tomato/, '🍅'],
+  [/potato|yam/, '🥔'], [/carrot/, '🥕'], [/onion|shallot/, '🧅'], [/garlic/, '🧄'], [/pepper|capsicum|chili/, '🫑'],
+  [/broccoli|cauliflow/, '🥦'], [/lettuce|spinach|kale|greens|salad|arugula|leaf/, '🥬'], [/corn/, '🌽'],
+  [/mushroom/, '🍄'], [/cucumber|pickle/, '🥒'], [/lime/, '🟢'], [/melon|cantaloup/, '🍈'], [/pineapple/, '🍍'],
+  [/peach|nectarine/, '🍑'], [/pear/, '🍐'], [/cherr/, '🍒'], [/rice/, '🍚'], [/pasta|noodle|spaghetti|macaroni/, '🍝'],
+  [/cereal|granola|oat|muesli/, '🥣'], [/flour|sugar|baking|cake mix/, '🧁'], [/oil|vinegar|olive/, '🫒'],
+  [/coffee|espresso/, '☕'], [/\btea\b|matcha/, '🍵'], [/juice|soda|cola|water|drink|beverage|lemonade/, '🧃'],
+  [/nut|almond|peanut|cashew|walnut|seed/, '🥜'], [/honey|jam|jelly|syrup|preserve/, '🍯'],
+  [/sauce|salsa|ketchup|mustard|mayo|dressing|condiment/, '🥫'], [/soup|broth|\bbean|lentil|chickpea/, '🥫'],
+  [/chip|crisp|cracker|pretzel|popcorn|\bsnack/, '🍿'], [/cookie|biscuit/, '🍪'], [/chocolate|candy|sweets/, '🍫'],
+  [/ice ?cream|gelato|sorbet/, '🍦'], [/pizza/, '🍕'], [/frozen/, '🧊'], [/spice|salt|season|herb|cinnamon/, '🧂'],
+  [/wine/, '🍷'], [/beer|ale|lager/, '🍺'], [/tofu/, '🧈'], [/dumpling|gyoza/, '🥟'],
+];
+const CAT_EMOJI = {
+  'dairy-milk':'🥛','dairy-cheese-hard':'🧀','dairy-cheese-soft':'🧀','dairy-yogurt':'🥛','dairy-butter':'🧈',
+  'eggs':'🥚','meat-raw':'🥩','poultry-raw':'🍗','fish-raw':'🐟','deli-meat':'🥓','leftovers':'🍲',
+  'produce-leafy':'🥬','produce-berry':'🍓','produce-hardy':'🥦','produce-root':'🥕','produce-citrus':'🍊',
+  'produce-banana':'🍌','produce-avocado':'🥑','herbs-fresh':'🌿','bread':'🍞','tortilla':'🌯',
+  'frozen-meal':'🍕','frozen-veg':'🥦','ice-cream':'🍦','canned':'🥫','jarred-sauce':'🥫','condiment':'🧂',
+  'dry-pasta-rice':'🍝','dry-grain-flour':'🌾','snack':'🍿','cereal':'🥣','baking':'🧁','oil-vinegar':'🫒',
+  'coffee-tea':'☕','juice-drink':'🧃','nuts-seeds':'🥜','spice':'🧂','other':'🍽️',
+};
+function foodEmoji(name, cat) {
+  const n = String(name || '').toLowerCase();
+  for (const [re, e] of NAME_EMOJI) if (re.test(n)) return e;
+  return CAT_EMOJI[cat] || null;
+}
+
+/* One thumbnail everywhere: uploaded/product photo first, then a food
+   emoji, then a first-letter tile as the last resort. */
+function thumbHtml(o) {
+  if (o.image) return `<div class="thumb"><img src="${esc(o.image)}" loading="lazy" alt=""></div>`;
+  const e = foodEmoji(o.name, o.cat);
+  if (e) return `<div class="thumb"><span class="emoji">${e}</span></div>`;
+  return `<div class="thumb"><span class="ph">${firstLetter(o.name)}</span></div>`;
+}
+const bigPicHtml = o => o.image
+  ? `<img src="${esc(o.image)}" alt="" style="width:52px;height:52px;border-radius:9px;object-fit:cover;border:1px solid var(--rime);flex:0 0 auto">`
+  : `<div style="width:52px;height:52px;border-radius:9px;background:var(--void);border:1px solid var(--rime);display:grid;place-items:center;font-size:${foodEmoji(o.name,o.cat)?'26px':'20px'};font-family:var(--mono);font-weight:600;color:var(--vapor-dim);flex:0 0 auto">${foodEmoji(o.name,o.cat) || firstLetter(o.name)}</div>`;
+
+/* Upload / change a photo. Downscaled to a small JPEG data-URL so 500 of
+   them stay tiny in storage and always show offline. */
+function downscaleImage(file, max = 240) {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.onload = () => {
+      const s = Math.min(1, max / Math.max(img.width, img.height));
+      const w = Math.max(1, Math.round(img.width * s)), h = Math.max(1, Math.round(img.height * s));
+      const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+      cv.getContext('2d').drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(img.src);
+      try { res(cv.toDataURL('image/jpeg', 0.82)); } catch (e) { rej(e); }
+    };
+    img.onerror = () => { URL.revokeObjectURL(img.src); rej(new Error('Could not read that image')); };
+    img.src = URL.createObjectURL(file);
+  });
+}
+async function setItemPhoto(it, file) {
+  try {
+    const url = await downscaleImage(file);
+    it.image = url;
+    await saveItem(it);
+    if (it.barcode) { const c = S.catalog.find(x => x.id === it.barcode); if (c) { c.image = url; await DB.put('catalog', c); } }
+    render(); toast('Photo updated');
+  } catch (e) { toast(e.message); }
+}
+async function setCatalogPhoto(c, file) {
+  try {
+    const url = await downscaleImage(file);
+    c.image = url;
+    await DB.put('catalog', c);
+    const i = S.catalog.findIndex(x => x.id === c.id); if (i > -1) S.catalog[i] = c;
+    S.items.forEach(it => { if (it.barcode === c.id && !it.image) it.image = url; });
+    render(); toast('Photo updated');
+  } catch (e) { toast(e.message); }
+}
+
 function itemRow(it) {
   const f = freshness(it);
   let q;
   if (it.mode === 'level') q = `<span class="pips">${[1,2,3,4].map(n => `<i class="${it.level >= n ? 'on' : ''}"></i>`).join('')}</span> ${LEVELS[it.level]}`;
   else if (it.mode === 'pack') q = `${it.qty} pack${it.qty > 1 ? 's' : ''} · ${it.unitsLeft}/${it.packSize} left`;
   else q = `×${it.qty}`;
-  const thumb = it.image
-    ? `<div class="thumb"><img src="${esc(it.image)}" loading="lazy" alt=""></div>`
-    : `<div class="thumb"><span class="ph">${firstLetter(it.name)}</span></div>`;
   const row = el(`<div class="item" style="--rail:${f.rail}">
-    ${thumb}
+    ${thumbHtml(it)}
     <div class="body">
       <div class="nm">${esc(it.name)}</div>
       <div class="meta">
@@ -615,12 +698,9 @@ async function addOne(it) {
 function itemSheet(it) {
   const dlg = document.getElementById('dlg');
   const f = freshness(it);
-  const pic = it.image
-    ? `<img src="${esc(it.image)}" alt="" style="width:52px;height:52px;border-radius:9px;object-fit:cover;border:1px solid var(--rime);flex:0 0 auto">`
-    : `<div style="width:52px;height:52px;border-radius:9px;background:var(--void);border:1px solid var(--rime);display:grid;place-items:center;font-family:var(--mono);font-size:20px;font-weight:600;color:var(--vapor-dim);flex:0 0 auto">${firstLetter(it.name)}</div>`;
   dlg.innerHTML = `
     <div style="display:flex;gap:12px;align-items:center;margin-bottom:14px">
-      ${pic}
+      ${bigPicHtml(it)}
       <div style="min-width:0">
         <div class="eyebrow">${esc(locName(it.loc))} · ${esc(it.cat)}</div>
         <h1 style="margin:3px 0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(it.name)}</h1>
@@ -628,6 +708,8 @@ function itemSheet(it) {
       </div>
     </div>
     <button class="btn ghost" data-a="move" style="margin-bottom:8px;font-weight:600">📍 Move to another shelf</button>
+    <button class="btn ghost" data-a="photo" style="margin-bottom:8px">📷 Change photo</button>
+    <input type="file" accept="image/*" id="itphoto" class="hide">
     <div class="row" style="margin-bottom:8px">
       <button class="btn ghost" data-a="plus">＋ Add one back</button>
       ${!it.opened ? `<button class="btn ghost" data-a="open">Just opened it</button>` : `<button class="btn ghost" data-a="date">Fix the date</button>`}
@@ -648,6 +730,8 @@ function itemSheet(it) {
   });
   dlg.querySelector('[data-a=toss]').onclick = () => go(() => tossItem(it));
   dlg.querySelector('[data-a=move]').onclick = () => { dlg.close(); moveSheet(it); };
+  dlg.querySelector('[data-a=photo]').onclick = () => dlg.querySelector('#itphoto').click();
+  dlg.querySelector('#itphoto').onchange = e => { const f = e.target.files[0]; if (f) { dlg.close(); setItemPhoto(it, f); } };
   dlg.querySelector('[data-a=date]').onclick = () => { dlg.close(); dateSheet(it); };
   dlg.querySelector('[data-a=close]').onclick = () => dlg.close();
   dlg.showModal();
@@ -1370,15 +1454,12 @@ function paintCatalog(box) {
   }
   const inStock = c => S.items.some(i => !i.deleted && i.barcode === c.id);
   list.slice(0, 200).forEach(c => {
-    const thumb = c.image
-      ? `<div class="thumb"><img src="${esc(c.image)}" loading="lazy" alt=""></div>`
-      : `<div class="thumb"><span class="ph">${firstLetter(c.name)}</span></div>`;
     const sub = c.brand ? esc(c.brand) : CAT_LABEL(c.cat || 'other');
     const stock = inStock(c)
       ? `<span class="stamp" style="--rail:var(--fresh)">IN STOCK</span>`
       : `<span class="qty" style="color:var(--vapor-dim)">not in the house</span>`;
     const row = el(`<div class="item">
-      ${thumb}
+      ${thumbHtml(c)}
       <div class="body" data-a="info" style="cursor:pointer">
         <div class="nm">${esc(c.name)}</div>
         <div class="meta"><span class="qty">${sub}</span>${stock}</div>
@@ -1397,12 +1478,9 @@ function paintCatalog(box) {
 function catalogSheet(c) {
   const dlg = document.getElementById('dlg');
   const have = S.items.filter(i => !i.deleted && i.barcode === c.id).length;
-  const pic = c.image
-    ? `<img src="${esc(c.image)}" alt="" style="width:52px;height:52px;border-radius:9px;object-fit:cover;border:1px solid var(--rime);flex:0 0 auto">`
-    : `<div style="width:52px;height:52px;border-radius:9px;background:var(--void);border:1px solid var(--rime);display:grid;place-items:center;font-family:var(--mono);font-size:20px;font-weight:600;color:var(--vapor-dim);flex:0 0 auto">${firstLetter(c.name)}</div>`;
   dlg.innerHTML = `
     <div style="display:flex;gap:12px;align-items:center;margin-bottom:14px">
-      ${pic}
+      ${bigPicHtml(c)}
       <div style="min-width:0">
         <div class="eyebrow">${esc(CAT_LABEL(c.cat || 'other'))}${c.packSize ? ' · pack of ' + c.packSize : ''}</div>
         <h1 style="margin:3px 0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c.name)}</h1>
@@ -1411,9 +1489,13 @@ function catalogSheet(c) {
     </div>
     <div class="note" style="margin:0 0 14px">Barcode <span class="code">${esc(c.id)}</span> — learned ${c.learned ? new Date(c.learned).toLocaleDateString() : 'a while ago'}.</div>
     <button class="btn cold" data-a="add">＋ Add to a shelf</button>
+    <button class="btn ghost" data-a="photo" style="margin-top:8px">📷 Change photo</button>
+    <input type="file" accept="image/*" id="cphoto" class="hide">
     <button class="btn ghost" data-a="forget" style="margin-top:8px;color:var(--spoil);border-color:var(--spoil)">Forget this product</button>
     <button class="btn ghost" data-a="close" style="margin-top:8px;border:none;color:var(--vapor)">Close</button>`;
   dlg.querySelector('[data-a=add]').onclick = () => { dlg.close(); confirmAdd({ ...c, source: 'yours' }, c.id); };
+  dlg.querySelector('[data-a=photo]').onclick = () => dlg.querySelector('#cphoto').click();
+  dlg.querySelector('#cphoto').onchange = e => { const f = e.target.files[0]; if (f) { dlg.close(); setCatalogPhoto(c, f); } };
   dlg.querySelector('[data-a=forget]').onclick = async () => {
     await DB.del('catalog', c.id);
     S.catalog = S.catalog.filter(x => x.id !== c.id);
@@ -1542,24 +1624,6 @@ function viewSetup(app) {
 
 /* ---------------- who's using this ----------------
    Not security. Attribution + kid mode. A password would kill it dead. */
-function whoSheet() {
-  const dlg = document.getElementById('dlg');
-  dlg.innerHTML = `<div class="eyebrow">Who's holding the phone</div>
-    <h1 style="margin:6px 0 14px">Tap yourself</h1>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
-      ${S.household.members.map(m => `<button data-n="${esc(m.name)}" style="background:var(--void);border:1px solid var(--rime-hi);
-        border-radius:10px;padding:14px 4px;display:grid;gap:5px;justify-items:center">
-        <span style="font-size:26px">${m.emoji}</span>
-        <span class="code" style="font-size:10px;color:var(--vapor)">${esc(m.name)}</span></button>`).join('')}
-    </div>`;
-  dlg.querySelectorAll('[data-n]').forEach(b => b.onclick = async () => {
-    S.who = S.household.members.find(m => m.name === b.dataset.n);
-    S.cfg.who = S.who.name; await saveCfg();
-    dlg.close(); render();
-  });
-  dlg.showModal();
-}
-
 async function saveCfg() { await DB.put('meta', { id: 'cfg', ...S.cfg }); }
 
 /* ---------------- shell ---------------- */
@@ -1580,10 +1644,9 @@ function render() {
   app.innerHTML = '';
 
   const searchBtn = document.getElementById('searchBtn');
-  if (!S.household) { nav.classList.add('hide'); document.getElementById('whoBtn').classList.add('hide'); searchBtn.classList.add('hide'); return viewSetup(app); }
-  nav.classList.remove('hide'); document.getElementById('whoBtn').classList.remove('hide'); searchBtn.classList.remove('hide');
+  if (!S.household) { nav.classList.add('hide'); searchBtn.classList.add('hide'); return viewSetup(app); }
+  nav.classList.remove('hide'); searchBtn.classList.remove('hide');
 
-  document.getElementById('whoEmoji').textContent = S.who?.emoji || '👤';
   const soonN = S.items.filter(i => !i.deleted && freshness(i).left <= 3).length;
   document.getElementById('title').textContent =
     { inv: 'Cold Room', soon: 'Eat me first', scan: 'Scan', cat: 'Catalog', cook: 'Cook', set: 'Setup' }[S.view];
@@ -1608,7 +1671,6 @@ function render() {
   ]);
   S.items = items; S.catalog = catalog; S.household = household || null; S.cfg = cfg || {};
   if (S.household) S.who = S.household.members.find(m => m.name === S.cfg.who) || S.household.members[0];
-  document.getElementById('whoBtn').onclick = whoSheet;
   document.getElementById('searchBtn').onclick = () => { S.view = 'inv'; S.loc = 'all'; S.focusSearch = true; render(); };
   render();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
