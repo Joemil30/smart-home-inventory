@@ -1,0 +1,20 @@
+{
+  "name": "Cold Room",
+  "short_name": "Cold Room",
+  "description": "What's in the house, what's dying, what you can cook right now.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0A0E13",
+  "theme_color": "#0A0E13",
+  "categories": ["food", "lifestyle", "utilities"],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

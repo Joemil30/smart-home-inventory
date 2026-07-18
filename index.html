@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0A0E13">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Cold Room</title>
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+/* ============================================================
+   COLD ROOM — design tokens
+   Thesis: the interface is a cold-storage manifest. Everything is
+   greyscale EXCEPT freshness, which is encoded as TEMPERATURE:
+   icy blue = fresh, amber = warming/dying, red = spoiled.
+   Color is never decoration here. Color is always time.
+   ============================================================ */
+:root{
+  --void:#0A0E13;      /* deep cold */
+  --shelf:#131A23;     /* card surface */
+  --rime:#1E2833;      /* dividers, borders */
+  --rime-hi:#2C3A4A;   /* raised border */
+  --frost:#E6EDF4;     /* primary text */
+  --vapor:#718396;     /* secondary text */
+  --vapor-dim:#4A5A6B; /* tertiary */
+
+  --cold:#5EC8F2;      /* fresh */
+  --chill:#7FD4C1;     /* fine */
+  --thaw:#E8A33D;      /* going */
+  --spoil:#E05252;     /* gone */
+
+  --mono:ui-monospace,'SF Mono','Cascadia Mono','JetBrains Mono','Roboto Mono',Consolas,monospace;
+  --sans:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+
+  --pad:16px;
+  --r:10px;
+  --nav-h:64px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:var(--void);color:var(--frost);font-family:var(--sans);overscroll-behavior-y:contain}
+body{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom));min-height:100dvh}
+button{font-family:inherit;font-size:inherit;color:inherit;background:none;border:none;cursor:pointer}
+input,select,textarea{font-family:var(--mono);font-size:16px;background:var(--void);color:var(--frost);border:1px solid var(--rime-hi);border-radius:8px;padding:11px 12px;width:100%}
+input:focus,select,textarea:focus,button:focus-visible{outline:2px solid var(--cold);outline-offset:2px}
+::placeholder{color:var(--vapor-dim)}
+
+/* ---- structural type: the manifest voice ---- */
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--vapor-dim)}
+.code{font-family:var(--mono);font-variant-numeric:tabular-nums}
+h1{font-family:var(--mono);font-size:19px;font-weight:600;letter-spacing:-.02em;margin:0}
+h2{font-family:var(--mono);font-size:13px;font-weight:600;letter-spacing:.04em;margin:0;color:var(--vapor)}
+
+/* ---- chrome ---- */
+header{position:sticky;top:0;z-index:20;background:rgba(10,14,19,.86);backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--rime);padding:calc(env(safe-area-inset-top) + 12px) var(--pad) 12px;
+  display:flex;align-items:center;gap:12px}
+header .who{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:18px;
+  background:var(--shelf);border:1px solid var(--rime-hi);border-radius:999px;padding:4px 10px}
+main{padding:var(--pad);max-width:640px;margin:0 auto}
+
+nav{position:fixed;bottom:0;left:0;right:0;z-index:20;height:calc(var(--nav-h) + env(safe-area-inset-bottom));
+  padding-bottom:env(safe-area-inset-bottom);background:rgba(10,14,19,.94);backdrop-filter:blur(14px);
+  border-top:1px solid var(--rime);display:flex}
+nav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  color:var(--vapor-dim);font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase}
+nav button svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.6}
+nav button[aria-current="page"]{color:var(--cold)}
+
+/* ---- the signature: freshness rail + inkjet date code ---- */
+.item{position:relative;display:flex;align-items:center;gap:12px;background:var(--shelf);
+  border:1px solid var(--rime);border-radius:var(--r);padding:12px 12px 12px 18px;margin-bottom:8px;overflow:hidden}
+.item::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--rail,var(--vapor-dim))}
+.item .body{flex:1;min-width:0}
+.item .nm{font-family:var(--mono);font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .meta{display:flex;gap:8px;align-items:baseline;margin-top:3px}
+/* inkjet date stamp, lifted straight off real packaging */
+.stamp{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--rail,var(--vapor));
+  opacity:.9;text-transform:uppercase}
+.qty{font-family:var(--mono);font-size:11px;color:var(--vapor);white-space:nowrap}
+.item .act{display:flex;gap:6px;flex-shrink:0}
+.item .act button{width:34px;height:34px;border:1px solid var(--rime-hi);border-radius:8px;
+  display:grid;place-items:center;color:var(--vapor);font-family:var(--mono);font-size:15px;line-height:1}
+.item .act button:active{background:var(--rime)}
+
+/* level pips for bulk goods */
+.pips{display:inline-flex;gap:2px;vertical-align:middle}
+.pips i{width:5px;height:11px;border-radius:1px;background:var(--rime-hi)}
+.pips i.on{background:var(--rail,var(--cold))}
+
+.card{background:var(--shelf);border:1px solid var(--rime);border-radius:var(--r);padding:14px;margin-bottom:10px}
+.btn{background:var(--frost);color:var(--void);border-radius:9px;padding:13px 16px;font-family:var(--mono);
+  font-size:13px;font-weight:600;letter-spacing:.03em;width:100%;display:block}
+.btn.ghost{background:none;color:var(--frost);border:1px solid var(--rime-hi)}
+.btn.cold{background:var(--cold);color:var(--void)}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.4}
+.row{display:flex;gap:8px}
+label{display:block;margin-bottom:14px}
+label .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--vapor);display:block;margin-bottom:6px}
+
+.chips{display:flex;gap:6px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex-shrink:0;font-family:var(--mono);font-size:11px;letter-spacing:.04em;padding:7px 12px;border-radius:999px;
+  border:1px solid var(--rime-hi);color:var(--vapor);white-space:nowrap}
+.chip[aria-pressed="true"]{background:var(--frost);color:var(--void);border-color:var(--frost)}
+
+.empty{text-align:center;padding:56px 20px;color:var(--vapor-dim)}
+.empty .big{font-family:var(--mono);font-size:13px;color:var(--vapor);margin-bottom:6px}
+.empty .sub{font-size:13px;line-height:1.5;max-width:34ch;margin:0 auto}
+
+/* scanner */
+#scanwrap{position:relative;background:#000;border-radius:var(--r);overflow:hidden;aspect-ratio:4/3;margin-bottom:12px}
+#video{width:100%;height:100%;object-fit:cover;display:block}
+.reticle{position:absolute;inset:16% 10%;border:1px solid rgba(94,200,242,.5);border-radius:6px;pointer-events:none}
+.reticle::after{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:var(--cold);
+  box-shadow:0 0 10px var(--cold);animation:sweep 2.6s ease-in-out infinite}
+@keyframes sweep{0%,100%{top:6%}50%{top:94%}}
+@media (prefers-reduced-motion:reduce){.reticle::after{animation:none}*{transition:none!important}}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--nav-h) + 20px);z-index:60;
+  background:var(--frost);color:var(--void);font-family:var(--mono);font-size:12px;font-weight:600;
+  padding:11px 16px;border-radius:999px;display:flex;align-items:center;gap:12px;max-width:calc(100vw - 32px);
+  box-shadow:0 8px 30px rgba(0,0,0,.6)}
+.toast button{color:var(--cold);font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.08em;
+  background:var(--void);padding:5px 9px;border-radius:6px}
+
+dialog{border:none;background:var(--shelf);color:var(--frost);border:1px solid var(--rime-hi);border-radius:14px;
+  padding:18px;width:min(460px,calc(100vw - 28px));max-height:86dvh;overflow:auto}
+dialog::backdrop{background:rgba(0,0,0,.72);backdrop-filter:blur(3px)}
+
+.recipe{border-left:4px solid var(--rail,var(--rime-hi));background:var(--shelf);border-radius:var(--r);
+  padding:13px 13px 13px 15px;margin-bottom:9px;border-top:1px solid var(--rime);
+  border-right:1px solid var(--rime);border-bottom:1px solid var(--rime)}
+.recipe h3{font-family:var(--mono);font-size:14px;margin:0 0 5px;font-weight:600}
+.gap{font-family:var(--mono);font-size:11px;color:var(--thaw)}
+.gap.none{color:var(--cold)}
+.tag{font-family:var(--mono);font-size:10px;color:var(--vapor-dim);letter-spacing:.06em}
+.spin{width:15px;height:15px;border:2px solid var(--rime-hi);border-top-color:var(--cold);border-radius:50%;
+  animation:sp .7s linear infinite;display:inline-block;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.hide{display:none!important}
+.note{font-size:12px;color:var(--vapor);line-height:1.55}
+.warn{border-left:3px solid var(--thaw);padding-left:10px;color:var(--thaw);font-size:12px;line-height:1.5}
+</style>
+</head>
+<body>
+
+<header>
+  <h1 id="title">Cold Room</h1>
+  <button class="who" id="whoBtn"><span id="whoEmoji">👤</span></button>
+</header>
+
+<main id="app"></main>
+
+<nav id="nav"></nav>
+
+<dialog id="dlg"></dialog>
+
+<script>
+/* ================================================================
+   COLD ROOM — household food inventory
+   Local-first. Works offline (your basement freezer has bad wifi).
+   Optional cloud sync is a drop-in, not a dependency.
+   ================================================================ */
+
+/* ---------------- storage: tiny IndexedDB wrapper ---------------- */
+const DB = (() => {
+  let db;
+  const STORES = ['items','catalog','recipes','meta','log'];
+  const open = () => new Promise((res, rej) => {
+    const r = indexedDB.open('coldroom', 1);
+    r.onupgradeneeded = e => {
+      const d = e.target.result;
+      STORES.forEach(s => { if (!d.objectStoreNames.contains(s)) d.createObjectStore(s, { keyPath: 'id' }); });
+    };
+    r.onsuccess = e => { db = e.target.result; res(db); };
+    r.onerror = () => rej(r.error);
+  });
+  const tx = (store, mode = 'readonly') => db.transaction(store, mode).objectStore(store);
+  const p = req => new Promise((res, rej) => { req.onsuccess = () => res(req.result); req.onerror = () => rej(req.error); });
+  return {
+    async init() { await open(); },
+    get: (s, id) => p(tx(s).get(id)),
+    all: (s) => p(tx(s).getAll()),
+    put: (s, v) => p(tx(s, 'readwrite').put(v)),
+    del: (s, id) => p(tx(s, 'readwrite').delete(id)),
+  };
+})();
+
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const DAY = 86400000;
+const today = () => { const d = new Date(); d.setHours(0,0,0,0); return d.getTime(); };
+
+/* ---------------- shelf life: category x location-kind ----------------
+   The whole point: you never type an expiry date. Ever.
+   Days are deliberately conservative-but-real, not the printed
+   "best by" date, which is a marketing artifact, not a safety line. */
+const SHELF = {
+  //                      fridge  freezer  pantry
+  'dairy-milk':          [   7,     90,      0 ],
+  'dairy-cheese-hard':   [  35,    180,      0 ],
+  'dairy-cheese-soft':   [  10,     60,      0 ],
+  'dairy-yogurt':        [  21,     60,      0 ],
+  'dairy-butter':        [  60,    270,      0 ],
+  'eggs':                [  28,      0,      0 ],
+  'meat-raw':            [   2,    180,      0 ],
+  'poultry-raw':         [   2,    270,      0 ],
+  'fish-raw':            [   2,    180,      0 ],
+  'deli-meat':           [   5,     60,      0 ],
+  'leftovers':           [   4,     90,      0 ],
+  'produce-leafy':       [   6,     30,      2 ],
+  'produce-berry':       [   5,    300,      1 ],
+  'produce-hardy':       [  21,    240,     10 ],
+  'produce-root':        [  40,    300,     60 ],
+  'produce-citrus':      [  28,    120,     10 ],
+  'produce-banana':      [   7,     90,      4 ],
+  'produce-avocado':     [   7,     90,      3 ],
+  'herbs-fresh':         [   7,    120,      0 ],
+  'bread':               [  10,     90,      4 ],
+  'tortilla':            [  30,    180,      7 ],
+  'frozen-meal':         [   0,    240,      0 ],
+  'frozen-veg':          [   0,    300,      0 ],
+  'ice-cream':           [   0,     90,      0 ],
+  'canned':              [ 400,      0,    730 ],
+  'jarred-sauce':        [  10,      0,    540 ],
+  'condiment':           [ 180,      0,    365 ],
+  'dry-pasta-rice':      [   0,      0,    720 ],
+  'dry-grain-flour':     [ 365,    365,    240 ],
+  'snack':               [   0,      0,     90 ],
+  'cereal':              [   0,      0,    180 ],
+  'baking':              [   0,      0,    540 ],
+  'oil-vinegar':         [   0,      0,    365 ],
+  'coffee-tea':          [   0,      0,    240 ],
+  'juice-drink':         [  10,    180,    270 ],
+  'nuts-seeds':          [ 180,    365,     90 ],
+  'spice':               [   0,      0,   1000 ],
+  'other':               [  14,    180,    180 ],
+};
+const KIND_IDX = { fridge: 0, freezer: 1, pantry: 2 };
+
+/* Once opened, the clock changes completely. Unopened sour cream
+   lasts weeks; opened lasts ten days. This is where most waste hides. */
+const OPENED_DAYS = {
+  'dairy-milk':7,'dairy-cheese-hard':21,'dairy-cheese-soft':7,'dairy-yogurt':7,
+  'deli-meat':4,'jarred-sauce':7,'juice-drink':7,'condiment':120,'canned':3,
+  'bread':7,'produce-leafy':3,'nuts-seeds':60,'coffee-tea':30,
+};
+
+/* count = discrete things you can literally count.
+   level = bulk things nobody weighs (milk, flour, oil).
+   pack  = Costco's fault. A container holding N units. */
+const UNIT_MODE = {
+  'dairy-milk':'level','oil-vinegar':'level','dry-grain-flour':'level','dry-pasta-rice':'level',
+  'condiment':'level','jarred-sauce':'level','juice-drink':'level','coffee-tea':'level',
+  'cereal':'level','baking':'level','spice':'level','nuts-seeds':'level',
+  'produce-leafy':'level','herbs-fresh':'level','dry-grain':'level',
+};
+const unitModeFor = cat => UNIT_MODE[cat] || 'count';
+
+/* Map Open Food Facts' sprawling category tags onto our small vocabulary.
+   Order matters — first hit wins, so specific before general. */
+const OFF_MAP = [
+  [/ice-?cream|frozen-desserts/,'ice-cream'],
+  [/frozen-vegetab|frozen-fruit/,'frozen-veg'],
+  [/frozen-meals|pizza|ready-meal/,'frozen-meal'],
+  [/milks?$|milk-|dairy-drink/,'dairy-milk'],
+  [/yogh?urt|yaourt/,'dairy-yogurt'],
+  [/butter|margarin/,'dairy-butter'],
+  [/hard-cheese|parmes|cheddar|gouda/,'dairy-cheese-hard'],
+  [/cheese|fromage/,'dairy-cheese-soft'],
+  [/eggs?$/,'eggs'],
+  [/poultry|chicken|turkey/,'poultry-raw'],
+  [/fish|seafood|salmon|tuna|shrimp/,'fish-raw'],
+  [/deli|charcuter|ham$|salami|bacon/,'deli-meat'],
+  [/meats?$|beef|pork|lamb/,'meat-raw'],
+  [/breads?|baguette|bagel|bun/,'bread'],
+  [/tortilla|wrap/,'tortilla'],
+  [/canned|tinned|preserve/,'canned'],
+  [/sauce|salsa|pesto|ketchup/,'jarred-sauce'],
+  [/condiment|mustard|mayonn|dressing/,'condiment'],
+  [/pastas?|rice|noodle|couscous/,'dry-pasta-rice'],
+  [/flour|baking/,'baking'],
+  [/cereal|granola|oat/,'cereal'],
+  [/oils?$|vinegar|olive-oil/,'oil-vinegar'],
+  [/coffee|teas?$|infusion/,'coffee-tea'],
+  [/juice|soda|water|beverage|drink/,'juice-drink'],
+  [/nuts|seeds|almond|peanut/,'nuts-seeds'],
+  [/spice|herb|seasoning/,'spice'],
+  [/snack|chips|crisps|biscuit|cookie|candy|chocolate|bar/,'snack'],
+  [/salad|lettuce|spinach|greens|kale/,'produce-leafy'],
+  [/berr|strawb|blueb|raspb/,'produce-berry'],
+  [/banana/,'produce-banana'],
+  [/avocado/,'produce-avocado'],
+  [/citrus|orange|lemon|lime|grapefruit/,'produce-citrus'],
+  [/potato|onion|carrot|garlic|root/,'produce-root'],
+  [/vegetab|fruits?$|produce/,'produce-hardy'],
+];
+/* Test each tag separately, not the joined blob — otherwise an
+   $-anchored pattern like /milks?$/ never fires, because the string
+   it's handed is "en:milks,en:dairies" and only the last tag can win.
+   Patterns loop outer so the specific-before-general ordering holds. */
+const mapCat = tags => {
+  const list = String(tags || '').toLowerCase()
+    .split(/[,\s]+/).map(t => t.replace(/^[a-z]{2}:/, '')).filter(Boolean);
+  for (const [re, cat] of OFF_MAP) if (list.some(t => re.test(t))) return cat;
+  return 'other';
+};
+
+const CATS = Object.keys(SHELF);
+
+/* ---------------- state ---------------- */
+let S = { items: [], catalog: [], recipes: [], household: null, cfg: {}, view: 'soon', loc: 'all', who: null, q: '', open: new Set() };
+
+const kindOf = id => (S.household?.locations.find(l => l.id === id)?.kind) || 'pantry';
+
+function estimateExpiry(cat, locId, opened) {
+  const kind = kindOf(locId);
+  let d = (SHELF[cat] || SHELF.other)[KIND_IDX[kind]];
+  if (!d) d = (SHELF[cat] || SHELF.other)[2] || 14;   // wrong-shelf fallback
+  if (opened && OPENED_DAYS[cat]) d = Math.min(d, OPENED_DAYS[cat]);
+  return today() + d * DAY;
+}
+
+/* Freshness as temperature. Fresh things are cold. Dying things warm up.
+   This is the single idea the whole interface is built on. */
+function freshness(item) {
+  const left = Math.round((item.expires - today()) / DAY);
+  const span = Math.max(1, Math.round((item.expires - item.added) / DAY));
+  const frac = left / span;
+  let rail, label;
+  if (left < 0)        { rail = 'var(--spoil)'; label = `EXPIRED ${-left}D`; }
+  else if (left === 0) { rail = 'var(--spoil)'; label = 'TODAY'; }
+  else if (left <= 2)  { rail = 'var(--spoil)'; label = `${left}D LEFT`; }
+  else if (left <= 5 || frac < .18) { rail = 'var(--thaw)'; label = `${left}D LEFT`; }
+  else if (frac < .4)  { rail = 'var(--chill)'; label = `${left}D`; }
+  else                 { rail = 'var(--cold)'; label = fmtDate(item.expires); }
+  return { left, rail, label };
+}
+const fmtDate = ts => { const d = new Date(ts); return `EXP ${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`; };
+const LEVELS = ['out','low','half','most','full'];
+
+/* ---------------- toast + undo ----------------
+   Nothing destructive is ever one tap. A kid will nuke the freezer
+   by accident on day three; this is the seatbelt. */
+let toastT;
+function toast(msg, undo) {
+  document.querySelector('.toast')?.remove();
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.innerHTML = `<span></span>`;
+  el.firstChild.textContent = msg;
+  if (undo) {
+    const b = document.createElement('button');
+    b.textContent = 'UNDO';
+    b.onclick = async () => { await undo(); el.remove(); render(); };
+    el.appendChild(b);
+  }
+  document.body.appendChild(el);
+  clearTimeout(toastT);
+  toastT = setTimeout(() => el.remove(), undo ? 6000 : 2800);
+}
+
+async function logAction(action, detail) {
+  await DB.put('log', { id: uid(), ts: Date.now(), who: S.who?.name || '?', action, detail });
+}
+
+/* ---------------- item mutations ---------------- */
+async function saveItem(it) {
+  await DB.put('items', it);
+  const i = S.items.findIndex(x => x.id === it.id);
+  if (i > -1) S.items[i] = it; else S.items.push(it);
+}
+
+async function addItem({ name, cat, loc, qty = 1, barcode = null, packSize = null, brand = '' }) {
+  const mode = packSize ? 'pack' : unitModeFor(cat);
+  const it = {
+    id: uid(), name, brand, cat, loc, barcode,
+    mode,
+    qty: mode === 'level' ? null : qty,
+    level: mode === 'level' ? 4 : null,
+    packSize, unitsLeft: packSize || null,
+    opened: false, added: today(), expires: estimateExpiry(cat, loc, false),
+    by: S.who?.name || '?', deleted: false,
+  };
+  await saveItem(it);
+  await logAction('add', name);
+  return it;
+}
+
+/* Depletion, the make-or-break. Every path funnels here. */
+async function deplete(it, why = 'used') {
+  const before = JSON.parse(JSON.stringify(it));
+  const undo = async () => { await saveItem(before); };
+  if (it.mode === 'level') {
+    it.level = Math.max(0, it.level - 1);
+    if (it.level === 0) it.deleted = true;
+  } else if (it.mode === 'pack') {
+    it.unitsLeft = Math.max(0, (it.unitsLeft ?? it.packSize) - 1);
+    if (it.unitsLeft === 0) { it.qty -= 1; it.unitsLeft = it.qty > 0 ? it.packSize : 0; }
+    if (it.qty <= 0) it.deleted = true;
+  } else {
+    it.qty -= 1;
+    if (it.qty <= 0) it.deleted = true;
+  }
+  await saveItem(it);
+  await logAction(why, it.name);
+  toast(`${it.name} — ${it.deleted ? 'all gone' : 'one less'}`, undo);
+  return undo;
+}
+
+async function markOpened(it) {
+  const before = JSON.parse(JSON.stringify(it));
+  it.opened = true;
+  it.expires = Math.min(it.expires, estimateExpiry(it.cat, it.loc, true));
+  await saveItem(it);
+  toast(`Opened — clock reset to ${fmtDate(it.expires).replace('EXP ', '')}`, async () => { await saveItem(before); });
+}
+
+/* The waste log. The only feature here that saves money instead of
+   just organising. Six months of this and you know exactly which
+   good intentions you keep throwing away. */
+async function tossItem(it) {
+  const before = JSON.parse(JSON.stringify(it));
+  it.deleted = true; it.wasted = true; it.wastedAt = Date.now();
+  await saveItem(it);
+  await logAction('wasted', it.name);
+  toast(`${it.name} logged as wasted`, async () => { await saveItem(before); });
+}
+
+/* ---------------- lookups ---------------- */
+async function lookupBarcode(code) {
+  const mine = S.catalog.find(c => c.id === code);
+  if (mine) return { ...mine, source: 'yours' };
+  try {
+    const r = await fetch(`https://world.openfoodfacts.org/api/v2/product/${code}.json?fields=product_name,brands,categories_tags,quantity`, { signal: AbortSignal.timeout(6000) });
+    const j = await r.json();
+    if (j.status === 1 && j.product?.product_name) {
+      return { id: code, name: j.product.product_name, brand: (j.product.brands || '').split(',')[0].trim(),
+               cat: mapCat((j.product.categories_tags || []).join(' ')), source: 'off' };
+    }
+  } catch (e) { /* offline or miss — fall through to the ask-once path */ }
+  return null;
+}
+
+async function learnProduct(p) {
+  const rec = { id: p.id, name: p.name, brand: p.brand || '', cat: p.cat, packSize: p.packSize || null, learned: Date.now() };
+  await DB.put('catalog', rec);
+  const i = S.catalog.findIndex(c => c.id === rec.id);
+  if (i > -1) S.catalog[i] = rec; else S.catalog.push(rec);
+}
+
+/* ---------------- Gemini ----------------
+   No model name is hardcoded. Google shut off 2.0-flash in June 2026
+   and moved Pro to paid-only in April; anything I pin here rots.
+   So we ask the key what it can actually do, and you pick. */
+const G = {
+  key: () => S.cfg.geminiKey || '',
+  model: () => S.cfg.geminiModel || '',
+  async models() {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${G.key()}`);
+    if (!r.ok) throw new Error((await r.json()).error?.message || 'Key rejected');
+    return (await r.json()).models
+      .filter(m => m.supportedGenerationMethods?.includes('generateContent'))
+      .filter(m => !/embedding|aqa|imagen|veo/i.test(m.name))
+      .map(m => ({ id: m.name.replace('models/', ''), label: m.displayName }));
+  },
+  async gen(parts, jsonSchema) {
+    if (!G.key()) throw new Error('No Gemini key. Settings → paste your key.');
+    if (!G.model()) throw new Error('No model picked. Settings → choose one.');
+    const body = { contents: [{ parts }] };
+    if (jsonSchema) body.generationConfig = { responseMimeType: 'application/json', responseSchema: jsonSchema };
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${G.model()}:generateContent?key=${G.key()}`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error?.message || `HTTP ${r.status}`);
+    const t = j.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!t) throw new Error('Empty response');
+    return jsonSchema ? JSON.parse(t) : t;
+  }
+};
+
+/* THE KEY INSIGHT: this is not open-ended food recognition.
+   We hand the model your actual inventory and ask "which of these
+   do you see?" — constrained matching, not identification.
+   Failure mode becomes "picked the wrong onion", not "hallucinated a mango". */
+async function visionMatch(b64, mime, mode) {
+  const live = S.items.filter(i => !i.deleted);
+  const known = live.map(i => `${i.id}|${i.name}${i.brand ? ' (' + i.brand + ')' : ''}`).join('\n');
+  const prompt = mode === 'deplete'
+    ? `These are ingredients laid out on a counter, about to be cooked.\n\nMy inventory (id|name):\n${known}\n\nReturn ONLY items you can actually see. Match to inventory ids where possible. If you see something not in my inventory, set id to null and give the name. Estimate visible count.`
+    : `Identify the food items in this photo (groceries just brought home).\n\nMy existing inventory, for matching known products:\n${known}\n\nFor anything new, name it plainly ("Roma tomatoes", "Ground beef 1lb") and pick the best category from:\n${CATS.join(', ')}\n\nCount what you see.`;
+  const schema = { type: 'OBJECT', properties: { found: { type: 'ARRAY', items: { type: 'OBJECT', properties: {
+    id: { type: 'STRING' }, name: { type: 'STRING' }, cat: { type: 'STRING' }, count: { type: 'INTEGER' }
+  }, required: ['name', 'count'] } } }, required: ['found'] };
+  const out = await G.gen([{ text: prompt }, { inline_data: { mime_type: mime, data: b64 } }], schema);
+  return out.found || [];
+}
+
+async function suggestRecipes() {
+  const live = S.items.filter(i => !i.deleted);
+  const staples = S.household.staples || [];
+  const h = S.household;
+  const soon = live.filter(i => freshness(i).left <= 5 && freshness(i).left >= -1);
+  const prompt = `You are planning dinner from what's actually in this kitchen right now.
+
+INVENTORY:
+${live.map(i => `- ${i.name}${i.brand ? ' (' + i.brand + ')' : ''} [${locName(i.loc)}]`).join('\n')}
+
+ASSUME UNLIMITED (do not ever list these as missing):
+${staples.join(', ') || 'salt, pepper, cooking oil, water'}
+
+USE THESE UP FIRST — expiring within days:
+${soon.map(i => `- ${i.name} (${freshness(i).label})`).join('\n') || '(nothing urgent)'}
+
+HOUSEHOLD: ${h.people} people${h.allergies?.length ? `. HARD ALLERGIES, never include: ${h.allergies.join(', ')}` : ''}${h.dislikes?.length ? `. Dislikes: ${h.dislikes.join(', ')}` : ''}${h.cookStyle ? `. Weeknight reality: ${h.cookStyle}` : ''}
+
+Give 5 real recipes, ranked: zero-missing first, and among those, whatever burns down the expiring list hardest. Include 1-2 that need just one or two extra items if they're notably better. "missing" = things NOT in inventory and NOT staples. Keep steps terse.`;
+  const schema = { type: 'OBJECT', properties: { recipes: { type: 'ARRAY', items: { type: 'OBJECT', properties: {
+    name: { type: 'STRING' }, minutes: { type: 'INTEGER' },
+    uses: { type: 'ARRAY', items: { type: 'STRING' } },
+    missing: { type: 'ARRAY', items: { type: 'STRING' } },
+    rescues: { type: 'ARRAY', items: { type: 'STRING' } },
+    steps: { type: 'ARRAY', items: { type: 'STRING' } }
+  }, required: ['name', 'minutes', 'uses', 'missing', 'steps'] } } }, required: ['recipes'] };
+  const out = await G.gen([{ text: prompt }], schema);
+  return out.recipes || [];
+}
+
+const locName = id => S.household?.locations.find(l => l.id === id)?.name || '?';
+
+/* ================================================================
+   VIEWS
+   ================================================================ */
+const el = (h) => { const d = document.createElement('div'); d.innerHTML = h.trim(); return d.firstElementChild; };
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+function itemRow(it) {
+  const f = freshness(it);
+  let q;
+  if (it.mode === 'level') q = `<span class="pips">${[1,2,3,4].map(n => `<i class="${it.level >= n ? 'on' : ''}"></i>`).join('')}</span> ${LEVELS[it.level]}`;
+  else if (it.mode === 'pack') q = `${it.qty} pack${it.qty > 1 ? 's' : ''} · ${it.unitsLeft}/${it.packSize} left`;
+  else q = `×${it.qty}`;
+  const row = el(`<div class="item" style="--rail:${f.rail}">
+    <div class="body">
+      <div class="nm">${esc(it.name)}</div>
+      <div class="meta">
+        <span class="stamp">${f.label}</span>
+        <span class="qty">${q}${it.opened ? ' · opened' : ''}</span>
+      </div>
+    </div>
+    <div class="act">
+      <button data-a="minus" title="Used one">−</button>
+      <button data-a="more" title="More">⋯</button>
+    </div>
+  </div>`);
+  row.querySelector('[data-a=minus]').onclick = async () => { await deplete(it); render(); };
+  row.querySelector('[data-a=more]').onclick = () => itemSheet(it);
+  return row;
+}
+
+function itemSheet(it) {
+  const dlg = document.getElementById('dlg');
+  const f = freshness(it);
+  dlg.innerHTML = `
+    <div class="eyebrow">${esc(locName(it.loc))} · ${esc(it.cat)}</div>
+    <h1 style="margin:6px 0 3px">${esc(it.name)}</h1>
+    <div class="stamp" style="--rail:${f.rail};font-size:12px;margin-bottom:16px">${f.label}${it.brand ? ' · ' + esc(it.brand) : ''}</div>
+    <div class="row" style="margin-bottom:8px">
+      ${!it.opened ? `<button class="btn ghost" data-a="open">Just opened it</button>` : ''}
+      <button class="btn ghost" data-a="move">Move shelf</button>
+    </div>
+    <div class="row" style="margin-bottom:8px">
+      <button class="btn ghost" data-a="date">Fix the date</button>
+      <button class="btn ghost" data-a="toss" style="color:var(--thaw);border-color:var(--thaw)">Threw it out</button>
+    </div>
+    <button class="btn cold" data-a="gone">All gone</button>
+    <button class="btn ghost" data-a="close" style="margin-top:8px;border:none;color:var(--vapor)">Close</button>`;
+  const go = async fn => { await fn(); dlg.close(); render(); };
+  dlg.querySelector('[data-a=open]')?.addEventListener('click', () => go(() => markOpened(it)));
+  dlg.querySelector('[data-a=gone]').onclick = () => go(async () => {
+    const before = JSON.parse(JSON.stringify(it));
+    it.deleted = true; await saveItem(it); await logAction('used up', it.name);
+    toast(`${it.name} — all gone`, async () => { await saveItem(before); });
+  });
+  dlg.querySelector('[data-a=toss]').onclick = () => go(() => tossItem(it));
+  dlg.querySelector('[data-a=move]').onclick = () => { dlg.close(); moveSheet(it); };
+  dlg.querySelector('[data-a=date]').onclick = () => { dlg.close(); dateSheet(it); };
+  dlg.querySelector('[data-a=close]').onclick = () => dlg.close();
+  dlg.showModal();
+}
+
+function moveSheet(it) {
+  const dlg = document.getElementById('dlg');
+  dlg.innerHTML = `<div class="eyebrow">Move</div><h1 style="margin:6px 0 14px">${esc(it.name)}</h1>
+    <p class="note" style="margin:0 0 12px">Different shelf, different clock. The date re-estimates automatically.</p>
+    ${S.household.locations.map(l => `<button class="btn ghost" data-l="${l.id}" style="margin-bottom:6px;text-align:left">${esc(l.name)}</button>`).join('')}
+    <button class="btn ghost" data-a="close" style="margin-top:6px;border:none;color:var(--vapor)">Cancel</button>`;
+  dlg.querySelectorAll('[data-l]').forEach(b => b.onclick = async () => {
+    const before = JSON.parse(JSON.stringify(it));
+    it.loc = b.dataset.l;
+    it.expires = estimateExpiry(it.cat, it.loc, it.opened);
+    await saveItem(it); dlg.close(); render();
+    toast(`Moved to ${locName(it.loc)} · ${fmtDate(it.expires).replace('EXP ','')}`, async () => { await saveItem(before); });
+  });
+  dlg.querySelector('[data-a=close]').onclick = () => dlg.close();
+  dlg.showModal();
+}
+
+function dateSheet(it) {
+  const dlg = document.getElementById('dlg');
+  const v = new Date(it.expires).toISOString().slice(0, 10);
+  dlg.innerHTML = `<div class="eyebrow">Override</div><h1 style="margin:6px 0 12px">${esc(it.name)}</h1>
+    <p class="note" style="margin:0 0 14px">We guessed <b>${fmtDate(it.expires).replace('EXP ','')}</b> from the category and shelf. Only change it if you actually disagree.</p>
+    <label><span class="lbl">Good until</span><input type="date" id="dv" value="${v}"></label>
+    <button class="btn cold" data-a="save">Save date</button>
+    <button class="btn ghost" data-a="close" style="margin-top:8px;border:none;color:var(--vapor)">Cancel</button>`;
+  dlg.querySelector('[data-a=save]').onclick = async () => {
+    it.expires = new Date(dlg.querySelector('#dv').value + 'T00:00').getTime();
+    it.dateOverride = true;
+    await saveItem(it); dlg.close(); render();
+  };
+  dlg.querySelector('[data-a=close]').onclick = () => dlg.close();
+  dlg.showModal();
+}
+
+/* ---------------- view: inventory ---------------- */
+const norm = s => String(s).toLowerCase().trim();
+
+/* Restock hints, learned rather than assumed.
+   The pantries hold DIFFERENT food — downstairs is not overflow of
+   upstairs. So "you have it there, go get it" is only true for things
+   that have genuinely lived on both shelves before. We keep depleted
+   items forever, so that history is already here. Silent until it has
+   evidence, which is the right cold-start behaviour. */
+function restockHints(locId) {
+  const live = S.items.filter(i => !i.deleted);
+  const hereNow  = new Set(live.filter(i => i.loc === locId).map(i => norm(i.name)));
+  const everHere = new Set(S.items.filter(i => i.loc === locId).map(i => norm(i.name)));
+  const out = [], seen = new Set();
+  for (const i of live) {
+    const n = norm(i.name);
+    if (i.loc === locId || hereNow.has(n) || seen.has(n)) continue;
+    if (!everHere.has(n)) continue;   // never lived here — that's just different food
+    seen.add(n); out.push(i);
+  }
+  return out;
+}
+
+const CAT_LABEL = c => c.replace(/-/g, ' ');
+
+function viewInv(app) {
+  const live = S.items.filter(i => !i.deleted);
+
+  const chips = el(`<div class="chips"></div>`);
+  const mk = (id, label) => {
+    const b = el(`<button class="chip" aria-pressed="${S.loc === id}">${esc(label)}</button>`);
+    b.onclick = () => { S.loc = id; S.q = ''; render(); };
+    return b;
+  };
+  chips.appendChild(mk('all', `All (${live.length})`));
+  S.household.locations.forEach(l =>
+    chips.appendChild(mk(l.id, `${l.name} (${live.filter(i => i.loc === l.id).length})`)));
+  app.appendChild(chips);
+
+  /* At 500 items search isn't a nicety, it's the primary way in. */
+  const sb = el(`<input id="q" placeholder="Search ${live.length} items…" value="${esc(S.q || '')}"
+    style="margin-bottom:12px" autocomplete="off" enterkeyhint="search">`);
+  sb.oninput = e => {
+    S.q = e.target.value;
+    const box = document.getElementById('results');
+    if (box) paintList(box);
+  };
+  app.appendChild(sb);
+
+  const box = el(`<div id="results"></div>`);
+  app.appendChild(box);
+  paintList(box);
+  if (S.q) { sb.focus(); sb.setSelectionRange(sb.value.length, sb.value.length); }
+}
+
+function paintList(box) {
+  box.innerHTML = '';
+  let live = S.items.filter(i => !i.deleted);
+  if (S.loc !== 'all') live = live.filter(i => i.loc === S.loc);
+
+  /* searching: flat, ranked, capped */
+  if (S.q?.trim()) {
+    const q = norm(S.q);
+    const hits = live.filter(i => norm(i.name).includes(q) || norm(i.brand || '').includes(q))
+                     .sort((a, b) => a.expires - b.expires);
+    if (!hits.length) return box.appendChild(el(`<div class="empty">
+      <div class="big">No match for "${esc(S.q)}"</div>
+      <div class="sub">If it's really in the house and not in here, the inventory has drifted. Scan it in.</div></div>`));
+    hits.slice(0, 60).forEach(i => box.appendChild(itemRow(i)));
+    if (hits.length > 60) box.appendChild(el(`<div class="note" style="text-align:center;padding:10px">
+      +${hits.length - 60} more — keep typing</div>`));
+    return;
+  }
+
+  if (!live.length) return box.appendChild(el(`<div class="empty">
+    <div class="big">Nothing on this shelf</div>
+    <div class="sub">Scan tab → photograph the whole shelf at once. That's how you fill 500 slots without losing a weekend.</div></div>`));
+
+  if (S.loc !== 'all') {
+    const hints = restockHints(S.loc);
+    if (hints.length) {
+      const names = [...new Set(hints.map(i => i.name))].slice(0, 3);
+      box.appendChild(el(`<div class="card" style="border-color:var(--rime-hi)">
+        <div class="eyebrow" style="margin-bottom:5px">Usually lives here — currently elsewhere</div>
+        <div class="note">${esc(names.join(' · '))}${hints.length > 3 ? ` +${hints.length - 3}` : ''}</div></div>`));
+    }
+  }
+
+  /* Grouped, collapsed, and built only when opened. 500 rows of DOM
+     rendered eagerly on every tap is what makes an app feel like mud. */
+  const groups = {};
+  const key = i => S.loc === 'all' ? i.loc : i.cat;
+  live.forEach(i => (groups[key(i)] ||= []).push(i));
+  const label = k => S.loc === 'all' ? locName(k) : CAT_LABEL(k);
+  const openAll = live.length <= 25;
+  const gkey = k => S.loc + ':' + k;
+
+  Object.entries(groups)
+    .sort((a, b) => Math.min(...a[1].map(i => i.expires)) - Math.min(...b[1].map(i => i.expires)))
+    .forEach(([k, list]) => {
+      list.sort((a, b) => a.expires - b.expires);
+      const worst = freshness(list[0]);
+      const urgent = list.filter(i => freshness(i).left <= 3).length;
+      const d = el(`<details ${openAll || S.open.has(gkey(k)) ? 'open' : ''} style="margin-bottom:6px">
+        <summary style="list-style:none;cursor:pointer;display:flex;align-items:center;gap:9px;
+          padding:11px 12px;background:var(--shelf);border:1px solid var(--rime);border-radius:var(--r)">
+          <span style="width:4px;height:17px;border-radius:2px;background:${urgent ? worst.rail : 'var(--rime-hi)'}"></span>
+          <span class="code" style="font-size:12px;flex:1">${esc(label(k))}</span>
+          ${urgent ? `<span class="code" style="font-size:10px;color:${worst.rail}">${urgent} DYING</span>` : ''}
+          <span class="code" style="font-size:11px;color:var(--vapor-dim)">${list.length}</span>
+        </summary>
+        <div class="grp" style="padding-top:6px"></div></details>`);
+      const body = d.querySelector('.grp');
+      const build = () => { if (d.dataset.built) return; list.forEach(i => body.appendChild(itemRow(i))); d.dataset.built = '1'; };
+      d.addEventListener('toggle', () => {
+        d.open ? S.open.add(gkey(k)) : S.open.delete(gkey(k));
+        if (d.open) build();
+      });
+      if (d.open) build();
+      box.appendChild(d);
+    });
+}
+
+/* ---------------- view: expiring ---------------- */
+function viewSoon(app) {
+  const live = S.items.filter(i => !i.deleted);
+  const soon = live.filter(i => freshness(i).left <= 7).sort((a, b) => a.expires - b.expires);
+  const wasted = S.items.filter(i => i.wasted);
+
+  if (!soon.length) {
+    app.appendChild(el(`<div class="empty"><div class="big">Nothing dying</div>
+      <div class="sub">Everything in the house has more than a week. Enjoy it.</div></div>`));
+  } else {
+    const dead = soon.filter(i => freshness(i).left < 0);
+    if (dead.length) app.appendChild(el(`<div class="card" style="border-color:var(--spoil)">
+      <div class="eyebrow" style="color:var(--spoil);margin-bottom:5px">Past date</div>
+      <div class="note">${dead.length} item${dead.length > 1 ? 's' : ''}. Check them — the date is a guess, your nose isn't. Tap <b>⋯ → Threw it out</b> so the waste log learns.</div></div>`));
+    app.appendChild(el(`<h2 style="margin:14px 0 8px">Eat me first</h2>`));
+    soon.forEach(i => app.appendChild(itemRow(i)));
+  }
+
+  if (wasted.length) {
+    const counts = {};
+    wasted.forEach(i => counts[i.name] = (counts[i.name] || 0) + 1);
+    const top = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    app.appendChild(el(`<h2 style="margin:26px 0 8px">Waste log · ${wasted.length} total</h2>`));
+    app.appendChild(el(`<div class="card"><div class="note">${top.map(([n, c]) =>
+      `${esc(n)} <span class="code" style="color:${c > 2 ? 'var(--spoil)' : 'var(--vapor-dim)'}">×${c}</span>`).join('<br>')}
+      ${top.some(t => t[1] > 2) ? `<div class="warn" style="margin-top:12px">You keep buying things you don't eat. Buy half as much of the ×3s.</div>` : ''}
+      </div></div>`));
+  }
+}
+
+/* ---------------- view: cook ---------------- */
+let recipeCache = null;
+function viewCook(app) {
+  const live = S.items.filter(i => !i.deleted);
+  const btn = el(`<button class="btn cold" style="margin-bottom:14px">Cook with what I have</button>`);
+  const out = el(`<div></div>`);
+  btn.onclick = async () => {
+    btn.disabled = true; btn.innerHTML = `<span class="spin"></span> Reading your shelves…`;
+    try {
+      recipeCache = await suggestRecipes();
+      renderRecipes(out);
+    } catch (e) {
+      out.innerHTML = `<div class="card"><div class="warn">${esc(e.message)}</div></div>`;
+    }
+    btn.disabled = false; btn.textContent = 'Try again';
+  };
+  app.appendChild(btn);
+  if (!live.length) app.appendChild(el(`<div class="card"><div class="note">Nothing in the inventory yet — there's nothing to cook with. Scan something in first.</div></div>`));
+  app.appendChild(out);
+  if (recipeCache) renderRecipes(out);
+}
+
+function renderRecipes(out) {
+  out.innerHTML = '';
+  if (!recipeCache?.length) return;
+  const sorted = [...recipeCache].sort((a, b) => a.missing.length - b.missing.length);
+  sorted.forEach(r => {
+    const n = r.missing.length;
+    const rail = n === 0 ? 'var(--cold)' : n <= 2 ? 'var(--thaw)' : 'var(--vapor-dim)';
+    const gap = n === 0 ? `<span class="gap none">Nothing missing</span>`
+      : `<span class="gap">Missing ${n}: ${esc(r.missing.join(', '))}</span>`;
+    const card = el(`<div class="recipe" style="--rail:${rail}">
+      <h3>${esc(r.name)}</h3>
+      <div style="margin-bottom:7px">${gap}</div>
+      <div class="tag">${r.minutes} MIN${r.rescues?.length ? ` · USES UP ${esc(r.rescues.join(', ')).toUpperCase()}` : ''}</div>
+      <div class="row" style="margin-top:11px">
+        <button class="btn ghost" data-a="how" style="font-size:11px;padding:9px">How</button>
+        <button class="btn ghost" data-a="cook" style="font-size:11px;padding:9px">I made this</button>
+      </div></div>`);
+    card.querySelector('[data-a=how]').onclick = () => {
+      const dlg = document.getElementById('dlg');
+      dlg.innerHTML = `<div class="eyebrow">${r.minutes} min</div><h1 style="margin:6px 0 12px">${esc(r.name)}</h1>
+        <ol class="note" style="padding-left:18px;margin:0 0 14px">${r.steps.map(s => `<li style="margin-bottom:7px">${esc(s)}</li>`).join('')}</ol>
+        <button class="btn ghost" data-a="c">Close</button>`;
+      dlg.querySelector('[data-a=c]').onclick = () => dlg.close();
+      dlg.showModal();
+    };
+    card.querySelector('[data-a=cook]').onclick = () => cookDeduct(r);
+    out.appendChild(card);
+  });
+}
+
+/* Auto-deduct on cook — but confirm first, because the recipe is
+   theory and your counter is reality. You grabbed 3 peppers, not 2. */
+function cookDeduct(r) {
+  const live = S.items.filter(i => !i.deleted);
+  const hits = live.filter(i => r.uses.some(u => {
+    const a = u.toLowerCase(), b = i.name.toLowerCase();
+    return a.includes(b) || b.includes(a);
+  }));
+  const dlg = document.getElementById('dlg');
+  dlg.innerHTML = `<div class="eyebrow">Made it</div><h1 style="margin:6px 0 6px">${esc(r.name)}</h1>
+    <p class="note" style="margin:0 0 14px">Untick anything you didn't actually use up.</p>
+    ${hits.map(i => `<label style="display:flex;gap:10px;align-items:center;margin-bottom:9px;font-family:var(--mono);font-size:13px">
+      <input type="checkbox" checked data-id="${i.id}" style="width:19px;height:19px;flex:0 0 auto">${esc(i.name)}</label>`).join('') ||
+      `<div class="note" style="margin-bottom:14px">Couldn't match anything to your inventory — nothing will change.</div>`}
+    <button class="btn cold" data-a="go">Deduct these</button>
+    <button class="btn ghost" data-a="c" style="margin-top:8px;border:none;color:var(--vapor)">Cancel</button>`;
+  dlg.querySelector('[data-a=go]').onclick = async () => {
+    const ids = [...dlg.querySelectorAll('input:checked')].map(c => c.dataset.id);
+    const undos = [];
+    for (const id of ids) undos.push(await deplete(S.items.find(i => i.id === id), 'cooked'));
+    dlg.close(); render();
+    toast(`${r.name} — ${ids.length} deducted`, async () => { for (const u of undos) await u(); });
+  };
+  dlg.querySelector('[data-a=c]').onclick = () => dlg.close();
+  dlg.showModal();
+}
+
+/* ---------------- view: scan ---------------- */
+let stream = null, scanLoop = null, detector = null;
+async function stopCam() {
+  cancelAnimationFrame(scanLoop);
+  stream?.getTracks().forEach(t => t.stop());
+  stream = null;
+}
+
+function viewScan(app) {
+  const mode = S.cfg.scanMode || 'in';
+  const wrap = el(`<div>
+    <div class="chips">
+      <button class="chip" data-m="in" aria-pressed="${mode === 'in'}">Putting away</button>
+      <button class="chip" data-m="out" aria-pressed="${mode === 'out'}">Trash / used up</button>
+    </div>
+    <div id="scanwrap"><video id="video" playsinline muted></video><div class="reticle"></div></div>
+    <div class="note" id="hint" style="text-align:center;margin-bottom:14px"></div>
+    <button class="btn cold" data-a="photo">📷 Shoot a whole shelf</button>
+    <button class="btn ghost" data-a="manual" style="margin-top:8px">Type one in</button>
+    <input type="file" accept="image/*" capture="environment" id="pick" class="hide">
+  </div>`);
+  app.appendChild(wrap);
+
+  wrap.querySelector('#hint').innerHTML = mode === 'in'
+    ? `Barcode for packaged. <b>Photo for everything else</b> — one shot takes a whole shelf.`
+    : `<b style="color:var(--thaw)">Scan the empty wrapper as you bin it.</b> Same gesture, opposite direction.`;
+
+  wrap.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { S.cfg.scanMode = b.dataset.m; saveCfg(); render(); });
+  wrap.querySelector('[data-a=manual]').onclick = () => manualSheet();
+  wrap.querySelector('#pick').onchange = e => e.target.files[0] && photoFlow(e.target.files[0]);
+  wrap.querySelector('[data-a=photo]').onclick = () => wrap.querySelector('#pick').click();
+
+  startCam(wrap.querySelector('#video'), mode);
+}
+
+async function startCam(video, mode) {
+  if (!('BarcodeDetector' in window)) {
+    document.getElementById('hint').innerHTML =
+      `<div class="warn" style="text-align:left">This browser can't scan barcodes natively — that's iOS Safari, mostly. Chrome on Android works. Use <b>Photo</b> or <b>Type it in</b> for now.</div>`;
+    return;
+  }
+  try {
+    detector = detector || new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128'] });
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    video.srcObject = stream; await video.play();
+    let last = 0, busy = false;
+    const tick = async () => {
+      if (!stream) return;
+      if (!busy && Date.now() - last > 1100) {
+        busy = true;
+        try {
+          const codes = await detector.detect(video);
+          if (codes[0]) { last = Date.now(); navigator.vibrate?.(40); await onCode(codes[0].rawValue, mode); }
+        } catch (e) {}
+        busy = false;
+      }
+      scanLoop = requestAnimationFrame(tick);
+    };
+    tick();
+  } catch (e) {
+    document.getElementById('hint').innerHTML =
+      `<div class="warn" style="text-align:left">No camera access. Needs HTTPS (or localhost) — see the README on hosting. You can still use Photo or Type it in.</div>`;
+  }
+}
+
+async function onCode(code, mode) {
+  if (mode === 'out') {
+    const it = S.items.find(i => !i.deleted && i.barcode === code);
+    if (!it) return toast(`Scanned ${code} — not in your inventory`);
+    await deplete(it, 'binned');
+    return;
+  }
+  const p = await lookupBarcode(code);
+  if (p) { confirmAdd(p, code); }
+  else { unknownSheet(code); }
+}
+
+function confirmAdd(p, code) {
+  const dlg = document.getElementById('dlg');
+  const guessLoc = S.catalog.find(c => c.id === code)?.lastLoc || defaultLoc(p.cat);
+  dlg.innerHTML = `<div class="eyebrow">${p.source === 'yours' ? 'From your catalog' : 'Open Food Facts'} · ${esc(code)}</div>
+    <h1 style="margin:6px 0 14px">${esc(p.name)}</h1>
+    <label><span class="lbl">Shelf</span><select id="loc">${S.household.locations.map(l =>
+      `<option value="${l.id}" ${l.id === guessLoc ? 'selected' : ''}>${esc(l.name)}</option>`).join('')}</select></label>
+    <div class="row"><label style="flex:1"><span class="lbl">How many</span><input type="number" id="qty" value="1" min="1"></label>
+    <label style="flex:1"><span class="lbl">Pack of (blank = single)</span><input type="number" id="pk" placeholder="40" value="${p.packSize || ''}"></label></div>
+    <button class="btn cold" data-a="add">Put it away</button>
+    <button class="btn ghost" data-a="c" style="margin-top:8px;border:none;color:var(--vapor)">Cancel</button>`;
+  dlg.querySelector('[data-a=add]').onclick = async () => {
+    const loc = dlg.querySelector('#loc').value;
+    const packSize = parseInt(dlg.querySelector('#pk').value) || null;
+    const n = parseInt(dlg.querySelector('#qty').value) || 1;
+    await addItem({ name: p.name, brand: p.brand, cat: p.cat, loc, qty: n, barcode: code, packSize });
+    await learnProduct({ ...p, id: code, packSize, lastLoc: loc });
+    dlg.close(); render();
+    toast(`${p.name} → ${locName(loc)}`);
+  };
+  dlg.querySelector('[data-a=c]').onclick = () => dlg.close();
+  dlg.showModal();
+}
+
+const defaultLoc = cat => {
+  const L = S.household.locations;
+  const s = SHELF[cat] || SHELF.other;
+  const want = s[1] && !s[0] && !s[2] ? 'freezer' : s[0] >= (s[2] || 0) ? 'fridge' : 'pantry';
+  return (L.find(l => l.kind === want) || L[0]).id;
+};
+
+/* The Kirkland path. Costco private label barely exists in public
+   databases, so we ask once and never again. Two trips and your
+   own catalog covers everything you actually buy. */
+function unknownSheet(code) {
+  const dlg = document.getElementById('dlg');
+  dlg.innerHTML = `<div class="eyebrow">Unknown barcode · ${esc(code)}</div>
+    <h1 style="margin:6px 0 8px">Never seen this one</h1>
+    <p class="note" style="margin:0 0 14px">Not in Open Food Facts — usually store brands like Kirkland. Tell us once and this barcode is yours forever.</p>
+    <button class="btn cold" data-a="shoot">📷 Read the label for me</button>
+    <div class="eyebrow" style="text-align:center;margin:14px 0 10px">or type it</div>
+    <label><span class="lbl">Name</span><input id="nm" placeholder="Kirkland Organic Eggs"></label>
+    <label><span class="lbl">What kind of thing</span><select id="cat">${CATS.map(c => `<option value="${c}">${c}</option>`).join('')}</select></label>
+    <label><span class="lbl">Shelf</span><select id="loc">${S.household.locations.map(l => `<option value="${l.id}">${esc(l.name)}</option>`).join('')}</select></label>
+    <label><span class="lbl">Pack of (blank = single)</span><input type="number" id="pk" placeholder="40"></label>
+    <button class="btn ghost" data-a="save">Save &amp; remember</button>
+    <input type="file" accept="image/*" capture="environment" id="lp" class="hide">`;
+  const fileEl = dlg.querySelector('#lp');
+  dlg.querySelector('[data-a=shoot]').onclick = () => fileEl.click();
+  fileEl.onchange = async e => {
+    const f = e.target.files[0]; if (!f) return;
+    const btn = dlg.querySelector('[data-a=shoot]');
+    btn.innerHTML = `<span class="spin"></span> Reading…`;
+    try {
+      const { b64, mime } = await toB64(f);
+      const schema = { type: 'OBJECT', properties: { name: { type: 'STRING' }, brand: { type: 'STRING' },
+        cat: { type: 'STRING' }, packSize: { type: 'INTEGER' } }, required: ['name', 'cat'] };
+      const r = await G.gen([{ text: `Read this food package label. Return the product name, brand, best category from this list: ${CATS.join(', ')}, and if it's a multipack, how many units are inside (else omit packSize).` },
+        { inline_data: { mime_type: mime, data: b64 } }], schema);
+      dlg.querySelector('#nm').value = r.name;
+      dlg.querySelector('#cat').value = CATS.includes(r.cat) ? r.cat : 'other';
+      if (r.packSize) dlg.querySelector('#pk').value = r.packSize;
+      dlg.querySelector('#loc').value = defaultLoc(r.cat);
+      btn.textContent = '✓ Got it — check below';
+    } catch (err) { btn.textContent = '📷 Try again'; toast(err.message); }
+  };
+  dlg.querySelector('[data-a=save]').onclick = async () => {
+    const name = dlg.querySelector('#nm').value.trim(); if (!name) return;
+    const cat = dlg.querySelector('#cat').value, loc = dlg.querySelector('#loc').value;
+    const packSize = parseInt(dlg.querySelector('#pk').value) || null;
+    await addItem({ name, cat, loc, barcode: code, packSize });
+    await learnProduct({ id: code, name, cat, packSize, lastLoc: loc });
+    dlg.close(); render();
+    toast(`${name} learned — scans instantly next time`);
+  };
+  dlg.showModal();
+}
+
+const toB64 = f => new Promise(res => {
+  const r = new FileReader();
+  r.onload = () => res({ b64: r.result.split(',')[1], mime: f.type });
+  r.readAsDataURL(f);
+});
+
+/* Photo flow: groceries on the counter (add) or ingredients laid out
+   before cooking (deplete). Same camera, opposite sign. */
+async function photoFlow(file) {
+  const mode = S.cfg.scanMode === 'out' ? 'deplete' : 'add';
+  const dlg = document.getElementById('dlg');
+  dlg.innerHTML = `<h1 style="margin:0 0 12px"><span class="spin"></span> Looking…</h1>
+    <p class="note">Matching against the ${S.items.filter(i => !i.deleted).length} things you already have.</p>`;
+  dlg.showModal();
+  try {
+    const { b64, mime } = await toB64(file);
+    const found = await visionMatch(b64, mime, mode);
+    if (!found.length) { dlg.innerHTML = `<h1 style="margin:0 0 10px">Nothing recognised</h1>
+      <p class="note" style="margin-bottom:14px">Try a flatter angle with less overlap, or type it in.</p>
+      <button class="btn ghost" onclick="document.getElementById('dlg').close()">Close</button>`; return; }
+    dlg.innerHTML = `<div class="eyebrow">${mode === 'add' ? 'Putting away' : 'Using these up'}</div>
+      <h1 style="margin:6px 0 6px">Found ${found.length}</h1>
+      <p class="note" style="margin:0 0 14px">Untick anything it got wrong.</p>
+      ${found.map((f, i) => `<label style="display:flex;gap:10px;align-items:center;margin-bottom:9px;font-family:var(--mono);font-size:13px">
+        <input type="checkbox" checked data-i="${i}" style="width:19px;height:19px;flex:0 0 auto">
+        ${esc(f.name)} <span style="color:var(--vapor-dim)">×${f.count || 1}</span></label>`).join('')}
+      ${mode === 'add' ? `<label style="margin-top:6px"><span class="lbl">Onto which shelf</span><select id="loc">${S.household.locations.map(l => `<option value="${l.id}">${esc(l.name)}</option>`).join('')}</select></label>` : ''}
+      <button class="btn cold" data-a="go">${mode === 'add' ? 'Put them away' : 'Deduct them'}</button>
+      <button class="btn ghost" data-a="c" style="margin-top:8px;border:none;color:var(--vapor)">Cancel</button>`;
+    dlg.querySelector('[data-a=go]').onclick = async () => {
+      const picks = [...dlg.querySelectorAll('input:checked')].map(c => found[+c.dataset.i]);
+      if (mode === 'add') {
+        const loc = dlg.querySelector('#loc').value;
+        for (const f of picks) await addItem({ name: f.name, cat: CATS.includes(f.cat) ? f.cat : 'other', loc, qty: f.count || 1 });
+        toast(`${picks.length} put away in ${locName(loc)}`);
+      } else {
+        for (const f of picks) {
+          const it = f.id && S.items.find(i => i.id === f.id && !i.deleted);
+          if (it) for (let n = 0; n < (f.count || 1); n++) await deplete(it, 'cooked');
+        }
+        toast(`${picks.length} deducted`);
+      }
+      dlg.close(); render();
+    };
+    dlg.querySelector('[data-a=c]').onclick = () => dlg.close();
+  } catch (e) {
+    dlg.innerHTML = `<h1 style="margin:0 0 10px">Couldn't read it</h1><div class="warn" style="margin-bottom:14px">${esc(e.message)}</div>
+      <button class="btn ghost" onclick="document.getElementById('dlg').close()">Close</button>`;
+  }
+}
+
+function manualSheet() {
+  const dlg = document.getElementById('dlg');
+  dlg.innerHTML = `<div class="eyebrow">Add by hand</div><h1 style="margin:6px 0 14px">What is it</h1>
+    <label><span class="lbl">Name</span><input id="nm" placeholder="Roma tomatoes" autofocus></label>
+    <label><span class="lbl">What kind of thing</span><select id="cat">${CATS.map(c => `<option value="${c}">${c}</option>`).join('')}</select></label>
+    <label><span class="lbl">Shelf</span><select id="loc">${S.household.locations.map(l => `<option value="${l.id}">${esc(l.name)}</option>`).join('')}</select></label>
+    <label><span class="lbl">How many</span><input type="number" id="qty" value="1" min="1"></label>
+    <button class="btn cold" data-a="add">Put it away</button>
+    <button class="btn ghost" data-a="c" style="margin-top:8px;border:none;color:var(--vapor)">Cancel</button>`;
+  dlg.querySelector('#cat').onchange = e => dlg.querySelector('#loc').value = defaultLoc(e.target.value);
+  dlg.querySelector('[data-a=add]').onclick = async () => {
+    const name = dlg.querySelector('#nm').value.trim(); if (!name) return;
+    await addItem({ name, cat: dlg.querySelector('#cat').value, loc: dlg.querySelector('#loc').value,
+      qty: parseInt(dlg.querySelector('#qty').value) || 1 });
+    dlg.close(); render(); toast(`${name} put away`);
+  };
+  dlg.querySelector('[data-a=c]').onclick = () => dlg.close();
+  dlg.showModal();
+}
+
+/* ---------------- view: settings ---------------- */
+function viewSet(app) {
+  const c = S.cfg;
+  app.appendChild(el(`<h2 style="margin:0 0 10px">Gemini</h2>`));
+  const card = el(`<div class="card">
+    <p class="note" style="margin:0 0 12px">Powers label reading, produce photos and recipes. Free key from <b>aistudio.google.com</b>. Barcodes don't need it.</p>
+    <div class="warn" style="margin-bottom:14px">On the free tier Google may train on what you send — that means photos of your kitchen. Turning on billing opts you out and still costs about nothing at this volume.</div>
+    <label><span class="lbl">API key</span><input id="gk" type="password" value="${esc(c.geminiKey || '')}" placeholder="AIza…"></label>
+    <button class="btn ghost" data-a="load">Fetch models this key can use</button>
+    <div id="ms" style="margin-top:12px">${c.geminiModel ? `<div class="note">Using <b class="code">${esc(c.geminiModel)}</b></div>` : ''}</div>
+  </div>`);
+  card.querySelector('[data-a=load]').onclick = async () => {
+    S.cfg.geminiKey = card.querySelector('#gk').value.trim(); await saveCfg();
+    const box = card.querySelector('#ms');
+    box.innerHTML = `<span class="spin"></span>`;
+    try {
+      const ms = await G.models();
+      box.innerHTML = `<label><span class="lbl">Model — Flash tiers are the free ones</span>
+        <select id="mm">${ms.map(m => `<option value="${m.id}" ${m.id === c.geminiModel ? 'selected' : ''}>${esc(m.id)}</option>`).join('')}</select></label>`;
+      box.querySelector('#mm').onchange = async e => { S.cfg.geminiModel = e.target.value; await saveCfg(); toast('Model set'); };
+      if (!S.cfg.geminiModel) { S.cfg.geminiModel = (ms.find(m => /flash/i.test(m.id) && !/lite|image|preview/i.test(m.id)) || ms[0]).id; await saveCfg(); box.querySelector('#mm').value = S.cfg.geminiModel; }
+    } catch (e) { box.innerHTML = `<div class="warn">${esc(e.message)}</div>`; }
+  };
+  app.appendChild(card);
+
+  app.appendChild(el(`<h2 style="margin:22px 0 10px">Household</h2>`));
+  const h = S.household;
+  const hc = el(`<div class="card">
+    <label><span class="lbl">People eating</span><input type="number" id="pp" value="${h.people}" min="1"></label>
+    <label><span class="lbl">Allergies — never suggested, ever</span><input id="al" value="${esc((h.allergies||[]).join(', '))}" placeholder="peanuts, shellfish"></label>
+    <label><span class="lbl">Won't eat</span><input id="dl" value="${esc((h.dislikes||[]).join(', '))}" placeholder="mushrooms, olives"></label>
+    <label><span class="lbl">Always in the house — never counted as missing</span><textarea id="st" rows="3">${esc((h.staples||[]).join(', '))}</textarea></label>
+    <label><span class="lbl">Weeknight reality</span><select id="cs">
+      ${['20 minutes and exhausted','I actually cook','Depends on the night'].map(o => `<option ${h.cookStyle===o?'selected':''}>${o}</option>`).join('')}</select></label>
+    <button class="btn ghost" data-a="s">Save</button></div>`);
+  hc.querySelector('[data-a=s]').onclick = async () => {
+    const csv = s => s.split(',').map(x => x.trim()).filter(Boolean);
+    Object.assign(S.household, {
+      people: parseInt(hc.querySelector('#pp').value) || 1,
+      allergies: csv(hc.querySelector('#al').value), dislikes: csv(hc.querySelector('#dl').value),
+      staples: csv(hc.querySelector('#st').value), cookStyle: hc.querySelector('#cs').value,
+    });
+    await DB.put('meta', { id: 'household', ...S.household });
+    recipeCache = null;
+    toast('Saved');
+  };
+  app.appendChild(hc);
+
+  app.appendChild(el(`<h2 style="margin:22px 0 10px">Sync</h2>`));
+  app.appendChild(el(`<div class="card"><div class="note">
+    Everything lives on this device right now — which is why it works in the basement with no signal.
+    When you're ready to put the kids' phones on it, that's a Supabase URL and key dropped in here.
+    Test the loop solo for two weeks first.</div></div>`));
+
+  app.appendChild(el(`<h2 style="margin:22px 0 10px">Later</h2>`));
+  app.appendChild(el(`<div class="card"><div class="note">
+    Shopping lists, store routing and receipt scanning are deliberately not here yet.
+    The data model already holds them — they bolt on, they don't rewrite.</div></div>`));
+
+  const exp = el(`<button class="btn ghost" style="margin-top:16px">Export everything (JSON)</button>`);
+  exp.onclick = async () => {
+    const blob = new Blob([JSON.stringify({ items: S.items, catalog: S.catalog, household: S.household,
+      log: await DB.all('log') }, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `coldroom-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+  };
+  app.appendChild(exp);
+}
+
+/* ---------------- setup wizard ----------------
+   These questions belong in the product, not in a chat window.
+   Persistent, editable, and the answers actually get used. */
+function viewSetup(app) {
+  app.appendChild(el(`<div class="eyebrow">First run</div>
+    <h1 style="margin:8px 0 6px;font-size:24px">Set up the cold room</h1>
+    <p class="note" style="margin:0 0 22px">Two minutes. All of it editable later.</p>`));
+  const f = el(`<div>
+    <label><span class="lbl">Who lives here — first names</span><input id="mem" placeholder="Alex, Sam, Mia, Theo"></label>
+    <label><span class="lbl">People eating</span><input type="number" id="pp" value="4" min="1"></label>
+    <label><span class="lbl">Allergies — hard no, never suggested</span><input id="al" placeholder="peanuts"></label>
+    <label><span class="lbl">Won't eat</span><input id="dl" placeholder="mushrooms, olives"></label>
+    <label><span class="lbl">Always in the house</span><textarea id="st" rows="3">salt, pepper, cooking oil, olive oil, butter, flour, sugar, garlic, onions, soy sauce, vinegar, rice</textarea>
+      <span class="note">Recipes never count these as missing. Otherwise every suggestion says "missing 1 ingredient: salt".</span></label>
+    <label><span class="lbl">Weeknight reality</span><select id="cs">
+      <option>I actually cook</option><option>20 minutes and exhausted</option><option>Depends on the night</option></select></label>
+    <button class="btn cold" data-a="go">Open the doors</button>
+  </div>`);
+  f.querySelector('[data-a=go]').onclick = async () => {
+    const csv = s => s.split(',').map(x => x.trim()).filter(Boolean);
+    const names = csv(f.querySelector('#mem').value);
+    const EM = ['🐻','🦊','🦉','🐙','🦌','🐝','🦅','🐢'];
+    S.household = {
+      id: 'household',
+      members: (names.length ? names : ['Me']).map((n, i) => ({ name: n, emoji: EM[i % EM.length] })),
+      people: parseInt(f.querySelector('#pp').value) || 1,
+      allergies: csv(f.querySelector('#al').value), dislikes: csv(f.querySelector('#dl').value),
+      staples: csv(f.querySelector('#st').value), cookStyle: f.querySelector('#cs').value,
+      locations: [
+        { id: 'uf', name: 'Upstairs fridge',   kind: 'fridge'  },
+        { id: 'df', name: 'Downstairs fridge', kind: 'fridge'  },
+        { id: 'uz', name: 'Upstairs freezer',  kind: 'freezer' },
+        { id: 'dz', name: 'Downstairs freezer',kind: 'freezer' },
+        { id: 'up', name: 'Upstairs pantry',   kind: 'pantry'  },
+        { id: 'dp', name: 'Downstairs pantry', kind: 'pantry'  },
+      ],
+    };
+    await DB.put('meta', S.household);
+    S.who = S.household.members[0];
+    S.view = 'scan';
+    render();
+  };
+  app.appendChild(f);
+}
+
+/* ---------------- who's using this ----------------
+   Not security. Attribution + kid mode. A password would kill it dead. */
+function whoSheet() {
+  const dlg = document.getElementById('dlg');
+  dlg.innerHTML = `<div class="eyebrow">Who's holding the phone</div>
+    <h1 style="margin:6px 0 14px">Tap yourself</h1>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+      ${S.household.members.map(m => `<button data-n="${esc(m.name)}" style="background:var(--void);border:1px solid var(--rime-hi);
+        border-radius:10px;padding:14px 4px;display:grid;gap:5px;justify-items:center">
+        <span style="font-size:26px">${m.emoji}</span>
+        <span class="code" style="font-size:10px;color:var(--vapor)">${esc(m.name)}</span></button>`).join('')}
+    </div>`;
+  dlg.querySelectorAll('[data-n]').forEach(b => b.onclick = async () => {
+    S.who = S.household.members.find(m => m.name === b.dataset.n);
+    S.cfg.who = S.who.name; await saveCfg();
+    dlg.close(); render();
+  });
+  dlg.showModal();
+}
+
+async function saveCfg() { await DB.put('meta', { id: 'cfg', ...S.cfg }); }
+
+/* ---------------- shell ---------------- */
+const ICONS = {
+  inv:'<path d="M5 3h14v18H5z"/><path d="M5 11h14M9 7v1M9 15v1"/>',
+  soon:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  scan:'<path d="M3 8V5a2 2 0 012-2h3M16 3h3a2 2 0 012 2v3M21 16v3a2 2 0 01-2 2h-3M8 21H5a2 2 0 01-2-2v-3"/><path d="M3 12h18"/>',
+  cook:'<path d="M12 3a4 4 0 014 4v1H8V7a4 4 0 014-4z"/><path d="M6 8h12l-1 12H7L6 8z"/>',
+  set:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',
+};
+const TABS = [['inv','Shelves'],['soon','Expiring'],['scan','Scan'],['cook','Cook'],['set','Setup']];
+
+function render() {
+  const app = document.getElementById('app');
+  const nav = document.getElementById('nav');
+  if (S.view !== 'scan') stopCam();
+  app.innerHTML = '';
+
+  if (!S.household) { nav.classList.add('hide'); document.getElementById('whoBtn').classList.add('hide'); return viewSetup(app); }
+  nav.classList.remove('hide'); document.getElementById('whoBtn').classList.remove('hide');
+
+  document.getElementById('whoEmoji').textContent = S.who?.emoji || '👤';
+  const soonN = S.items.filter(i => !i.deleted && freshness(i).left <= 3).length;
+  document.getElementById('title').textContent =
+    { inv: 'Cold Room', soon: 'Eat me first', scan: 'Scan', cook: 'Cook', set: 'Setup' }[S.view];
+
+  ({ inv: viewInv, soon: viewSoon, scan: viewScan, cook: viewCook, set: viewSet })[S.view](app);
+
+  nav.innerHTML = '';
+  TABS.forEach(([id, label]) => {
+    const b = el(`<button ${S.view === id ? 'aria-current="page"' : ''}>
+      <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">${ICONS[id]}</svg>
+      <span>${label}${id === 'soon' && soonN ? ` ${soonN}` : ''}</span></button>`);
+    if (id === 'soon' && soonN) b.style.color = 'var(--thaw)';
+    b.onclick = () => { S.view = id; render(); };
+    nav.appendChild(b);
+  });
+}
+
+(async function boot() {
+  await DB.init();
+  const [items, catalog, household, cfg] = await Promise.all([
+    DB.all('items'), DB.all('catalog'), DB.get('meta', 'household'), DB.get('meta', 'cfg')
+  ]);
+  S.items = items; S.catalog = catalog; S.household = household || null; S.cfg = cfg || {};
+  if (S.household) S.who = S.household.members.find(m => m.name === S.cfg.who) || S.household.members[0];
+  document.getElementById('whoBtn').onclick = whoSheet;
+  render();
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+})();
+</script>
+</body>
+</html>

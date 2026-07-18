@@ -1,0 +1,94 @@
+# Cold Room
+
+Household food inventory. Six shelves, barcode in, wrapper out, cook from what's dying.
+
+Local-first: everything lives in the browser's IndexedDB on the device. No account, no server, works with the wifi off. That's not a shortcut — your downstairs freezer has bad signal, and an inventory app that won't load in the basement is a dead app.
+
+---
+
+## Getting it on your phone
+
+Camera access requires HTTPS. A file on your desktop won't do it, and neither will `python -m http.server` over your LAN — browsers refuse camera on plain `http://192.168.x.x`. So it needs a real HTTPS host. Free options, easiest first:
+
+**Netlify Drop** — go to `app.netlify.com/drop`, drag this whole folder onto the page. You get an HTTPS URL in about ten seconds. No account needed to start.
+
+**Cloudflare Pages / GitHub Pages** — same idea, if you'd rather own the repo.
+
+Then on the phone: open the URL → Share → **Add to Home Screen**. It launches fullscreen with no browser chrome and works offline from then on.
+
+## First run
+
+The setup screen asks the things the recipe engine actually needs — who eats, allergies, what's always in the house. The staples list matters more than it looks: without it every suggestion reads "missing 1 ingredient: salt."
+
+## Filling it (the 500-item problem)
+
+Don't hand-enter your house. You won't finish, and the project dies before the habit ever forms.
+
+Go shelf by shelf: open the shelf you want in the picker, hit Scan → **Shoot a whole shelf**, and photograph it. Everything recognised lands on that shelf in one go. Untick whatever it got wrong. A pantry takes a couple of photos; the whole house takes an evening rather than a weekend.
+
+Barcodes are for the *grocery-bag* flow afterwards, not for the initial fill.
+
+## Barcode scanning, honestly
+
+Uses the browser's native `BarcodeDetector`.
+
+| | Works |
+|---|---|
+| Chrome / Edge on Android | Yes |
+| Chrome on desktop | Yes |
+| **Safari on iOS** | **No** — Apple hasn't shipped it |
+
+On iPhone the scan tab tells you this and points at the photo and manual paths, which cover everything scanning does, just slower. If you're on iOS and want real scanning, that's a ZXing bundle — say the word and I'll wire it in.
+
+Barcodes resolve against **Open Food Facts**: free, no key, no rate limit, ~3M products.
+
+## Gemini (optional)
+
+Only needed for label reading, produce photos, and recipes. Barcodes work without it.
+
+1. Free key at `aistudio.google.com`
+2. Setup tab → paste it → **Fetch models this key can use**
+
+No model name is hardcoded anywhere. Google killed `gemini-2.0-flash` in June 2026 and moved Pro to paid-only in April; anything pinned in source rots within months. The app asks your key what it can do and lists the answers. Pick a **Flash** tier — those are the free ones.
+
+**Know this:** on the free tier Google may use what you send to train their models. Here that means photos of your kitchen and your groceries. Enabling billing opts you out and costs roughly nothing at household volume.
+
+---
+
+## How it's meant to be used
+
+**Putting groceries away** — Scan tab, "Putting away." Barcode the packaged half. Unknown code (hi, Kirkland) → it asks once, remembers forever. The unbarcoded half goes in by photo — shoot the whole counter at once.
+
+**Eating** — the `−` button on any row. One tap.
+
+**Binning** — Scan tab, flip to "Trash / used up," scan the empty wrapper as it goes in the bin. Same gesture as putting it away, opposite sign. This is the one habit that keeps the whole thing honest.
+
+**Cooking** — Cook tab → "Cook with what I have." Sorted by nothing-missing first, then by whatever burns down the expiring list hardest. Hit "I made this" and it deducts — but confirms first, because the recipe is theory and your counter is reality.
+
+**Something rotted** — `⋯ → Threw it out`. Don't skip this. The waste log is the only feature here that saves money instead of just organising.
+
+## Under the hood
+
+- **Restock hints are learned, never assumed.** Your pantries hold different food — downstairs is not overflow of upstairs. So "you have it on the other shelf" only appears for items that have genuinely lived on both. Depleted items are kept forever, so that history builds itself. Silent until it has evidence.
+- **Built for 500+.** Search is the front door. Shelves group into collapsible categories that sort dying-first and only build their rows when opened, so a tap never re-renders five hundred things.
+- **Opens on what's dying**, not on the inventory. You said this is purely about not wasting food, so that's the daily check-in. "Nothing dying" is a good thing to see.
+- **No expiry dates get typed.** Shelf life is estimated from category × shelf kind. Bread in the pantry is 4 days; the same loaf in the downstairs freezer is 90. Moving an item re-estimates it. Override only when you disagree.
+- **Opened changes everything.** Unopened soft cheese, 10 days. Opened, 7. That gap is where most household waste hides.
+- **Quantities pick themselves.** Countable things get counts. Bulk things (milk, flour, oil) get full/most/half/low/out. Costco multipacks get container + units left.
+- **Vision is constrained matching, not recognition.** Photos are sent along with your actual inventory and the question "which of these do you see?" Worst case it picks the wrong onion instead of inventing a mango.
+- **Nothing destructive is one tap.** Everything soft-deletes with a 6-second undo.
+
+## Deliberately not here yet
+
+Shopping lists, store routing, receipt scanning, cloud sync. The data model already holds all four — they bolt on, they don't rewrite. Live on the core loop for two weeks first; you'll know exactly which one you actually want.
+
+## Files
+
+```
+index.html            the whole app
+sw.js                 offline shell
+manifest.webmanifest  home-screen install
+icon.svg              app icon
+```
+
+Export everything to JSON from the Setup tab whenever you want out.
