@@ -6,8 +6,11 @@
 <meta name="theme-color" content="#0A0E13">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Cold Room">
 <title>Cold Room</title>
 <link rel="manifest" href="manifest.webmanifest">
+<!-- iOS uses this PNG for the Add-to-Home-Screen icon; it ignores the SVG in the manifest. -->
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
 /* ============================================================
    COLD ROOM — design tokens
@@ -857,11 +860,33 @@ function cookDeduct(r) {
 }
 
 /* ---------------- view: scan ---------------- */
-let stream = null, scanLoop = null, detector = null;
+let stream = null, scanLoop = null, detector = null, zxingReader = null, zxingLoading = null;
+let lastScan = { code: '', t: 0 };
+
 async function stopCam() {
   cancelAnimationFrame(scanLoop);
+  try { zxingReader?.reset(); } catch (e) {}   // stops ZXing's decode loop + releases its camera
+  zxingReader = null;
   stream?.getTracks().forEach(t => t.stop());
   stream = null;
+}
+
+/* ZXing is only needed where there's no native BarcodeDetector — iOS
+   Safari, essentially. It's vendored (not a CDN) and pre-cached by the
+   service worker, so barcode scanning still works in the basement with
+   no signal. Loaded lazily: Android/desktop never pull the 330KB they
+   don't need, but the service worker has it cached the moment they do. */
+function loadZXing() {
+  if (window.ZXing) return Promise.resolve();
+  if (zxingLoading) return zxingLoading;
+  zxingLoading = new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = 'zxing.min.js';
+    s.onload = () => res();
+    s.onerror = () => { zxingLoading = null; rej(new Error('load-failed')); };
+    document.head.appendChild(s);
+  });
+  return zxingLoading;
 }
 
 function viewScan(app) {
@@ -892,11 +917,12 @@ function viewScan(app) {
 }
 
 async function startCam(video, mode) {
-  if (!('BarcodeDetector' in window)) {
-    document.getElementById('hint').innerHTML =
-      `<div class="warn" style="text-align:left">This browser can't scan barcodes natively — that's iOS Safari, mostly. Chrome on Android works. Use <b>Photo</b> or <b>Type it in</b> for now.</div>`;
-    return;
-  }
+  await stopCam();                                  // never leave a prior camera session running
+  if ('BarcodeDetector' in window) return startNative(video, mode);
+  return startZXing(video, mode);                   // iOS Safari and anything else without it
+}
+
+async function startNative(video, mode) {
   try {
     detector = detector || new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128'] });
     stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
@@ -915,13 +941,46 @@ async function startCam(video, mode) {
       scanLoop = requestAnimationFrame(tick);
     };
     tick();
-  } catch (e) {
-    document.getElementById('hint').innerHTML =
-      `<div class="warn" style="text-align:left">No camera access. Needs HTTPS (or localhost) — see the README on hosting. You can still use Photo or Type it in.</div>`;
+  } catch (e) { camError(); }
+}
+
+/* iOS Safari ships no BarcodeDetector, so on iPhone we drive the camera
+   through ZXing instead. Same reticle, same onCode handler downstream —
+   only the decoder differs. ZXing owns the stream via decodeFromConstraints;
+   we grab a reference so stopCam() and the overlay behave identically. */
+async function startZXing(video, mode) {
+  try { await loadZXing(); }
+  catch (e) {
+    const h = document.getElementById('hint');
+    if (h) h.innerHTML = `<div class="warn" style="text-align:left">Couldn't load the scanner. If this is the first time on this phone, open the app once <b>with signal</b> so it caches itself — then it scans offline. <b>Photo</b> and <b>Type it in</b> work either way.</div>`;
+    return;
   }
+  try {
+    const hints = new Map();
+    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+      ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.EAN_8,
+      ZXing.BarcodeFormat.UPC_A, ZXing.BarcodeFormat.UPC_E, ZXing.BarcodeFormat.CODE_128,
+    ]);
+    zxingReader = new ZXing.BrowserMultiFormatReader(hints, 300);
+    await zxingReader.decodeFromConstraints({ video: { facingMode: 'environment' } }, video, (result) => {
+      if (result) { navigator.vibrate?.(40); onCode(result.getText(), mode); }
+    });
+    stream = video.srcObject;
+  } catch (e) { camError(); }
+}
+
+function camError() {
+  const h = document.getElementById('hint');
+  if (h) h.innerHTML =
+    `<div class="warn" style="text-align:left">No camera access. It needs HTTPS, and on iPhone you have to tap <b>Allow</b> when Safari asks. You can still use <b>Photo</b> or <b>Type it in</b>.</div>`;
 }
 
 async function onCode(code, mode) {
+  const dlg = document.getElementById('dlg');
+  const now = Date.now();
+  if (dlg.open) return;                                            // a sheet is already up — ignore stray reads
+  if (code === lastScan.code && now - lastScan.t < 2500) return;   // same barcode, moments apart (ZXing fires per-frame)
+  lastScan = { code, t: now };
   if (mode === 'out') {
     const it = S.items.find(i => !i.deleted && i.barcode === code);
     if (!it) return toast(`Scanned ${code} — not in your inventory`);

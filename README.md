@@ -28,17 +28,17 @@ Go shelf by shelf: open the shelf you want in the picker, hit Scan → **Shoot a
 
 Barcodes are for the *grocery-bag* flow afterwards, not for the initial fill.
 
-## Barcode scanning, honestly
+## Barcode scanning
 
-Uses the browser's native `BarcodeDetector`.
+Uses the browser's native `BarcodeDetector` where it exists, and falls back to a bundled **ZXing** decoder where it doesn't.
 
-| | Works |
+| | Barcode scanning |
 |---|---|
-| Chrome / Edge on Android | Yes |
-| Chrome on desktop | Yes |
-| **Safari on iOS** | **No** — Apple hasn't shipped it |
+| Chrome / Edge on Android | Native `BarcodeDetector` |
+| Chrome on desktop | Native `BarcodeDetector` |
+| **Safari on iOS / iPadOS** | **ZXing fallback — works** |
 
-On iPhone the scan tab tells you this and points at the photo and manual paths, which cover everything scanning does, just slower. If you're on iOS and want real scanning, that's a ZXing bundle — say the word and I'll wire it in.
+The ZXing decoder (`zxing.min.js`) is vendored, not pulled from a CDN, and the service worker pre-caches it — so iPhone scanning still works offline in the basement. It loads lazily: browsers with native detection never download it. iOS still needs HTTPS and a one-time "Allow" on the camera prompt.
 
 Barcodes resolve against **Open Food Facts**: free, no key, no rate limit, ~3M products.
 
@@ -89,6 +89,8 @@ index.html            the whole app
 sw.js                 offline shell
 manifest.webmanifest  home-screen install
 icon.svg              app icon
+apple-touch-icon.png  iOS home-screen icon (iOS ignores the SVG)
+zxing.min.js          barcode decoder for iOS — vendored, lazy-loaded, pre-cached
 ```
 
 Export everything to JSON from the Setup tab whenever you want out.

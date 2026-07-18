@@ -4,8 +4,8 @@
    App shell is cache-first. Live data is IndexedDB, so it never needs
    the network at all. Only barcode lookups and Gemini do. */
 
-const CACHE = 'coldroom-v1';
-const SHELL = ['./', './index.html', './manifest.webmanifest'];
+const CACHE = 'coldroom-v2';
+const SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg', './apple-touch-icon.png', './zxing.min.js'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
