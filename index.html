@@ -333,7 +333,7 @@ const mapCat = tags => {
 const CATS = Object.keys(SHELF);
 
 /* ---------------- state ---------------- */
-let S = { items: [], catalog: [], recipes: [], household: null, cfg: {}, view: 'soon', loc: 'all', who: null, q: '', open: new Set() };
+let S = { items: [], catalog: [], recipes: [], household: null, cfg: {}, view: 'soon', loc: 'all', who: null, q: '', cq: '', open: new Set() };
 
 const kindOf = id => (S.household?.locations.find(l => l.id === id)?.kind) || 'pantry';
 
@@ -1329,6 +1329,101 @@ function manualSheet() {
   dlg.showModal();
 }
 
+/* ---------------- view: catalog ----------------
+   The learned product database. Every barcode you scan is remembered here
+   forever (learnProduct), so a re-scan is instant and store brands only
+   need identifying once. This is the browsable face of that memory —
+   it gets bigger and smarter the more the house gets used. */
+function viewCatalog(app) {
+  const total = S.catalog.length;
+  app.appendChild(el(`<p class="note" style="margin:0 0 12px">Everything you've scanned, remembered forever — <b>${total}</b> product${total === 1 ? '' : 's'} and counting. Recognised instantly next time, even offline.</p>`));
+
+  if (!total) {
+    app.appendChild(el(`<div class="empty">
+      <div class="big">Nothing learned yet</div>
+      <div class="sub">Scan a barcode in the Scan tab. Every product you scan lands here — including the Kirkland ones you teach it once.</div></div>`));
+    return;
+  }
+
+  const sb = el(`<input id="cq" placeholder="Search ${total} known products…" value="${esc(S.cq || '')}"
+    style="margin-bottom:12px" autocomplete="off" enterkeyhint="search">`);
+  sb.oninput = e => { S.cq = e.target.value; paintCatalog(document.getElementById('catlist')); };
+  app.appendChild(sb);
+
+  const box = el(`<div id="catlist"></div>`);
+  app.appendChild(box);
+  paintCatalog(box);
+  if (S.cq) { sb.focus(); sb.setSelectionRange(sb.value.length, sb.value.length); }
+}
+
+function paintCatalog(box) {
+  if (!box) return;
+  box.innerHTML = '';
+  let list = [...S.catalog].sort((a, b) => (b.learned || 0) - (a.learned || 0));   // newest first
+  if (S.cq?.trim()) {
+    const q = norm(S.cq);
+    list = list.filter(c => norm(c.name).includes(q) || norm(c.brand || '').includes(q));
+  }
+  if (!list.length) {
+    return box.appendChild(el(`<div class="empty"><div class="big">No match for "${esc(S.cq)}"</div>
+      <div class="sub">It's not in the scan memory yet. Scan it once and it's yours forever.</div></div>`));
+  }
+  const inStock = c => S.items.some(i => !i.deleted && i.barcode === c.id);
+  list.slice(0, 200).forEach(c => {
+    const thumb = c.image
+      ? `<div class="thumb"><img src="${esc(c.image)}" loading="lazy" alt=""></div>`
+      : `<div class="thumb"><span class="ph">${firstLetter(c.name)}</span></div>`;
+    const sub = c.brand ? esc(c.brand) : CAT_LABEL(c.cat || 'other');
+    const stock = inStock(c)
+      ? `<span class="stamp" style="--rail:var(--fresh)">IN STOCK</span>`
+      : `<span class="qty" style="color:var(--vapor-dim)">not in the house</span>`;
+    const row = el(`<div class="item">
+      ${thumb}
+      <div class="body" data-a="info" style="cursor:pointer">
+        <div class="nm">${esc(c.name)}</div>
+        <div class="meta"><span class="qty">${sub}</span>${stock}</div>
+      </div>
+      <div class="act"><button class="plus" data-a="add" aria-label="Add ${esc(c.name)} to a shelf">＋</button></div>
+    </div>`);
+    const img = c.image && row.querySelector('.thumb img');
+    if (img) img.onerror = () => { img.parentNode.innerHTML = `<span class="ph">${firstLetter(c.name)}</span>`; };
+    row.querySelector('[data-a=add]').onclick = () => confirmAdd({ ...c, source: 'yours' }, c.id);   // restock without re-scanning
+    row.querySelector('[data-a=info]').onclick = () => catalogSheet(c);
+    box.appendChild(row);
+  });
+  if (list.length > 200) box.appendChild(el(`<div class="note" style="text-align:center;padding:10px">+${list.length - 200} more — keep typing</div>`));
+}
+
+function catalogSheet(c) {
+  const dlg = document.getElementById('dlg');
+  const have = S.items.filter(i => !i.deleted && i.barcode === c.id).length;
+  const pic = c.image
+    ? `<img src="${esc(c.image)}" alt="" style="width:52px;height:52px;border-radius:9px;object-fit:cover;border:1px solid var(--rime);flex:0 0 auto">`
+    : `<div style="width:52px;height:52px;border-radius:9px;background:var(--void);border:1px solid var(--rime);display:grid;place-items:center;font-family:var(--mono);font-size:20px;font-weight:600;color:var(--vapor-dim);flex:0 0 auto">${firstLetter(c.name)}</div>`;
+  dlg.innerHTML = `
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:14px">
+      ${pic}
+      <div style="min-width:0">
+        <div class="eyebrow">${esc(CAT_LABEL(c.cat || 'other'))}${c.packSize ? ' · pack of ' + c.packSize : ''}</div>
+        <h1 style="margin:3px 0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c.name)}</h1>
+        <div class="stamp" style="--rail:${have ? 'var(--fresh)' : 'var(--vapor-dim)'};font-size:12px">${have ? have + ' IN THE HOUSE' : 'NOT IN STOCK'}${c.brand ? ' · ' + esc(c.brand) : ''}</div>
+      </div>
+    </div>
+    <div class="note" style="margin:0 0 14px">Barcode <span class="code">${esc(c.id)}</span> — learned ${c.learned ? new Date(c.learned).toLocaleDateString() : 'a while ago'}.</div>
+    <button class="btn cold" data-a="add">＋ Add to a shelf</button>
+    <button class="btn ghost" data-a="forget" style="margin-top:8px;color:var(--spoil);border-color:var(--spoil)">Forget this product</button>
+    <button class="btn ghost" data-a="close" style="margin-top:8px;border:none;color:var(--vapor)">Close</button>`;
+  dlg.querySelector('[data-a=add]').onclick = () => { dlg.close(); confirmAdd({ ...c, source: 'yours' }, c.id); };
+  dlg.querySelector('[data-a=forget]').onclick = async () => {
+    await DB.del('catalog', c.id);
+    S.catalog = S.catalog.filter(x => x.id !== c.id);
+    dlg.close(); render();
+    toast(`Forgot ${c.name}`, async () => { await DB.put('catalog', c); S.catalog.push(c); });
+  };
+  dlg.querySelector('[data-a=close]').onclick = () => dlg.close();
+  dlg.showModal();
+}
+
 /* ---------------- view: settings ---------------- */
 function viewSet(app) {
   const c = S.cfg;
@@ -1474,8 +1569,9 @@ const ICONS = {
   scan:'<path d="M3 8V5a2 2 0 012-2h3M16 3h3a2 2 0 012 2v3M21 16v3a2 2 0 01-2 2h-3M8 21H5a2 2 0 01-2-2v-3"/><path d="M3 12h18"/>',
   cook:'<path d="M12 3a4 4 0 014 4v1H8V7a4 4 0 014-4z"/><path d="M6 8h12l-1 12H7L6 8z"/>',
   set:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',
+  cat:'<rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/>',
 };
-const TABS = [['inv','Shelves'],['soon','Expiring'],['scan','Scan'],['cook','Cook'],['set','Setup']];
+const TABS = [['inv','Shelves'],['soon','Expiring'],['scan','Scan'],['cat','Catalog'],['cook','Cook'],['set','Setup']];
 
 function render() {
   const app = document.getElementById('app');
@@ -1490,9 +1586,9 @@ function render() {
   document.getElementById('whoEmoji').textContent = S.who?.emoji || '👤';
   const soonN = S.items.filter(i => !i.deleted && freshness(i).left <= 3).length;
   document.getElementById('title').textContent =
-    { inv: 'Cold Room', soon: 'Eat me first', scan: 'Scan', cook: 'Cook', set: 'Setup' }[S.view];
+    { inv: 'Cold Room', soon: 'Eat me first', scan: 'Scan', cat: 'Catalog', cook: 'Cook', set: 'Setup' }[S.view];
 
-  ({ inv: viewInv, soon: viewSoon, scan: viewScan, cook: viewCook, set: viewSet })[S.view](app);
+  ({ inv: viewInv, soon: viewSoon, scan: viewScan, cat: viewCatalog, cook: viewCook, set: viewSet })[S.view](app);
 
   nav.innerHTML = '';
   TABS.forEach(([id, label]) => {
