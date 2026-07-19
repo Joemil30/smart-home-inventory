@@ -466,6 +466,73 @@ async function scanDateForItem(it, file) {
   }
 }
 
+/* Live "video" date reader: point the camera at the printed Best-By and it
+   reads frames continuously until a date locks — no shutter, no AI, no limits.
+   Runs its OWN camera stream so it never collides with the barcode scanner's.
+   OCR is slow (~1-2s/frame), so we crop tight to the reticle and scan frames
+   one at a time in sequence rather than at animation speed. */
+async function liveDateScan(it) {
+  const dlg = document.getElementById('dlg');
+  dlg.innerHTML = `<h1 style="margin:0 0 10px;font-size:17px">Point at the date</h1>
+    <div id="dscanwrap" style="position:relative;background:#000;border-radius:var(--r);overflow:hidden;aspect-ratio:4/3;margin-bottom:10px">
+      <video id="dvid" playsinline muted style="width:100%;height:100%;object-fit:cover;display:block"></video>
+      <div style="position:absolute;inset:34% 12%;border:2px solid rgba(21,154,85,.85);border-radius:8px;pointer-events:none"></div>
+    </div>
+    <div class="note" id="dhint" style="text-align:center;margin-bottom:12px"><span class="spin"></span> Warming up the reader…</div>
+    <button class="btn ghost" data-a="type" style="margin-bottom:8px">Type it instead</button>
+    <button class="btn ghost" data-a="cancel" style="border:none;color:var(--vapor)">Cancel</button>`;
+  dlg.showModal();
+
+  const video = dlg.querySelector('#dvid');
+  const hint = dlg.querySelector('#dhint');
+  let localStream = null, running = true, worker = null;
+
+  const cleanup = () => { running = false; try { localStream?.getTracks().forEach(t => t.stop()); } catch (e) {} localStream = null; };
+  dlg.querySelector('[data-a=cancel]').onclick = () => { cleanup(); dlg.close(); };
+  dlg.querySelector('[data-a=type]').onclick = () => { cleanup(); dlg.close(); dateSheet(it); };
+  dlg.addEventListener('close', cleanup, { once: true });   // closing via backdrop/esc also releases the camera
+
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    video.srcObject = localStream; await video.play();
+    worker = await getTessWorker();                 // first time downloads ~9MB, then cached
+  } catch (e) {
+    if (!running) return;
+    hint.innerHTML = `<div class="warn" style="text-align:left">${esc(e.message || 'Camera or reader unavailable')}. Use “Type it instead”, or the photo scanner from the item menu.</div>`;
+    return;
+  }
+  if (!running) return;
+  hint.innerHTML = 'Hold steady over the date — it reads on its own.';
+
+  const cv = document.createElement('canvas');
+  const ctx = cv.getContext('2d', { willReadFrequently: true });
+  let misses = 0;
+  while (running && dlg.open) {
+    const vw = video.videoWidth, vh = video.videoHeight;
+    if (!vw) { await sleep(120); continue; }
+    // crop to the reticle band (inset 34%/12%) — just the date, upscaled for legibility
+    const cx = vw * 0.12, cy = vh * 0.34, cw = vw * 0.76, ch = vh * 0.32, scale = 2;
+    cv.width = cw * scale; cv.height = ch * scale;
+    ctx.drawImage(video, cx, cy, cw, ch, 0, 0, cv.width, cv.height);
+    let date = null, text = '';
+    try { const { data } = await worker.recognize(cv); text = data.text || ''; date = extractDate(text); } catch (e) {}
+    if (!running || !dlg.open) break;
+    if (date) {
+      cleanup();
+      it.expires = date; it.dateConfirmed = true; await saveItem(it); learnFromDate(it);
+      dlg.close(); render();
+      toast(`${it.name} — good until ${fmtDate(date).replace('EXP ', '')}`);
+      return;
+    }
+    misses++;
+    const seen = (text || '').replace(/\s+/g, ' ').trim().slice(0, 28);
+    hint.innerHTML = misses > 4 && seen
+      ? `Reading… “${esc(seen)}” <span class="note">— closer / flatter helps</span>`
+      : 'Hold steady over the date — it reads on its own.';
+    await sleep(60);
+  }
+}
+
 /* Freshness as temperature. Fresh things are cold. Dying things warm up.
    This is the single idea the whole interface is built on. */
 function freshness(item) {
@@ -1129,7 +1196,7 @@ function itemSheet(it) {
     <button class="btn ghost" data-a="photo" style="margin-bottom:8px">📷 Change photo</button>
     <input type="file" accept="image/*" id="itphoto" class="hide">
     <button class="btn ghost" data-a="tolist" style="margin-bottom:8px">🛒 Add to shopping list</button>
-    <button class="btn ghost" data-a="scandate" style="margin-bottom:8px">📅 Scan the printed date (free)</button>
+    <button class="btn ghost" data-a="scandate" style="margin-bottom:8px">📅 Scan the date — live camera (free)</button>
     <input type="file" accept="image/*" capture="environment" id="itdate" class="hide">
     <div class="row" style="margin-bottom:8px">
       <button class="btn ghost" data-a="plus">＋ Add one back</button>
@@ -1154,7 +1221,7 @@ function itemSheet(it) {
   dlg.querySelector('[data-a=toss]').onclick = () => go(() => tossItem(it));
   dlg.querySelector('[data-a=move]').onclick = () => { dlg.close(); moveSheet(it); };
   dlg.querySelector('[data-a=tolist]').onclick = () => go(() => addToList(it.name));
-  dlg.querySelector('[data-a=scandate]').onclick = () => dlg.querySelector('#itdate').click();
+  dlg.querySelector('[data-a=scandate]').onclick = () => { dlg.close(); liveDateScan(it); };
   dlg.querySelector('#itdate').onchange = e => { const f = e.target.files[0]; if (f) { dlg.close(); scanDateForItem(it, f); } };
   dlg.querySelector('[data-a=photo]').onclick = () => dlg.querySelector('#itphoto').click();
   dlg.querySelector('#itphoto').onchange = e => { const f = e.target.files[0]; if (f) { dlg.close(); setItemPhoto(it, f); } };
