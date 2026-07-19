@@ -495,14 +495,32 @@ async function learnProduct(p) {
   if (i > -1) S.catalog[i] = rec; else S.catalog.push(rec);
 }
 
-/* ---------------- Gemini ----------------
-   No model name is hardcoded. Google shut off 2.0-flash in June 2026
-   and moved Pro to paid-only in April; anything I pin here rots.
-   So we ask the key what it can actually do, and you pick. */
+/* ---------------- AI ----------------
+   No model name is hardcoded — Google keeps killing free models (2.0-flash
+   went to limit:0). We ask the key what it can do and pick the newest live
+   one. Provider-agnostic: Gemini natively, or any OpenAI-compatible endpoint
+   (OpenRouter's free models are the no-Google fallback). Same gen(parts,
+   schema) signature everywhere; only the internals branch. */
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const verNum = id => { const m = String(id).match(/(\d+\.\d+)/); return m ? parseFloat(m[1]) : 0; };
+const retryDelayMs = msg => { const m = String(msg).match(/retry in ([\d.]+)\s*s/i) || String(msg).match(/retryDelay["'\s:=]+([\d.]+)s/i); return m ? Math.ceil(parseFloat(m[1]) * 1000) : null; };
+const onlyJson = t => { const s = t.indexOf('{'), a = t.indexOf('['); const st = s < 0 ? a : (a < 0 ? s : Math.min(s, a)); if (st < 0) return t; const e = Math.max(t.lastIndexOf('}'), t.lastIndexOf(']')); return e > st ? t.slice(st, e + 1) : t.slice(st); };
+
 const G = {
-  key: () => S.cfg.geminiKey || '',
-  model: () => S.cfg.geminiModel || '',
+  provider: () => S.cfg.aiProvider || 'gemini',
+  key: () => (G.provider() === 'openai' ? S.cfg.openaiKey : S.cfg.geminiKey) || '',
+  model: () => (G.provider() === 'openai' ? S.cfg.openaiModel : S.cfg.geminiModel) || '',
+  base: () => (S.cfg.openaiBase || 'https://openrouter.ai/api/v1').replace(/\/+$/, ''),
+  setModel: async id => { if (G.provider() === 'openai') S.cfg.openaiModel = id; else S.cfg.geminiModel = id; await saveCfg(); },
+  /* known-dead / not-free Gemini models to never auto-pick */
+  _dead: id => /gemini-(2\.0-flash|1\.5|1\.0)|-exp-|deprecated|-tuning/i.test(String(id)),
+
   async models() {
+    if (G.provider() === 'openai') {
+      const r = await fetch(`${G.base()}/models`, { headers: { Authorization: `Bearer ${G.key()}` } });
+      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error?.message || `Key rejected (HTTP ${r.status})`);
+      return ((await r.json()).data || []).map(m => ({ id: m.id, label: m.id }));
+    }
     const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${G.key()}`);
     if (!r.ok) throw new Error((await r.json()).error?.message || 'Key rejected');
     return (await r.json()).models
@@ -510,19 +528,69 @@ const G = {
       .filter(m => !/embedding|aqa|imagen|veo/i.test(m.name))
       .map(m => ({ id: m.name.replace('models/', ''), label: m.displayName }));
   },
+
+  /* pick the best default: newest live Flash for Gemini; a free vision model for OpenRouter */
+  pick(models) {
+    if (G.provider() === 'openai') {
+      return (models.find(m => /:free/i.test(m.id) && /(vision|-vl|gemini|llava|qwen.*vl|llama.*(vision|scout|maverick)|pixtral|gemma)/i.test(m.id))
+        || models.find(m => /:free/i.test(m.id)) || models[0])?.id;
+    }
+    const flash = models.filter(m => /flash/i.test(m.id) && !/lite|image|preview|thinking|8b/i.test(m.id) && !G._dead(m.id));
+    flash.sort((a, b) => verNum(b.id) - verNum(a.id));
+    return (flash[0] || models.find(m => !G._dead(m.id)) || models[0])?.id;
+  },
+
+  /* heal a stale/dead saved Gemini model at boot without any user action */
+  async ensureModel() {
+    if (G.provider() !== 'gemini' || !G.key()) return;
+    if (G.model() && !G._dead(G.model())) return;
+    try { const id = G.pick(await G.models()); if (id) await G.setModel(id); } catch (e) {}
+  },
+
   async gen(parts, jsonSchema) {
-    if (!G.key()) throw new Error('No Gemini key. Settings → paste your key.');
-    if (!G.model()) throw new Error('No model picked. Settings → choose one.');
+    if (!G.key()) throw new Error(`No API key. Setup → paste your ${G.provider() === 'openai' ? 'OpenRouter' : 'Gemini'} key.`);
+    if (!G.model()) throw new Error('No model chosen. Setup → Fetch models, pick one.');
+    return G.provider() === 'openai' ? G._openai(parts, jsonSchema) : G._gemini(parts, jsonSchema);
+  },
+
+  async _fetchRetry(call, tries = 2) {
+    for (let i = 0; ; i++) {
+      const r = await call();
+      if (r.ok) return r.json();
+      let j = {}; try { j = await r.json(); } catch (e) {}
+      const msg = j.error?.message || `HTTP ${r.status}`;
+      if (r.status === 429 && i < tries) {
+        const wait = retryDelayMs(msg);
+        if (wait && wait <= 6000) { await sleep(wait + 300); continue; }
+      }
+      if (r.status === 429) throw new Error(msg + '\n\nTip: your free quota is spent or the model is discontinued. Wait a bit, or Setup → pick another model / switch to OpenRouter.');
+      throw new Error(msg);
+    }
+  },
+
+  async _gemini(parts, jsonSchema) {
     const body = { contents: [{ parts }] };
     if (jsonSchema) body.generationConfig = { responseMimeType: 'application/json', responseSchema: jsonSchema };
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${G.model()}:generateContent?key=${G.key()}`,
-      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    const j = await r.json();
-    if (!r.ok) throw new Error(j.error?.message || `HTTP ${r.status}`);
+    const j = await G._fetchRetry(() => fetch(`https://generativelanguage.googleapis.com/v1beta/models/${G.model()}:generateContent?key=${G.key()}`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }));
     const t = j.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!t) throw new Error('Empty response');
     return jsonSchema ? JSON.parse(t) : t;
-  }
+  },
+
+  async _openai(parts, jsonSchema) {
+    const content = parts.map(p => p.text != null
+      ? { type: 'text', text: p.text }
+      : { type: 'image_url', image_url: { url: `data:${p.inline_data.mime_type};base64,${p.inline_data.data}` } });
+    if (jsonSchema) content.push({ type: 'text', text: 'Respond with ONLY valid minified JSON — no prose, no code fences.' });
+    const body = { model: G.model(), messages: [{ role: 'user', content }] };
+    if (jsonSchema) body.response_format = { type: 'json_object' };
+    const j = await G._fetchRetry(() => fetch(`${G.base()}/chat/completions`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${G.key()}`, 'HTTP-Referer': location.origin, 'X-Title': 'Cold Room' }, body: JSON.stringify(body) }));
+    const t = j.choices?.[0]?.message?.content;
+    if (!t) throw new Error('Empty response');
+    return jsonSchema ? JSON.parse(onlyJson(t)) : t;
+  },
 };
 
 /* THE KEY INSIGHT: this is not open-ended food recognition.
@@ -1681,24 +1749,39 @@ function catalogSheet(c) {
 /* ---------------- view: settings ---------------- */
 function viewSet(app) {
   const c = S.cfg;
-  app.appendChild(el(`<h2 style="margin:0 0 10px">Gemini</h2>`));
+  app.appendChild(el(`<h2 style="margin:0 0 10px">AI (photos, labels, recipes)</h2>`));
+  const prov = c.aiProvider || 'gemini';
   const card = el(`<div class="card">
-    <p class="note" style="margin:0 0 12px">Powers label reading, produce photos and recipes. Free key from <b>aistudio.google.com</b>. Barcodes don't need it.</p>
-    <div class="warn" style="margin-bottom:14px">On the free tier Google may train on what you send — that means photos of your kitchen. Turning on billing opts you out and still costs about nothing at this volume.</div>
-    <label><span class="lbl">API key</span><input id="gk" type="password" value="${esc(c.geminiKey || '')}" placeholder="AIza…"></label>
+    <p class="note" style="margin:0 0 12px">Powers whole-shelf photos, label reading, receipts and recipes. Barcodes and the 📅 date scanner work without it.</p>
+    <div class="chips" style="padding-bottom:10px">
+      <button class="chip" data-p="gemini" aria-pressed="${prov === 'gemini'}">Gemini (Google)</button>
+      <button class="chip" data-p="openai" aria-pressed="${prov === 'openai'}">OpenRouter (free)</button>
+    </div>
+    <div class="note" style="margin:0 0 12px">${prov === 'gemini'
+      ? `Free key from <b>aistudio.google.com</b>. If scanning says "quota" or "limit: 0", your model was discontinued — tap <b>Fetch models</b> to grab a live one.`
+      : `Free key from <b>openrouter.ai → Keys</b>. Then pick a model ending in <b>:free</b>. No Google account needed.`}</div>
+    ${prov === 'openai' ? `<label><span class="lbl">API base URL</span><input id="ob" value="${esc(c.openaiBase || 'https://openrouter.ai/api/v1')}"></label>` : ''}
+    <label><span class="lbl">API key</span><input id="gk" type="password" value="${esc((prov === 'openai' ? c.openaiKey : c.geminiKey) || '')}" placeholder="${prov === 'openai' ? 'sk-or-…' : 'AIza…'}"></label>
     <button class="btn ghost" data-a="load">Fetch models this key can use</button>
-    <div id="ms" style="margin-top:12px">${c.geminiModel ? `<div class="note">Using <b class="code">${esc(c.geminiModel)}</b></div>` : ''}</div>
+    <div id="ms" style="margin-top:12px">${G.model() ? `<div class="note">Using <b class="code">${esc(G.model())}</b></div>` : ''}</div>
   </div>`);
+  card.querySelectorAll('[data-p]').forEach(b => b.onclick = async () => { S.cfg.aiProvider = b.dataset.p; await saveCfg(); render(); });
   card.querySelector('[data-a=load]').onclick = async () => {
-    S.cfg.geminiKey = card.querySelector('#gk').value.trim(); await saveCfg();
+    if (prov === 'openai') { S.cfg.openaiBase = card.querySelector('#ob').value.trim() || 'https://openrouter.ai/api/v1'; S.cfg.openaiKey = card.querySelector('#gk').value.trim(); }
+    else S.cfg.geminiKey = card.querySelector('#gk').value.trim();
+    await saveCfg();
     const box = card.querySelector('#ms');
     box.innerHTML = `<span class="spin"></span>`;
     try {
       const ms = await G.models();
-      box.innerHTML = `<label><span class="lbl">Model — Flash tiers are the free ones</span>
-        <select id="mm">${ms.map(m => `<option value="${m.id}" ${m.id === c.geminiModel ? 'selected' : ''}>${esc(m.id)}</option>`).join('')}</select></label>`;
-      box.querySelector('#mm').onchange = async e => { S.cfg.geminiModel = e.target.value; await saveCfg(); toast('Model set'); };
-      if (!S.cfg.geminiModel) { S.cfg.geminiModel = (ms.find(m => /flash/i.test(m.id) && !/lite|image|preview/i.test(m.id)) || ms[0]).id; await saveCfg(); box.querySelector('#mm').value = S.cfg.geminiModel; }
+      const cur = G.model();
+      box.innerHTML = `<label><span class="lbl">Model${prov === 'openai' ? ' — pick one ending in :free' : ' — Flash tiers are free'}</span>
+        <select id="mm">${ms.map(m => `<option value="${esc(m.id)}" ${m.id === cur ? 'selected' : ''}>${esc(m.id)}</option>`).join('')}</select></label>`;
+      box.querySelector('#mm').onchange = async e => { await G.setModel(e.target.value); toast('Model set'); };
+      if (!cur || (prov === 'gemini' && G._dead(cur)) || !ms.some(m => m.id === cur)) {
+        const id = G.pick(ms);
+        if (id) { await G.setModel(id); box.querySelector('#mm').value = id; toast('Picked ' + id); }
+      }
     } catch (e) { box.innerHTML = `<div class="warn">${esc(e.message)}</div>`; }
   };
   app.appendChild(card);
@@ -1846,6 +1929,7 @@ function render() {
   document.getElementById('searchBtn').onclick = () => { S.view = 'inv'; S.loc = 'all'; S.focusSearch = true; render(); };
   render();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+  G.ensureModel();   // silently repair a discontinued Gemini model (e.g. the dead 2.0-flash)
 })();
 </script>
 </body>
