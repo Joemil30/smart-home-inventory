@@ -1170,7 +1170,55 @@ function paintList(box) {
 }
 
 /* ---------------- view: expiring ---------------- */
+/* ---------------- voice: trash / eat / add ----------------
+   The hardest habit is REMOVING food as you eat it. A mic button lets
+   anyone say "finished the milk" walking past the fridge. Free (Web
+   Speech API). Graceful when unsupported (older iOS just won't show it). */
+const cleanWords = s => String(s || '').toLowerCase().replace(/[^\w\s]/g, ' ').replace(/\s+/g, ' ').trim();
+const VOICE_STOP = new Set('threw throw thrown toss tossed tossing chuck chucked binned bin spoiled rotten rotted moldy mould expired trash bad old gross nasty away out the a an some our my your we i of is are was were all gone empty no more used up finished finish ate eaten eat eating using use drank drink drinking add need needs buy get got to on shopping list please can you just it that this and'.split(' '));
+function parseVoice(text) {
+  const raw = cleanWords(text);
+  if (!raw) return null;
+  const toss = /\b(threw|throw|thrown|toss|tossed|chucked?|binned|spoiled|rotten|rotted|moldy|mould|expired|trash)\b/.test(raw);
+  const eat = /\b(finished|finish|ate|eaten|eat|used|drank|drink|gone|empty|no more|out of|used up)\b/.test(raw);
+  const list = /\b(add|need|needs|buy|get|got)\b/.test(raw) && /\b(list|shopping|store)\b/.test(raw);
+  const name = raw.split(' ').filter(w => w && !VOICE_STOP.has(w)).join(' ').trim();
+  if (!name) return null;
+  if (list) return { action: 'list', name };
+  if (toss) return { action: 'toss', name };
+  if (eat) return { action: 'eat', name };
+  return null;   // no clear verb — don't guess a destructive action
+}
+async function handleVoice(text) {
+  const p = parseVoice(text);
+  if (!p) return toast(`Didn't catch that — try "finished the milk" or "add eggs to the list"`);
+  if (p.action === 'list') { await addToList(p.name.replace(/\b\w/, c => c.toUpperCase())); render(); return; }
+  const q = p.name;
+  const hits = S.items.filter(i => !i.deleted && (norm(i.name).includes(q) || q.includes(norm(i.name))));
+  if (!hits.length) return toast(`No "${p.name}" in the house`);
+  const it = hits.sort((a, b) => a.expires - b.expires)[0];
+  if (p.action === 'toss') await tossItem(it); else await deplete(it, 'voice');
+  render();
+}
+function voiceButton() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return null;
+  const idle = '🎤 Say "finished the milk"';
+  const b = el(`<button class="btn ghost" style="margin-bottom:12px">${idle}</button>`);
+  b.onclick = () => {
+    const rec = new SR(); rec.lang = 'en-US'; rec.interimResults = false; rec.maxAlternatives = 1;
+    b.textContent = '🎤 Listening…'; b.disabled = true;
+    rec.onresult = e => { b.disabled = false; b.textContent = idle; handleVoice(e.results[0][0].transcript); };
+    rec.onerror = () => { b.disabled = false; b.textContent = '🎤 mic blocked — tap to retry'; };
+    rec.onend = () => { b.disabled = false; if (b.textContent === '🎤 Listening…') b.textContent = idle; };
+    try { rec.start(); } catch (e) { b.disabled = false; }
+  };
+  return b;
+}
+
 function viewSoon(app) {
+  const vb = voiceButton();
+  if (vb) app.appendChild(vb);
   const live = S.items.filter(i => !i.deleted);
   const soon = live.filter(i => freshness(i).left <= 7).sort((a, b) => a.expires - b.expires);
   const wasted = S.items.filter(i => i.wasted);

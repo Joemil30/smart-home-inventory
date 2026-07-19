@@ -4,7 +4,7 @@
    App shell is cache-first. Live data is IndexedDB, so it never needs
    the network at all. Only barcode lookups and Gemini do. */
 
-const CACHE = 'coldroom-v10';       // app shell — wiped on each version bump
+const CACHE = 'coldroom-v11';       // app shell — wiped on each version bump
 const IMG = 'coldroom-img';         // product thumbnails — kept across app updates
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg', './apple-touch-icon.png', './zxing.min.js'];
 
