@@ -1,15 +1,33 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- ShelfLife. One continuous line loops into an S (for Shelf) built
-       from three stacked shelf-bars — the "infinite freshness loop".
-       Fresh green throughout: this app is about keeping food alive. -->
+  <!-- ShelfLife. A shelf of groceries (bottle, carton, can) with a
+       neon-green scan line sweeping across the middle — the one-pan
+       "video scan" that sets the app apart, rendered as its mark. -->
   <rect width="512" height="512" fill="#0E1512"/>
+
+  <!-- groceries on a shelf -->
+  <g fill="#E8EFF3">
+    <!-- bottle -->
+    <rect x="150" y="196" width="44" height="140" rx="15"/>
+    <rect x="164" y="170" width="16" height="30"/>
+    <rect x="160" y="158" width="24" height="14" rx="4"/>
+    <!-- milk carton, gabled top -->
+    <path d="M226 250 L268 214 L310 250 Z"/>
+    <rect x="226" y="246" width="84" height="90" rx="7"/>
+    <!-- can -->
+    <rect x="338" y="266" width="46" height="70" rx="12"/>
+  </g>
+  <!-- the shelf they sit on -->
+  <rect x="120" y="336" width="272" height="16" rx="8" fill="#AEB8C0"/>
+
+  <!-- the scan line: layered glow + crisp neon core -->
   <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#3BE07E"/>
+    <linearGradient id="s" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#159A55"/>
+      <stop offset="0.5" stop-color="#3BE07E"/>
       <stop offset="1" stop-color="#159A55"/>
     </linearGradient>
   </defs>
-  <path d="M321 188 H191 A34 34 0 0 0 191 256 H321 A34 34 0 0 1 321 324 H191"
-        fill="none" stroke="url(#g)" stroke-width="40"
-        stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="96"  y="248" width="320" height="44" rx="22" fill="#2FE07A" opacity="0.14"/>
+  <rect x="104" y="258" width="304" height="24" rx="12" fill="#2FE07A" opacity="0.28"/>
+  <rect x="104" y="264" width="304" height="12" rx="6"  fill="url(#s)"/>
 </svg>

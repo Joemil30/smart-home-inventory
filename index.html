@@ -2291,21 +2291,52 @@ function viewSet(app) {
   renderSyncCard(sc);
   app.appendChild(sc);
 
-  app.appendChild(el(`<h2 style="margin:22px 0 10px">Later</h2>`));
+  app.appendChild(el(`<h2 style="margin:22px 0 10px">Backup &amp; restore</h2>`));
   app.appendChild(el(`<div class="card"><div class="note">
-    Shopping lists and store routing aren't here yet.
-    The data model already holds them — they bolt on, they don't rewrite.</div></div>`));
+    Everything lives on this device. If you're not using Family sync, your
+    phone's browser can wipe local data after a while unused &mdash; so export
+    a backup now and then, and re-import it to restore. (Family sync backs up
+    to the cloud automatically, which is the real fix.)</div></div>`));
 
-  const exp = el(`<button class="btn ghost" style="margin-top:16px">Export everything (JSON)</button>`);
+  const exp = el(`<button class="btn ghost" style="margin-top:6px">Export everything (JSON)</button>`);
   exp.onclick = async () => {
-    const blob = new Blob([JSON.stringify({ items: S.items, catalog: S.catalog, household: S.household,
-      log: await DB.all('log') }, null, 2)], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify({ v: 1, items: S.items, catalog: S.catalog,
+      shopping: S.shopping, household: S.household, log: await DB.all('log') }, null, 2)],
+      { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = `shelflife-${new Date().toISOString().slice(0,10)}.json`;
     a.click();
   };
   app.appendChild(exp);
+
+  const imp = el(`<button class="btn ghost" style="margin-top:8px">Restore from a backup file</button>`);
+  const picker = el(`<input type="file" accept="application/json,.json" class="hide">`);
+  imp.onclick = () => picker.click();
+  picker.onchange = async () => {
+    const file = picker.files && picker.files[0];
+    if (!file) return;
+    try {
+      const data = JSON.parse(await file.text());
+      // Merge by id — restores anything missing without clobbering newer edits.
+      const restore = async (store, rows) => { for (const r of (rows || [])) if (r && r.id) await DB.put(store, r); };
+      await Promise.all([
+        restore('items', data.items), restore('catalog', data.catalog),
+        restore('shopping', data.shopping), restore('log', data.log),
+      ]);
+      if (data.household) await DB.put('meta', { id: 'household', ...data.household });
+      const [items, catalog, shopping, household] = await Promise.all([
+        DB.all('items'), DB.all('catalog'), DB.all('shopping'), DB.get('meta', 'household')]);
+      S.items = items; S.catalog = catalog; S.shopping = shopping;
+      if (household) S.household = household;
+      if (S.household && !S.who) S.who = S.household.members[0];
+      toast(`Restored ${items.length} item${items.length === 1 ? '' : 's'}`);
+      render();
+    } catch (e) { toast('Could not read that file'); }
+    picker.value = '';
+  };
+  app.appendChild(imp);
+  app.appendChild(picker);
 }
 
 /* ---------------- setup wizard ----------------
