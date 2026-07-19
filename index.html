@@ -2292,11 +2292,22 @@ function viewSet(app) {
   app.appendChild(sc);
 
   app.appendChild(el(`<h2 style="margin:22px 0 10px">Backup &amp; restore</h2>`));
-  app.appendChild(el(`<div class="card"><div class="note">
-    Everything lives on this device. If you're not using Family sync, your
-    phone's browser can wipe local data after a while unused &mdash; so export
-    a backup now and then, and re-import it to restore. (Family sync backs up
-    to the cloud automatically, which is the real fix.)</div></div>`));
+  const statusCard = el(`<div class="card"><div class="note" id="storeStatus">Checking on-device storage&hellip;</div></div>`);
+  app.appendChild(statusCard);
+  (async () => {
+    const s = statusCard.querySelector('#storeStatus');
+    let persisted = false, usage = '';
+    try {
+      if (navigator.storage && navigator.storage.persisted) persisted = await navigator.storage.persisted();
+      if (navigator.storage && navigator.storage.estimate) {
+        const est = await navigator.storage.estimate();
+        if (est && est.usage != null) usage = ` (~${(est.usage / 1048576).toFixed(1)} MB stored)`;
+      }
+    } catch (e) {}
+    s.innerHTML = persisted
+      ? `<b style="color:var(--chill)">✓ Protected.</b> This device is set to keep ShelfLife's data through routine cleanup${usage}. Still, export a backup now and then — or turn on Family sync — in case the device is reset or lost.`
+      : `<b style="color:var(--thaw)">⚠ At risk.</b> Your phone can wipe ShelfLife's on-device data when it's unused or low on space${usage}. Two fixes: <b>Family sync</b> (below — auto-backs-up every change, the reliable one), or export a JSON backup here and re-import it if needed.`;
+  })();
 
   const exp = el(`<button class="btn ghost" style="margin-top:6px">Export everything (JSON)</button>`);
   exp.onclick = async () => {
@@ -2429,6 +2440,12 @@ function render() {
 
 (async function boot() {
   await DB.init();
+  // Ask the browser NOT to evict our data. On installed PWAs (esp. iOS) this
+  // is the difference between "kept" and "wiped after a week unused". Best
+  // effort — never blocks boot, and Family sync is still the real backup.
+  if (navigator.storage && navigator.storage.persist) {
+    navigator.storage.persisted().then(p => { if (!p) return navigator.storage.persist(); }).catch(() => {});
+  }
   const [items, catalog, shopping, household, cfg] = await Promise.all([
     DB.all('items'), DB.all('catalog'), DB.all('shopping'), DB.get('meta', 'household'), DB.get('meta', 'cfg')
   ]);
