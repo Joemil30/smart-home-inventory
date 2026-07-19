@@ -367,6 +367,82 @@ function parseExpiry(s) {
   return d.getTime();
 }
 
+/* ---------------- free on-device date OCR (Tesseract) ----------------
+   "Video for the expiration dates" — read the printed date with ZERO API
+   calls, offline, unlimited. Vendored + lazy-loaded (~a few MB, cached
+   after first use). Its sweet spot is exactly this: digits and dates. */
+const MONTHS = { jan:1, feb:2, mar:3, apr:4, may:5, jun:6, jul:7, aug:8, sep:9, oct:10, nov:11, dec:12 };
+function ymd(y, mo, d) {
+  mo = +mo; d = +d; if (mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+  return parseExpiry(`${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`);
+}
+/* Pull a date out of OCR'd (or any) text across the formats packages use. */
+function extractDate(text) {
+  const t = String(text || '').toUpperCase().replace(/[^\w\/.\-: ]/g, ' ');
+  let m;
+  if ((m = t.match(/\b(20\d{2})[\/.\-](\d{1,2})[\/.\-](\d{1,2})\b/))) return ymd(m[1], m[2], m[3]);          // YYYY-MM-DD
+  if ((m = t.match(/\b(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})\b/))) { const y = m[3].length === 2 ? '20' + m[3] : m[3]; return ymd(y, m[1], m[2]); } // MM/DD/YYYY (US)
+  if ((m = t.match(/\b(\d{1,2})\s*([A-Z]{3})[A-Z]*\s*(20\d{2}|\d{2})\b/))) { const mo = MONTHS[m[2].toLowerCase()]; if (mo) return ymd(m[3].length === 2 ? '20' + m[3] : m[3], mo, m[1]); } // DD MON YYYY
+  if ((m = t.match(/\b([A-Z]{3})[A-Z]*\s*(\d{1,2})\s*,?\s*(20\d{2}|\d{2})\b/))) { const mo = MONTHS[m[1].toLowerCase()]; if (mo) return ymd(m[3].length === 2 ? '20' + m[3] : m[3], mo, m[2]); } // MON DD YYYY
+  return null;
+}
+const tessUrl = p => new URL('tess/' + p, location.href).href;
+let tessWorker = null, tessLibLoading = null;
+function loadTessLib() {
+  if (window.Tesseract) return Promise.resolve();
+  if (tessLibLoading) return tessLibLoading;
+  tessLibLoading = new Promise((res, rej) => {
+    const s = document.createElement('script'); s.src = tessUrl('tesseract.min.js');
+    s.onload = () => res(); s.onerror = () => { tessLibLoading = null; rej(new Error('date reader failed to load')); };
+    document.head.appendChild(s);
+  });
+  return tessLibLoading;
+}
+async function getTessWorker() {
+  await loadTessLib();
+  if (!tessWorker) {
+    tessWorker = await Tesseract.createWorker('eng', 1, {
+      workerPath: tessUrl('worker.min.js'),
+      corePath: tessUrl(''),
+      langPath: tessUrl(''),
+      gzip: true,
+    });
+    await tessWorker.setParameters({ tessedit_char_whitelist: '0123456789/.:- ABCDEFGHIJKLMNOPQRSTUVWXYZ' });
+  }
+  return tessWorker;
+}
+async function ocrDate(imageUrl) {
+  const w = await getTessWorker();
+  const { data } = await w.recognize(imageUrl);
+  return { text: data.text || '', date: extractDate(data.text) };
+}
+async function scanDateForItem(it, file) {
+  const dlg = document.getElementById('dlg');
+  dlg.innerHTML = `<h1 style="margin:0 0 12px"><span class="spin"></span> Reading the date…</h1>
+    <p class="note">On-device — no internet, no AI limits. The first scan loads the reader (a few MB, cached after).</p>`;
+  dlg.showModal();
+  try {
+    const { b64, mime } = await toB64(file);
+    const { date, text } = await ocrDate(`data:${mime};base64,${b64}`);
+    if (date) {
+      it.expires = date; it.dateConfirmed = true; await saveItem(it);
+      dlg.close(); render();
+      toast(`${it.name} — good until ${fmtDate(date).replace('EXP ', '')}`);
+    } else {
+      dlg.innerHTML = `<h1 style="margin:0 0 10px">Couldn't find a date</h1>
+        <p class="note" style="margin-bottom:12px">Read: "${esc((text || '').trim().slice(0, 80))}". Try a closer, flatter shot of just the date — or type it.</p>
+        <button class="btn ghost" data-a="type">Type the date</button>
+        <button class="btn ghost" data-a="c" style="margin-top:8px;border:none;color:var(--vapor)">Close</button>`;
+      dlg.querySelector('[data-a=type]').onclick = () => { dlg.close(); dateSheet(it); };
+      dlg.querySelector('[data-a=c]').onclick = () => dlg.close();
+    }
+  } catch (e) {
+    dlg.innerHTML = `<h1 style="margin:0 0 10px">Scanner didn't load</h1>
+      <div class="warn" style="margin-bottom:12px">${esc(e.message)}. If this is your first time offline, open the app once with signal so it caches.</div>
+      <button class="btn ghost" onclick="document.getElementById('dlg').close()">Close</button>`;
+  }
+}
+
 /* Freshness as temperature. Fresh things are cold. Dying things warm up.
    This is the single idea the whole interface is built on. */
 function freshness(item) {
@@ -980,6 +1056,8 @@ function itemSheet(it) {
     <button class="btn ghost" data-a="photo" style="margin-bottom:8px">📷 Change photo</button>
     <input type="file" accept="image/*" id="itphoto" class="hide">
     <button class="btn ghost" data-a="tolist" style="margin-bottom:8px">🛒 Add to shopping list</button>
+    <button class="btn ghost" data-a="scandate" style="margin-bottom:8px">📅 Scan the printed date (free)</button>
+    <input type="file" accept="image/*" capture="environment" id="itdate" class="hide">
     <div class="row" style="margin-bottom:8px">
       <button class="btn ghost" data-a="plus">＋ Add one back</button>
       ${!it.opened ? `<button class="btn ghost" data-a="open">Just opened it</button>` : `<button class="btn ghost" data-a="date">Fix the date</button>`}
@@ -1003,6 +1081,8 @@ function itemSheet(it) {
   dlg.querySelector('[data-a=toss]').onclick = () => go(() => tossItem(it));
   dlg.querySelector('[data-a=move]').onclick = () => { dlg.close(); moveSheet(it); };
   dlg.querySelector('[data-a=tolist]').onclick = () => go(() => addToList(it.name));
+  dlg.querySelector('[data-a=scandate]').onclick = () => dlg.querySelector('#itdate').click();
+  dlg.querySelector('#itdate').onchange = e => { const f = e.target.files[0]; if (f) { dlg.close(); scanDateForItem(it, f); } };
   dlg.querySelector('[data-a=photo]').onclick = () => dlg.querySelector('#itphoto').click();
   dlg.querySelector('#itphoto').onchange = e => { const f = e.target.files[0]; if (f) { dlg.close(); setItemPhoto(it, f); } };
   dlg.querySelector('[data-a=date]').onclick = () => { dlg.close(); dateSheet(it); };
