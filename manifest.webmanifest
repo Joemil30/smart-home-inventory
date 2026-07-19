@@ -1,6 +1,6 @@
 {
-  "name": "Cold Room",
-  "short_name": "Cold Room",
+  "name": "ShelfLife",
+  "short_name": "ShelfLife",
   "description": "What's in the house, what's dying, what you can cook right now.",
   "start_url": "./",
   "scope": "./",

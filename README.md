@@ -1,4 +1,4 @@
-# Cold Room
+# ShelfLife
 
 Household food inventory. Six shelves, barcode in, wrapper out, cook from what's dying.
 
@@ -80,11 +80,17 @@ For a whole bag at once, flip on **⚡ Rapid add** and pick the shelf: now every
 - **Vision is constrained matching, not recognition.** Photos are sent along with your actual inventory and the question "which of these do you see?" Worst case it picks the wrong onion instead of inventing a mango.
 - **Nothing destructive is one tap.** Everything soft-deletes with a 6-second undo.
 
-## Deliberately not here yet
+## The family layer
 
-Shopping lists, store routing, cloud sync. The data model already holds them — they bolt on, they don't rewrite. Live on the core loop for two weeks first; you'll know exactly which one you actually want.
+Once you've lived on the core loop, the shared pieces bolt on — same data model, no rewrite:
 
-(Receipt scanning is now built: Scan tab → **🧾 Scan a receipt** photographs a receipt and adds the whole trip in one AI call.)
+- **Receipt scanning** — Scan tab → **🧾 Scan a receipt** photographs a receipt and adds the whole trip in one AI call.
+- **Free on-device date OCR** — item sheet → **📅 Scan the printed date** reads Best By / Use By dates locally (Tesseract), no AI quota, works offline, unlimited.
+- **Voice trash/eat** — mic button on the Expiring screen: "finished the milk", "threw out the bad spinach", "add eggs to the list".
+- **Shared shopping list** — 🛒 header button, with an IN STOCK / not-in-the-house badge per line so nobody rebuys what you already have.
+- **Family cloud sync** — optional Supabase project + a shared household code; last-write-wins, realtime, offline queue. Setup is guided in-app (Settings → Family sync).
+- **Push notifications** — free web push via a Supabase Edge Function (`supabase/functions/notify`). Best-effort on iOS (installed PWA, iOS 16.4+).
+- **Swappable AI provider** — Gemini or any OpenAI-compatible endpoint (OpenRouter's free vision models by default). No model name is hardcoded; dead models heal at boot.
 
 ## Files
 

@@ -1,23 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- Cold Room. The icon is the interface's one idea, compressed:
-       shelves, and a rail that reads cold -> warm as food dies. -->
-  <rect width="512" height="512" fill="#0A0E13"/>
-  <g transform="translate(146 116)">
-    <!-- the rail: fresh at the top, spoiling by the bottom -->
-    <defs>
-      <linearGradient id="r" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#5EC8F2"/>
-        <stop offset="0.55" stop-color="#7FD4C1"/>
-        <stop offset="0.8" stop-color="#E8A33D"/>
-        <stop offset="1" stop-color="#E05252"/>
-      </linearGradient>
-    </defs>
-    <rect x="0" y="0" width="22" height="280" rx="6" fill="url(#r)"/>
-    <!-- shelves, filling up -->
-    <rect x="48" y="14"  width="172" height="22" rx="7" fill="#E6EDF4"/>
-    <rect x="48" y="76"  width="128" height="22" rx="7" fill="#E6EDF4" opacity=".78"/>
-    <rect x="48" y="138" width="152" height="22" rx="7" fill="#E6EDF4" opacity=".56"/>
-    <rect x="48" y="200" width="96"  height="22" rx="7" fill="#E6EDF4" opacity=".34"/>
-    <rect x="48" y="258" width="134" height="22" rx="7" fill="#E6EDF4" opacity=".18"/>
-  </g>
+  <!-- ShelfLife. One continuous line loops into an S (for Shelf) built
+       from three stacked shelf-bars — the "infinite freshness loop".
+       Fresh green throughout: this app is about keeping food alive. -->
+  <rect width="512" height="512" fill="#0E1512"/>
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3BE07E"/>
+      <stop offset="1" stop-color="#159A55"/>
+    </linearGradient>
+  </defs>
+  <path d="M321 188 H191 A34 34 0 0 0 191 256 H321 A34 34 0 0 1 321 324 H191"
+        fill="none" stroke="url(#g)" stroke-width="40"
+        stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

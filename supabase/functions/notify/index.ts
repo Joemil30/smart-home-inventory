@@ -1,4 +1,4 @@
-// Cold Room — family push sender (Supabase Edge Function, Deno).
+// ShelfLife — family push sender (Supabase Edge Function, Deno).
 // Any family phone POSTs { household, title, body, tag } and every
 // subscribed device in that household gets a web-push notification.
 //
@@ -30,10 +30,10 @@ Deno.serve(async (req) => {
       .select('id,data').eq('household', household).eq('store', 'push').eq('deleted', false);
 
     webpush.setVapidDetails(
-      Deno.env.get('VAPID_SUBJECT') || 'mailto:coldroom@example.com',
+      Deno.env.get('VAPID_SUBJECT') || 'mailto:shelflife@example.com',
       Deno.env.get('VAPID_PUBLIC')!, Deno.env.get('VAPID_PRIVATE')!,
     );
-    const payload = JSON.stringify({ title: title || 'Cold Room', body: body || '', tag: tag || 'coldroom' });
+    const payload = JSON.stringify({ title: title || 'ShelfLife', body: body || '', tag: tag || 'shelflife' });
 
     await Promise.all((subs || []).map(async (row: { id: string; data: unknown }) => {
       try {

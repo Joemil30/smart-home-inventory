@@ -6,18 +6,20 @@
 <meta name="theme-color" content="#FBFAF7">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Cold Room">
-<title>Cold Room</title>
+<meta name="apple-mobile-web-app-title" content="ShelfLife">
+<title>ShelfLife</title>
 <link rel="manifest" href="manifest.webmanifest">
 <!-- iOS uses this PNG for the Add-to-Home-Screen icon; it ignores the SVG in the manifest. -->
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
 /* ============================================================
-   COLD ROOM — design tokens
+   SHELFLIFE — design tokens
    Light, plain, easy to scan. Warm off-white surfaces, near-black
-   text, and one orange accent for anything you tap. The only other
-   colour is freshness, kept to a simple traffic light:
-   green = fresh, orange = eat soon, red = past its date.
+   text, and one fresh-green accent for anything you tap. Green is
+   also "fresh/good", which is on-brand: the whole app is freshness,
+   so the accent and the good-state share a colour on purpose.
+   The rest of the freshness signal stays a simple traffic light:
+   green = fresh, amber = eat soon, red = past its date.
    Colour is never decoration here — it means "act on me".
    ============================================================ */
 :root{
@@ -29,11 +31,11 @@
   --vapor:#726A5C;     /* secondary text */
   --vapor-dim:#A69C8B; /* tertiary */
 
-  --cold:#DD5B1E;      /* accent — orange (buttons, active tab, focus) */
-  --chill:#3F9B67;     /* good — green (success, nothing-missing) */
-  --thaw:#DD5B1E;      /* eat soon — orange */
+  --cold:#159A55;      /* accent — fresh green (buttons, active tab, focus) */
+  --chill:#159A55;     /* good — green (success, nothing-missing) */
+  --thaw:#DD7A1E;      /* eat soon — amber */
   --spoil:#D6453F;     /* past date — red */
-  --fresh:#4F8A5B;     /* fresh — calm green */
+  --fresh:#2E8B57;     /* fresh — calm green */
 
   --mono:ui-monospace,'SF Mono','Cascadia Mono','JetBrains Mono','Roboto Mono',Consolas,monospace;
   --sans:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
@@ -128,7 +130,7 @@ label .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-tran
 /* scanner */
 #scanwrap{position:relative;background:#000;border-radius:var(--r);overflow:hidden;aspect-ratio:4/3;margin-bottom:12px}
 #video{width:100%;height:100%;object-fit:cover;display:block}
-.reticle{position:absolute;inset:16% 10%;border:1px solid rgba(221,91,30,.6);border-radius:6px;pointer-events:none}
+.reticle{position:absolute;inset:16% 10%;border:1px solid rgba(21,154,85,.6);border-radius:6px;pointer-events:none}
 .reticle::after{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:var(--cold);
   box-shadow:0 0 10px var(--cold);animation:sweep 2.6s ease-in-out infinite}
 @keyframes sweep{0%,100%{top:6%}50%{top:94%}}
@@ -172,7 +174,7 @@ dialog::backdrop{background:rgba(28,24,19,.42);backdrop-filter:blur(3px)}
 <body>
 
 <header>
-  <h1 id="title">Cold Room</h1>
+  <h1 id="title">ShelfLife</h1>
   <button id="searchBtn" class="hide" aria-label="Search everything you have">🔎</button>
   <button id="cartBtn" class="hide" aria-label="Shopping list">🛒</button>
 </header>
@@ -719,7 +721,7 @@ const G = {
     const body = { model: G.model(), messages: [{ role: 'user', content }] };
     if (jsonSchema) body.response_format = { type: 'json_object' };
     const j = await G._fetchRetry(() => fetch(`${G.base()}/chat/completions`,
-      { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${G.key()}`, 'HTTP-Referer': location.origin, 'X-Title': 'Cold Room' }, body: JSON.stringify(body) }));
+      { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${G.key()}`, 'HTTP-Referer': location.origin, 'X-Title': 'ShelfLife' }, body: JSON.stringify(body) }));
     const t = j.choices?.[0]?.message?.content;
     if (!t) throw new Error('Empty response');
     return jsonSchema ? JSON.parse(onlyJson(t)) : t;
@@ -835,7 +837,7 @@ if (typeof window !== 'undefined') window.addEventListener('online', () => SYNC.
 
 /* ---------------- push notifications (free, via the family's Edge Function) ----
    Any open app can trigger a family-wide ping (no server cron needed):
-   whoever opens Cold Room and sees something dying notifies the other
+   whoever opens ShelfLife and sees something dying notifies the other
    phones. Advanced/optional — needs the notify function deployed once. */
 function urlB64ToU8(b64) {
   const pad = '='.repeat((4 - b64.length % 4) % 4);
@@ -2300,7 +2302,7 @@ function viewSet(app) {
       log: await DB.all('log') }, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `coldroom-${new Date().toISOString().slice(0,10)}.json`;
+    a.download = `shelflife-${new Date().toISOString().slice(0,10)}.json`;
     a.click();
   };
   app.appendChild(exp);
@@ -2311,7 +2313,7 @@ function viewSet(app) {
    Persistent, editable, and the answers actually get used. */
 function viewSetup(app) {
   app.appendChild(el(`<div class="eyebrow">First run</div>
-    <h1 style="margin:8px 0 6px;font-size:24px">Set up the cold room</h1>
+    <h1 style="margin:8px 0 6px;font-size:24px">Set up ShelfLife</h1>
     <p class="note" style="margin:0 0 22px">Two minutes. All of it editable later.</p>`));
   const f = el(`<div>
     <label><span class="lbl">Who lives here — first names</span><input id="mem" placeholder="Alex, Sam, Mia, Theo"></label>
@@ -2379,7 +2381,7 @@ function render() {
 
   const soonN = S.items.filter(i => !i.deleted && freshness(i).left <= 3).length;
   document.getElementById('title').textContent =
-    { inv: 'Cold Room', soon: 'Eat me first', scan: 'Scan', cat: 'Catalog', cook: 'Cook', set: 'Setup', shop: 'Shopping' }[S.view];
+    { inv: 'ShelfLife', soon: 'Eat me first', scan: 'Scan', cat: 'Catalog', cook: 'Cook', set: 'Setup', shop: 'Shopping' }[S.view];
 
   ({ inv: viewInv, soon: viewSoon, scan: viewScan, cat: viewCatalog, cook: viewCook, set: viewSet, shop: viewShopping })[S.view](app);
 

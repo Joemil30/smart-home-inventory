@@ -1,4 +1,4 @@
--- Cold Room — family sync schema.
+-- ShelfLife — family sync schema.
 -- Run this once in your Supabase project: SQL Editor -> paste -> Run.
 -- (The app also offers a "Copy setup SQL" button that copies this.)
 

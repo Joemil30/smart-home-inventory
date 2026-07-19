@@ -1,19 +1,19 @@
-/* Cold Room — offline shell.
+/* ShelfLife — offline shell.
    The whole reason this exists: your downstairs freezer has bad wifi,
    and an inventory app that won't load in the basement is a dead app.
    App shell is cache-first. Live data is IndexedDB, so it never needs
    the network at all. Only barcode lookups and Gemini do. */
 
-const CACHE = 'coldroom-v13';       // app shell — wiped on each version bump
-const IMG = 'coldroom-img';         // product thumbnails — kept across app updates
+const CACHE = 'shelflife-v14';      // app shell — wiped on each version bump
+const IMG = 'shelflife-img';        // product thumbnails — kept across app updates
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg', './apple-touch-icon.png', './zxing.min.js'];
 
 /* Push notifications: show the payload, and focus the app on tap. */
 self.addEventListener('push', e => {
   let d = {}; try { d = e.data ? e.data.json() : {}; } catch (x) { d = { body: e.data && e.data.text() }; }
-  e.waitUntil(self.registration.showNotification(d.title || 'Cold Room', {
+  e.waitUntil(self.registration.showNotification(d.title || 'ShelfLife', {
     body: d.body || '', icon: './apple-touch-icon.png', badge: './apple-touch-icon.png',
-    tag: d.tag || 'coldroom', data: { url: d.url || './' },
+    tag: d.tag || 'shelflife', data: { url: d.url || './' },
   }));
 });
 self.addEventListener('notificationclick', e => {
