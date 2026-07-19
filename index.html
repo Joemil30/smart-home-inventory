@@ -64,6 +64,8 @@ header .who{display:flex;align-items:center;gap:6px;font-size:18px;
   background:var(--shelf);border:1px solid var(--rime-hi);border-radius:999px;padding:4px 10px}
 header #searchBtn{margin-left:auto;font-size:15px;background:var(--shelf);border:1px solid var(--rime-hi);
   border-radius:999px;width:38px;height:34px;display:grid;place-items:center}
+header #cartBtn{font-size:15px;background:var(--shelf);border:1px solid var(--rime-hi);
+  border-radius:999px;width:38px;height:34px;display:grid;place-items:center}
 main{padding:var(--pad);max-width:640px;margin:0 auto}
 
 nav{position:fixed;bottom:0;left:0;right:0;z-index:20;height:calc(var(--nav-h) + env(safe-area-inset-bottom));
@@ -172,6 +174,7 @@ dialog::backdrop{background:rgba(28,24,19,.42);backdrop-filter:blur(3px)}
 <header>
   <h1 id="title">Cold Room</h1>
   <button id="searchBtn" class="hide" aria-label="Search everything you have">🔎</button>
+  <button id="cartBtn" class="hide" aria-label="Shopping list">🛒</button>
 </header>
 
 <main id="app"></main>
@@ -190,7 +193,7 @@ dialog::backdrop{background:rgba(28,24,19,.42);backdrop-filter:blur(3px)}
 /* ---------------- storage: tiny IndexedDB wrapper ---------------- */
 const DB = (() => {
   let db;
-  const STORES = ['items','catalog','recipes','meta','log'];
+  const STORES = ['items','catalog','recipes','meta','log','shopping'];
   const open = () => new Promise((res, rej) => {
     const r = indexedDB.open('coldroom', 1);
     r.onupgradeneeded = e => {
@@ -333,7 +336,7 @@ const mapCat = tags => {
 const CATS = Object.keys(SHELF);
 
 /* ---------------- state ---------------- */
-let S = { items: [], catalog: [], recipes: [], household: null, cfg: {}, view: 'soon', loc: 'all', who: null, q: '', cq: '', open: new Set() };
+let S = { items: [], catalog: [], recipes: [], shopping: [], household: null, cfg: {}, view: 'soon', loc: 'all', who: null, q: '', cq: '', open: new Set() };
 
 const kindOf = id => (S.household?.locations.find(l => l.id === id)?.kind) || 'pantry';
 
@@ -408,9 +411,40 @@ async function logAction(action, detail) {
 
 /* ---------------- item mutations ---------------- */
 async function saveItem(it) {
+  it.updatedAt = Date.now();
   await DB.put('items', it);
   const i = S.items.findIndex(x => x.id === it.id);
   if (i > -1) S.items[i] = it; else S.items.push(it);
+  SYNC.push('items', it.id, it);
+}
+
+/* Shopping list — a synced store of its own. */
+async function saveShopping(it) {
+  it.updatedAt = Date.now();
+  await DB.put('shopping', it);
+  const i = S.shopping.findIndex(x => x.id === it.id);
+  if (i > -1) S.shopping[i] = it; else S.shopping.push(it);
+  SYNC.push('shopping', it.id, it);
+}
+async function saveHousehold() {
+  S.household.id = 'household';
+  S.household.updatedAt = Date.now();
+  await DB.put('meta', S.household);
+  SYNC.push('meta', 'household', S.household);
+}
+
+/* how many of this (by fuzzy name) are actually in the house right now —
+   powers the shopping list's "you already have it" guard. */
+function itemInStock(name) {
+  const q = norm(name);
+  return S.items.filter(i => !i.deleted && (norm(i.name).includes(q) || q.includes(norm(i.name)))).length;
+}
+async function addToList(name, qty) {
+  const ex = S.shopping.find(s => !s.deleted && !s.done && norm(s.name) === norm(name));
+  if (ex) { toast(`${name} is already on the list`); return ex; }
+  const it = { id: uid(), name: String(name).trim(), qty: qty || '', by: S.who?.name || '', done: false, deleted: false };
+  await saveShopping(it);
+  return it;
 }
 
 async function addItem({ name, cat, loc, qty = 1, barcode = null, packSize = null, brand = '', image = null, expires = null, dateConfirmed = false }) {
@@ -489,10 +523,11 @@ async function lookupBarcode(code) {
 }
 
 async function learnProduct(p) {
-  const rec = { id: p.id, name: p.name, brand: p.brand || '', cat: p.cat, packSize: p.packSize || null, image: p.image || null, lastLoc: p.lastLoc || null, learned: Date.now() };
+  const rec = { id: p.id, name: p.name, brand: p.brand || '', cat: p.cat, packSize: p.packSize || null, image: p.image || null, lastLoc: p.lastLoc || null, learned: Date.now(), updatedAt: Date.now() };
   await DB.put('catalog', rec);
   const i = S.catalog.findIndex(c => c.id === rec.id);
   if (i > -1) S.catalog[i] = rec; else S.catalog.push(rec);
+  SYNC.push('catalog', rec.id, rec);
 }
 
 /* ---------------- AI ----------------
@@ -592,6 +627,113 @@ const G = {
     return jsonSchema ? JSON.parse(onlyJson(t)) : t;
   },
 };
+
+/* ---------------- family cloud sync (Supabase) ----------------
+   Local IndexedDB stays the source of truth (works offline). On every
+   write we upsert the record to a shared `sync` table keyed by a household
+   code; on boot we pull + merge (last-write-wins by updatedAt) and
+   subscribe to realtime changes. Nothing here runs until the household
+   sets up their own free Supabase project. Keys/cfg stay device-local. */
+let supaLoading = null;
+function loadSupabase() {
+  if (window.supabase) return Promise.resolve();
+  if (supaLoading) return supaLoading;
+  supaLoading = new Promise((res, rej) => {
+    const s = document.createElement('script'); s.src = 'supabase.min.js';
+    s.onload = () => res(); s.onerror = () => { supaLoading = null; rej(new Error('sync-load-failed')); };
+    document.head.appendChild(s);
+  });
+  return supaLoading;
+}
+
+const SYNC = {
+  cli: null, chan: null,
+  configured: () => !!(S.cfg.supaUrl && S.cfg.supaKey && S.cfg.householdCode),
+  on: () => SYNC.configured() && !!window.supabase,
+  code: () => S.cfg.householdCode,
+  client() {
+    if (!this.cli && S.cfg.supaUrl && S.cfg.supaKey && window.supabase)
+      this.cli = window.supabase.createClient(S.cfg.supaUrl, S.cfg.supaKey, { auth: { persistSession: false } });
+    return this.cli;
+  },
+  row(store, id, data) {
+    return { household: SYNC.code(), store, id, data,
+      updated_at: new Date(data?.updatedAt || Date.now()).toISOString(),
+      deleted: !!(data && data.deleted && store === 'catalog') };
+  },
+  async push(store, id, data) {
+    if (!SYNC.on()) return;
+    const row = SYNC.row(store, id, data);
+    try { const { error } = await SYNC.client().from('sync').upsert(row, { onConflict: 'household,store,id' }); if (error) throw error; }
+    catch (e) { SYNC.queue(row); }
+  },
+  queue(row) {
+    const q = S.cfg._syncq || (S.cfg._syncq = []);
+    q.push(row); if (q.length > 800) q.splice(0, q.length - 800);
+    saveCfg();
+  },
+  async flush() {
+    if (!SYNC.on() || !(S.cfg._syncq || []).length) return;
+    const q = S.cfg._syncq; S.cfg._syncq = []; await saveCfg();
+    for (const row of q) { try { await SYNC.client().from('sync').upsert(row, { onConflict: 'household,store,id' }); } catch (e) { SYNC.queue(row); } }
+  },
+  /* apply a remote row locally, last-write-wins. Never calls saveItem/push
+     (no echo loop) — writes straight to DB + S. */
+  applyRow(r) {
+    if (!r || !r.store) return;
+    const ts = r.data?.updatedAt || Date.parse(r.updated_at) || 0;
+    if (r.store === 'items') {
+      const i = S.items.findIndex(x => x.id === r.id);
+      if (i > -1 && (S.items[i].updatedAt || 0) >= ts) return;
+      DB.put('items', r.data); if (i > -1) S.items[i] = r.data; else S.items.push(r.data);
+    } else if (r.store === 'catalog') {
+      const i = S.catalog.findIndex(x => x.id === r.id);
+      if (r.deleted) { if (i > -1) { S.catalog.splice(i, 1); DB.del('catalog', r.id); } return; }
+      if (i > -1 && (S.catalog[i].updatedAt || 0) >= ts) return;
+      DB.put('catalog', r.data); if (i > -1) S.catalog[i] = r.data; else S.catalog.push(r.data);
+    } else if (r.store === 'shopping') {
+      const i = S.shopping.findIndex(x => x.id === r.id);
+      if (i > -1 && (S.shopping[i].updatedAt || 0) >= ts) return;
+      DB.put('shopping', r.data); if (i > -1) S.shopping[i] = r.data; else S.shopping.push(r.data);
+    } else if (r.store === 'meta' && r.id === 'household') {
+      if ((S.household?.updatedAt || 0) >= ts) return;
+      S.household = r.data; DB.put('meta', r.data);
+    }
+  },
+  async pull() {
+    if (!SYNC.on()) return;
+    try {
+      const { data, error } = await SYNC.client().from('sync').select('*').eq('household', SYNC.code());
+      if (error) throw error;
+      (data || []).forEach(r => SYNC.applyRow(r));
+      render();
+    } catch (e) {}
+  },
+  subscribe() {
+    if (!SYNC.on() || SYNC.chan) return;
+    try {
+      SYNC.chan = SYNC.client()
+        .channel('cr-' + SYNC.code())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'sync', filter: `household=eq.${SYNC.code()}` },
+          p => { if (p.new && p.new.store) { SYNC.applyRow(p.new); render(); } })
+        .subscribe();
+    } catch (e) {}
+  },
+  async start() {
+    if (!SYNC.configured()) return;
+    try { await loadSupabase(); } catch (e) { return; }
+    await SYNC.flush(); await SYNC.pull(); SYNC.subscribe();
+  },
+  /* push everything local up when first joining/creating a household */
+  async pushAll() {
+    if (!SYNC.on()) return;
+    for (const it of S.items) await SYNC.push('items', it.id, it);
+    for (const c of S.catalog) await SYNC.push('catalog', c.id, c);
+    for (const s of S.shopping) await SYNC.push('shopping', s.id, s);
+    if (S.household) await SYNC.push('meta', 'household', S.household);
+  },
+};
+if (typeof window !== 'undefined') window.addEventListener('online', () => SYNC.flush());
 
 /* THE KEY INSIGHT: this is not open-ended food recognition.
    We hand the model your actual inventory and ask "which of these
@@ -837,6 +979,7 @@ function itemSheet(it) {
     <button class="btn ghost" data-a="move" style="margin-bottom:8px;font-weight:600">📍 Move to another shelf</button>
     <button class="btn ghost" data-a="photo" style="margin-bottom:8px">📷 Change photo</button>
     <input type="file" accept="image/*" id="itphoto" class="hide">
+    <button class="btn ghost" data-a="tolist" style="margin-bottom:8px">🛒 Add to shopping list</button>
     <div class="row" style="margin-bottom:8px">
       <button class="btn ghost" data-a="plus">＋ Add one back</button>
       ${!it.opened ? `<button class="btn ghost" data-a="open">Just opened it</button>` : `<button class="btn ghost" data-a="date">Fix the date</button>`}
@@ -859,6 +1002,7 @@ function itemSheet(it) {
   });
   dlg.querySelector('[data-a=toss]').onclick = () => go(() => tossItem(it));
   dlg.querySelector('[data-a=move]').onclick = () => { dlg.close(); moveSheet(it); };
+  dlg.querySelector('[data-a=tolist]').onclick = () => go(() => addToList(it.name));
   dlg.querySelector('[data-a=photo]').onclick = () => dlg.querySelector('#itphoto').click();
   dlg.querySelector('#itphoto').onchange = e => { const f = e.target.files[0]; if (f) { dlg.close(); setItemPhoto(it, f); } };
   dlg.querySelector('[data-a=date]').onclick = () => { dlg.close(); dateSheet(it); };
@@ -1746,6 +1890,127 @@ function catalogSheet(c) {
   dlg.showModal();
 }
 
+/* ---------------- family sync setup ---------------- */
+const SUPA_SQL = `create table if not exists public.sync (
+  household text not null,
+  store text not null,
+  id text not null,
+  data jsonb,
+  updated_at timestamptz default now(),
+  deleted boolean default false,
+  primary key (household, store, id)
+);
+alter table public.sync enable row level security;
+create policy "family access" on public.sync for all using (true) with check (true);
+alter publication supabase_realtime add table public.sync;`;
+
+function renderSyncCard(sc) {
+  const c = S.cfg;
+  if (SYNC.configured()) {
+    sc.innerHTML = `
+      <div class="note" style="margin:0 0 10px">Syncing across every phone that joins this household. To add a family member: have them paste the <b>same Project URL + key</b>, then <b>Join</b> with the code below.</div>
+      <div class="eyebrow" style="margin:6px 0 4px">Household code</div>
+      <div class="row" style="align-items:center;margin-bottom:12px">
+        <input id="hc" readonly value="${esc(c.householdCode)}" style="flex:1;font-family:var(--mono);font-size:12px">
+        <button class="btn ghost" data-a="copyc" style="width:auto;padding:0 14px">Copy</button>
+      </div>
+      <button class="btn ghost" data-a="resync">Re-sync now</button>
+      <button class="btn ghost" data-a="off" style="margin-top:8px;color:var(--spoil);border-color:var(--spoil)">Disconnect this phone</button>`;
+    sc.querySelector('[data-a=copyc]').onclick = () => { navigator.clipboard?.writeText(c.householdCode); toast('Code copied'); };
+    sc.querySelector('[data-a=resync]').onclick = async () => { await SYNC.pull(); toast('Synced'); };
+    sc.querySelector('[data-a=off]').onclick = async () => { S.cfg.householdCode = ''; await saveCfg(); SYNC.chan = null; renderSyncCard(sc); toast('Disconnected — data stays on this phone'); };
+    return;
+  }
+  sc.innerHTML = `
+    <div class="note" style="margin:0 0 10px">Share one inventory + shopping list across the family's phones. Free. Your data lives in a private Supabase project <b>you own</b>.</div>
+    <div class="warn" style="margin-bottom:12px">Heads-up: this puts your inventory in the cloud (not only on this phone). Only people with your project URL + key + household code can reach it.</div>
+    <ol class="note" style="padding-left:18px;margin:0 0 12px">
+      <li style="margin-bottom:6px">Make a free project at <b>supabase.com</b> → New project.</li>
+      <li style="margin-bottom:6px">Copy the SQL below → Supabase <b>SQL Editor</b> → Run.</li>
+      <li>Supabase <b>Project Settings → API</b>: copy the <b>Project URL</b> and <b>anon public</b> key, paste below.</li>
+    </ol>
+    <button class="btn ghost" data-a="copysql" style="margin-bottom:12px">Copy setup SQL</button>
+    <label><span class="lbl">Project URL</span><input id="su" value="${esc(c.supaUrl || '')}" placeholder="https://xxxx.supabase.co"></label>
+    <label><span class="lbl">anon public key</span><input id="sk" type="password" value="${esc(c.supaKey || '')}" placeholder="eyJ…"></label>
+    <button class="btn cold" data-a="save">Connect</button>
+    <div id="ssx" style="margin-top:10px"></div>`;
+  sc.querySelector('[data-a=copysql]').onclick = () => { navigator.clipboard?.writeText(SUPA_SQL); toast('SQL copied — paste it into Supabase → SQL Editor'); };
+  sc.querySelector('[data-a=save]').onclick = async () => {
+    const url = sc.querySelector('#su').value.trim().replace(/\/+$/, '');
+    const key = sc.querySelector('#sk').value.trim();
+    if (!url || !key) return toast('Paste both the Project URL and the key');
+    const box = sc.querySelector('#ssx'); box.innerHTML = `<span class="spin"></span>`;
+    S.cfg.supaUrl = url; S.cfg.supaKey = key; await saveCfg();
+    try {
+      SYNC.cli = null; await loadSupabase();
+      const { error } = await SYNC.client().from('sync').select('household').limit(1);
+      if (error) throw error;
+      box.innerHTML = `<div class="note" style="margin-bottom:8px">Connected ✓ Create a new household, or join one with its code.</div>
+        <button class="btn cold" data-a="create">Create new household</button>
+        <div class="eyebrow" style="text-align:center;margin:10px 0 8px">or join</div>
+        <div class="row"><input id="jc" placeholder="household code" style="flex:1"><button class="btn ghost" data-a="join" style="width:auto;padding:0 14px">Join</button></div>`;
+      box.querySelector('[data-a=create]').onclick = async () => {
+        S.cfg.householdCode = (crypto.randomUUID?.() || (uid() + uid())); await saveCfg();
+        SYNC.cli = null; await loadSupabase(); await SYNC.pushAll(); SYNC.subscribe();
+        renderSyncCard(sc); toast('Household created — sharing on');
+      };
+      box.querySelector('[data-a=join]').onclick = async () => {
+        const code = box.querySelector('#jc').value.trim(); if (!code) return;
+        S.cfg.householdCode = code; await saveCfg();
+        SYNC.cli = null; await loadSupabase(); await SYNC.pull(); SYNC.subscribe();
+        renderSyncCard(sc); toast('Joined household');
+      };
+    } catch (e) { box.innerHTML = `<div class="warn">${esc(e.message)} — check the URL/key and that you ran the SQL.</div>`; }
+  };
+}
+
+/* ---------------- view: shopping list ---------------- */
+function viewShopping(app) {
+  const list = S.shopping.filter(s => !s.deleted)
+    .sort((a, b) => (a.done ? 1 : 0) - (b.done ? 1 : 0) || (b.updatedAt || 0) - (a.updatedAt || 0));
+
+  const add = el(`<div class="row" style="margin-bottom:12px">
+    <input id="sadd" placeholder="Add an item…" autocomplete="off" enterkeyhint="done" style="flex:1">
+    <button class="btn cold" data-a="add" style="width:auto;padding:0 18px">Add</button></div>`);
+  const doAdd = async () => {
+    const inp = add.querySelector('#sadd'); const v = inp.value.trim();
+    if (!v) return;
+    await addToList(v); render();
+    setTimeout(() => document.getElementById('sadd')?.focus(), 0);
+  };
+  add.querySelector('[data-a=add]').onclick = doAdd;
+  add.querySelector('#sadd').onkeydown = e => { if (e.key === 'Enter') doAdd(); };
+  app.appendChild(add);
+
+  if (!SYNC.configured())
+    app.appendChild(el(`<div class="note" style="margin:0 0 12px">This list is on this phone only. Turn on <b>Setup → Family sync</b> and the whole family shares one list.</div>`));
+
+  if (!list.length) {
+    app.appendChild(el(`<div class="empty"><div class="big">List is empty</div>
+      <div class="sub">Add what you need. Each line shows if you <b>already have it</b> in the house, so nobody double-buys.</div></div>`));
+    return;
+  }
+  list.forEach(s => {
+    const have = itemInStock(s.name);
+    const row = el(`<div class="item">
+      <button class="thumb" data-a="chk" aria-label="Check off" style="cursor:pointer;font-size:20px;color:#fff;background:${s.done ? 'var(--fresh)' : 'var(--void)'}">${s.done ? '✓' : ''}</button>
+      <div class="body">
+        <div class="nm" style="${s.done ? 'text-decoration:line-through;color:var(--vapor-dim)' : ''}">${esc(s.name)}${s.qty ? ` <span class="qty">×${esc(s.qty)}</span>` : ''}</div>
+        <div class="meta">${have ? `<span class="stamp" style="--rail:var(--thaw)">ALREADY HAVE ${have}</span>` : `<span class="qty" style="color:var(--vapor-dim)">not in the house</span>`}${s.by ? ` <span class="qty">· ${esc(s.by)}</span>` : ''}</div>
+      </div>
+      <div class="act"><button data-a="del" aria-label="Remove ${esc(s.name)}">×</button></div>
+    </div>`);
+    row.querySelector('[data-a=chk]').onclick = async () => { s.done = !s.done; await saveShopping(s); render(); };
+    row.querySelector('[data-a=del]').onclick = async () => { s.deleted = true; await saveShopping(s); render(); };
+    app.appendChild(row);
+  });
+  if (list.some(s => s.done)) {
+    const clr = el(`<button class="btn ghost" style="margin-top:8px">Clear checked-off</button>`);
+    clr.onclick = async () => { for (const s of list.filter(x => x.done)) { s.deleted = true; await saveShopping(s); } render(); };
+    app.appendChild(clr);
+  }
+}
+
 /* ---------------- view: settings ---------------- */
 function viewSet(app) {
   const c = S.cfg;
@@ -1803,17 +2068,16 @@ function viewSet(app) {
       allergies: csv(hc.querySelector('#al').value), dislikes: csv(hc.querySelector('#dl').value),
       staples: csv(hc.querySelector('#st').value), cookStyle: hc.querySelector('#cs').value,
     });
-    await DB.put('meta', { id: 'household', ...S.household });
+    await saveHousehold();
     recipeCache = null;
     toast('Saved');
   };
   app.appendChild(hc);
 
-  app.appendChild(el(`<h2 style="margin:22px 0 10px">Sync</h2>`));
-  app.appendChild(el(`<div class="card"><div class="note">
-    Everything lives on this device right now — which is why it works in the basement with no signal.
-    When you're ready to put the kids' phones on it, that's a Supabase URL and key dropped in here.
-    Test the loop solo for two weeks first.</div></div>`));
+  app.appendChild(el(`<h2 style="margin:22px 0 10px">Family sync</h2>`));
+  const sc = el(`<div class="card"></div>`);
+  renderSyncCard(sc);
+  app.appendChild(sc);
 
   app.appendChild(el(`<h2 style="margin:22px 0 10px">Later</h2>`));
   app.appendChild(el(`<div class="card"><div class="note">
@@ -1869,7 +2133,7 @@ function viewSetup(app) {
         { id: 'dp', name: 'Downstairs pantry', kind: 'pantry'  },
       ],
     };
-    await DB.put('meta', S.household);
+    await saveHousehold();
     S.who = S.household.members[0];
     S.view = 'scan';
     render();
@@ -1899,14 +2163,15 @@ function render() {
   app.innerHTML = '';
 
   const searchBtn = document.getElementById('searchBtn');
-  if (!S.household) { nav.classList.add('hide'); searchBtn.classList.add('hide'); return viewSetup(app); }
-  nav.classList.remove('hide'); searchBtn.classList.remove('hide');
+  const cartBtn = document.getElementById('cartBtn');
+  if (!S.household) { nav.classList.add('hide'); searchBtn.classList.add('hide'); cartBtn.classList.add('hide'); return viewSetup(app); }
+  nav.classList.remove('hide'); searchBtn.classList.remove('hide'); cartBtn.classList.remove('hide');
 
   const soonN = S.items.filter(i => !i.deleted && freshness(i).left <= 3).length;
   document.getElementById('title').textContent =
-    { inv: 'Cold Room', soon: 'Eat me first', scan: 'Scan', cat: 'Catalog', cook: 'Cook', set: 'Setup' }[S.view];
+    { inv: 'Cold Room', soon: 'Eat me first', scan: 'Scan', cat: 'Catalog', cook: 'Cook', set: 'Setup', shop: 'Shopping' }[S.view];
 
-  ({ inv: viewInv, soon: viewSoon, scan: viewScan, cat: viewCatalog, cook: viewCook, set: viewSet })[S.view](app);
+  ({ inv: viewInv, soon: viewSoon, scan: viewScan, cat: viewCatalog, cook: viewCook, set: viewSet, shop: viewShopping })[S.view](app);
 
   nav.innerHTML = '';
   TABS.forEach(([id, label]) => {
@@ -1921,15 +2186,17 @@ function render() {
 
 (async function boot() {
   await DB.init();
-  const [items, catalog, household, cfg] = await Promise.all([
-    DB.all('items'), DB.all('catalog'), DB.get('meta', 'household'), DB.get('meta', 'cfg')
+  const [items, catalog, shopping, household, cfg] = await Promise.all([
+    DB.all('items'), DB.all('catalog'), DB.all('shopping'), DB.get('meta', 'household'), DB.get('meta', 'cfg')
   ]);
-  S.items = items; S.catalog = catalog; S.household = household || null; S.cfg = cfg || {};
+  S.items = items; S.catalog = catalog; S.shopping = shopping; S.household = household || null; S.cfg = cfg || {};
   if (S.household) S.who = S.household.members.find(m => m.name === S.cfg.who) || S.household.members[0];
   document.getElementById('searchBtn').onclick = () => { S.view = 'inv'; S.loc = 'all'; S.focusSearch = true; render(); };
+  document.getElementById('cartBtn').onclick = () => { S.view = 'shop'; render(); };
   render();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
   G.ensureModel();   // silently repair a discontinued Gemini model (e.g. the dead 2.0-flash)
+  SYNC.start();      // pull + subscribe if a household is already configured
 })();
 </script>
 </body>
