@@ -340,12 +340,33 @@ let S = { items: [], catalog: [], recipes: [], shopping: [], household: null, cf
 
 const kindOf = id => (S.household?.locations.find(l => l.id === id)?.kind) || 'pantry';
 
-function estimateExpiry(cat, locId, opened) {
-  const kind = kindOf(locId);
+function baseDays(cat, kind) {
   let d = (SHELF[cat] || SHELF.other)[KIND_IDX[kind]];
   if (!d) d = (SHELF[cat] || SHELF.other)[2] || 14;   // wrong-shelf fallback
+  return d;
+}
+/* Per-store learning: a bounded offset per category, learned from the real
+   dates the family confirms, shared across phones via the household record. */
+const learnedOffset = cat => { const v = S.household?.learn?.[cat]; return typeof v === 'number' ? Math.max(-14, Math.min(30, v)) : 0; };
+function estimateExpiry(cat, locId, opened) {
+  const kind = kindOf(locId);
+  let d = Math.max(1, baseDays(cat, kind) + learnedOffset(cat));
   if (opened && OPENED_DAYS[cat]) d = Math.min(d, OPENED_DAYS[cat]);
   return today() + d * DAY;
+}
+/* Learn from a genuinely-confirmed date (typed, scanned, or read off a
+   photo) — never from a relative "still good" bump. Heavily clamped so a
+   bad reading can't corrupt the estimates. */
+async function learnFromDate(it) {
+  if (!it || !it.dateConfirmed || !S.household) return;
+  const base = baseDays(it.cat, kindOf(it.loc));
+  const observed = Math.round((it.expires - (it.added || today())) / DAY);
+  if (observed < 0 || observed > 1200) return;
+  const delta = observed - base;
+  if (Math.abs(delta) > 60) return;                   // ignore wild outliers
+  const learn = S.household.learn || (S.household.learn = {});
+  learn[it.cat] = Math.max(-14, Math.min(30, Math.round(0.5 * (learn[it.cat] || 0) + 0.5 * delta)));
+  await saveHousehold();
 }
 
 /* The few categories where the PRINTED date really matters and the guess
@@ -425,7 +446,7 @@ async function scanDateForItem(it, file) {
     const { b64, mime } = await toB64(file);
     const { date, text } = await ocrDate(`data:${mime};base64,${b64}`);
     if (date) {
-      it.expires = date; it.dateConfirmed = true; await saveItem(it);
+      it.expires = date; it.dateConfirmed = true; await saveItem(it); learnFromDate(it);
       dlg.close(); render();
       toast(`${it.name} — good until ${fmtDate(date).replace('EXP ', '')}`);
     } else {
@@ -538,6 +559,7 @@ async function addItem({ name, cat, loc, qty = 1, barcode = null, packSize = nul
   };
   await saveItem(it);
   await logAction('add', name);
+  if (it.dateConfirmed) learnFromDate(it);   // a real printed date was read at add time
   return it;
 }
 
@@ -810,6 +832,55 @@ const SYNC = {
   },
 };
 if (typeof window !== 'undefined') window.addEventListener('online', () => SYNC.flush());
+
+/* ---------------- push notifications (free, via the family's Edge Function) ----
+   Any open app can trigger a family-wide ping (no server cron needed):
+   whoever opens Cold Room and sees something dying notifies the other
+   phones. Advanced/optional — needs the notify function deployed once. */
+function urlB64ToU8(b64) {
+  const pad = '='.repeat((4 - b64.length % 4) % 4);
+  const s = (b64 + pad).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(s), arr = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+  return arr;
+}
+const PUSH = {
+  supported: () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window,
+  fnUrl: () => S.cfg.supaUrl ? S.cfg.supaUrl.replace(/\/+$/, '') + '/functions/v1/notify' : '',
+  deviceId() { if (!S.cfg.deviceId) { S.cfg.deviceId = uid() + uid(); saveCfg(); } return S.cfg.deviceId; },
+  async enable() {
+    if (!PUSH.supported()) throw new Error("This device doesn't support web push.");
+    if (!SYNC.on()) throw new Error('Turn on Family sync first.');
+    if (!S.cfg.vapidPublic) throw new Error('Paste your VAPID public key first.');
+    if ((await Notification.requestPermission()) !== 'granted') throw new Error('Notifications were blocked.');
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToU8(S.cfg.vapidPublic) });
+    await SYNC.client().from('sync').upsert({ household: SYNC.code(), store: 'push', id: PUSH.deviceId(), data: sub.toJSON(), updated_at: new Date().toISOString(), deleted: false }, { onConflict: 'household,store,id' });
+    S.cfg.pushOn = true; await saveCfg();
+  },
+  async disable() {
+    try { const s = await (await navigator.serviceWorker.ready).pushManager.getSubscription(); if (s) await s.unsubscribe(); } catch (e) {}
+    try { if (SYNC.on()) await SYNC.client().from('sync').update({ deleted: true }).match({ household: SYNC.code(), store: 'push', id: PUSH.deviceId() }); } catch (e) {}
+    S.cfg.pushOn = false; await saveCfg();
+  },
+  async notifyFamily(title, body, tag) {
+    if (!SYNC.on() || !PUSH.fnUrl()) return;
+    try {
+      await fetch(PUSH.fnUrl(), { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + S.cfg.supaKey, apikey: S.cfg.supaKey },
+        body: JSON.stringify({ household: SYNC.code(), title, body, tag }) });
+    } catch (e) {}
+  },
+  async dailyCheck() {
+    if (!SYNC.on() || !S.cfg.pushOn) return;
+    const key = new Date().toISOString().slice(0, 10);
+    if (S.cfg.lastNotify === key) return;
+    const dying = S.items.filter(i => !i.deleted && freshness(i).left <= 2);
+    if (!dying.length) return;
+    S.cfg.lastNotify = key; await saveCfg();
+    const names = [...new Set(dying.map(i => i.name))].slice(0, 3).join(', ');
+    await PUSH.notifyFamily('Eat me first', `${dying.length} item${dying.length > 1 ? 's' : ''} dying: ${names}`, 'expiring');
+  },
+};
 
 /* THE KEY INSIGHT: this is not open-ended food recognition.
    We hand the model your actual inventory and ask "which of these
@@ -1119,7 +1190,7 @@ function dateSheet(it) {
     it.expires = new Date(dlg.querySelector('#dv').value + 'T00:00').getTime();
     it.dateOverride = true;
     it.dateConfirmed = true;
-    await saveItem(it); dlg.close(); render();
+    await saveItem(it); learnFromDate(it); dlg.close(); render();
   };
   dlg.querySelector('[data-a=close]').onclick = () => dlg.close();
   dlg.showModal();
@@ -1844,7 +1915,7 @@ function verifyNudge(items) {
       const ts = parseExpiry(inp.value);
       if (ts && ts !== i.expires) { i.expires = ts; }
       i.dateConfirmed = true;
-      await saveItem(i);
+      await saveItem(i); learnFromDate(i);
     }
     dlg.close(); render(); toast('Dates set');
   };
@@ -2043,9 +2114,20 @@ function renderSyncCard(sc) {
         <button class="btn ghost" data-a="copyc" style="width:auto;padding:0 14px">Copy</button>
       </div>
       <button class="btn ghost" data-a="resync">Re-sync now</button>
+      <div class="eyebrow" style="margin:16px 0 6px">Notifications (advanced)</div>
+      <div class="note" style="margin:0 0 8px">Free family push. Deploy the <b>notify</b> function once (in <b>supabase/functions/notify</b> — needs a computer + CLI), generate VAPID keys, then paste the <b>public</b> key and enable.</div>
+      <label><span class="lbl">VAPID public key</span><input id="vp" value="${esc(c.vapidPublic || '')}" placeholder="B…"></label>
+      <button class="btn ghost" data-a="pushon">${c.pushOn ? 'Notifications ON — tap to turn off' : 'Enable notifications on this phone'}</button>
       <button class="btn ghost" data-a="off" style="margin-top:8px;color:var(--spoil);border-color:var(--spoil)">Disconnect this phone</button>`;
     sc.querySelector('[data-a=copyc]').onclick = () => { navigator.clipboard?.writeText(c.householdCode); toast('Code copied'); };
     sc.querySelector('[data-a=resync]').onclick = async () => { await SYNC.pull(); toast('Synced'); };
+    sc.querySelector('[data-a=pushon]').onclick = async () => {
+      try {
+        if (S.cfg.pushOn) { await PUSH.disable(); toast('Notifications off'); }
+        else { S.cfg.vapidPublic = sc.querySelector('#vp').value.trim(); await saveCfg(); await PUSH.enable(); toast('Notifications on'); }
+      } catch (e) { toast(e.message); }
+      renderSyncCard(sc);
+    };
     sc.querySelector('[data-a=off]').onclick = async () => { S.cfg.householdCode = ''; await saveCfg(); SYNC.chan = null; renderSyncCard(sc); toast('Disconnected — data stays on this phone'); };
     return;
   }
@@ -2324,7 +2406,7 @@ function render() {
   render();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
   G.ensureModel();   // silently repair a discontinued Gemini model (e.g. the dead 2.0-flash)
-  SYNC.start();      // pull + subscribe if a household is already configured
+  SYNC.start().then(() => PUSH.dailyCheck());   // pull + subscribe, then maybe ping the family about dying food
 })();
 </script>
 </body>

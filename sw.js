@@ -4,9 +4,25 @@
    App shell is cache-first. Live data is IndexedDB, so it never needs
    the network at all. Only barcode lookups and Gemini do. */
 
-const CACHE = 'coldroom-v12';       // app shell — wiped on each version bump
+const CACHE = 'coldroom-v13';       // app shell — wiped on each version bump
 const IMG = 'coldroom-img';         // product thumbnails — kept across app updates
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg', './apple-touch-icon.png', './zxing.min.js'];
+
+/* Push notifications: show the payload, and focus the app on tap. */
+self.addEventListener('push', e => {
+  let d = {}; try { d = e.data ? e.data.json() : {}; } catch (x) { d = { body: e.data && e.data.text() }; }
+  e.waitUntil(self.registration.showNotification(d.title || 'Cold Room', {
+    body: d.body || '', icon: './apple-touch-icon.png', badge: './apple-touch-icon.png',
+    tag: d.tag || 'coldroom', data: { url: d.url || './' },
+  }));
+});
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then(cs => {
+    for (const c of cs) if ('focus' in c) return c.focus();
+    return clients.openWindow(e.notification.data?.url || './');
+  }));
+});
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
