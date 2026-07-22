@@ -184,8 +184,9 @@ label .lbl{font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:up
 
 /* ---- recipe cards ---- */
 .recipe-card{background:var(--shelf);border:1px solid var(--rime);border-radius:var(--r);overflow:hidden;margin-bottom:12px;box-shadow:var(--shadow-sm)}
-.recipe-card .banner{height:96px;display:flex;align-items:center;justify-content:center;font-size:46px;
+.recipe-card .banner{height:120px;display:flex;align-items:center;justify-content:center;font-size:46px;
   background:linear-gradient(150deg,var(--cold-soft),var(--shelf));position:relative}
+.recipe-card .banner.photo{background-size:cover;background-position:center;background-repeat:no-repeat}
 .recipe-card .banner .badge{position:absolute;top:10px;right:10px;font-size:11px;font-weight:700;padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.94);box-shadow:var(--shadow-sm)}
 .recipe-card .banner .badge.ok{color:var(--cold-2)}
 .recipe-card .banner .badge.miss{color:#9a5a10}
@@ -1173,7 +1174,69 @@ Give 5 real recipes, ranked: zero-missing first, and among those, whatever burns
     steps: { type: 'ARRAY', items: { type: 'STRING' } }
   }, required: ['name', 'minutes', 'uses', 'missing', 'steps'] } } }, required: ['recipes'] };
   const out = await G.gen([{ text: prompt }], schema);
-  return out.recipes || [];
+  const recipes = out.recipes || [];
+  // real dish photos, best-effort (free, no key) — never block the recipes on it
+  await Promise.all(recipes.map(async r => { try { r.image = await PHOTO.dish(r.name, (r.uses || [])[0]); } catch (e) {} }));
+  return recipes;
+}
+
+/* Real product & dish photos, from free no-key sources. Open Food Facts for
+   groceries, TheMealDB for cooked dishes. Everything degrades to the food
+   emoji when offline or unmatched, and the service worker caches the images
+   so they still show in the basement. */
+const PHOTO = {
+  _mem: new Map(),
+  async food(name) {
+    const key = String(name || '').toLowerCase().trim();
+    if (!key) return null;
+    if (PHOTO._mem.has('f:' + key)) return PHOTO._mem.get('f:' + key);
+    let url = null;
+    try {
+      const r = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(name)}&search_simple=1&json=1&page_size=1&fields=image_front_small_url,image_small_url`, { signal: AbortSignal.timeout(5000) });
+      const j = await r.json();
+      const p = j.products && j.products[0];
+      url = (p && (p.image_front_small_url || p.image_small_url)) || null;
+    } catch (e) {}
+    PHOTO._mem.set('f:' + key, url);
+    return url;
+  },
+  async dish(name, ingredient) {
+    try {
+      const r = await fetch(`https://www.themealdb.com/api/json/v1/1/search.php?s=${encodeURIComponent(name)}`, { signal: AbortSignal.timeout(5000) });
+      const j = await r.json();
+      if (j.meals && j.meals[0] && j.meals[0].strMealThumb) return j.meals[0].strMealThumb;
+    } catch (e) {}
+    if (ingredient) {
+      try {
+        const r = await fetch(`https://www.themealdb.com/api/json/v1/1/filter.php?i=${encodeURIComponent(String(ingredient).split(' ')[0])}`, { signal: AbortSignal.timeout(5000) });
+        const j = await r.json();
+        if (j.meals && j.meals[0] && j.meals[0].strMealThumb) return j.meals[0].strMealThumb;
+      } catch (e) {}
+    }
+    return null;
+  },
+};
+
+/* Quietly give real photos to pantry items that don't have one yet. Opt-out
+   via Settings (it does send item names to Open Food Facts). Runs a few at a
+   time, remembers what it tried, and never re-fetches. */
+let _enriching = false;
+async function enrichItemPhotos() {
+  if (_enriching || S.cfg.autoPhotos === false || !navigator.onLine) return;
+  const todo = S.items.filter(i => !i.deleted && !i.image && !i.photoTried).slice(0, 6);
+  if (!todo.length) return;
+  _enriching = true;
+  let changed = false;
+  for (const it of todo) {
+    const url = await PHOTO.food(it.brand ? `${it.brand} ${it.name}` : it.name);
+    const cur = S.items.find(x => x.id === it.id);
+    if (!cur || cur.deleted) continue;
+    cur.photoTried = true;
+    if (url) { cur.image = url; changed = true; }
+    await saveItem(cur);
+  }
+  _enriching = false;
+  if (changed && (S.view === 'pantry' || S.view === 'inv')) render();
 }
 
 const locName = id => S.household?.locations.find(l => l.id === id)?.name || '?';
@@ -1783,8 +1846,9 @@ let recipeCache = null;
 function recipeCardEl(r) {
   const n = (r.missing || []).length;
   const emoji = foodEmoji(r.name, '') || '🍳';
+  const bannerStyle = r.image ? ` class="banner photo" style="background-image:url('${esc(r.image)}')"` : ' class="banner"';
   const card = el(`<div class="recipe-card">
-    <div class="banner">${emoji}<span class="badge ${n === 0 ? 'ok' : 'miss'}">${n === 0 ? '✓ Ready to cook' : 'Need ' + n}</span></div>
+    <div${bannerStyle}>${r.image ? '' : emoji}<span class="badge ${n === 0 ? 'ok' : 'miss'}">${n === 0 ? '✓ Ready to cook' : 'Need ' + n}</span></div>
     <div class="rc-body">
       <h3>${esc(r.name)}</h3>
       <div class="rc-meta">${r.minutes} MIN${r.rescues?.length ? ' · USES UP ' + esc(r.rescues.join(', ')).toUpperCase() : ''}</div>
@@ -2832,6 +2896,7 @@ function viewPantry(app) {
     sec.querySelector('[data-a=allsoon]').onclick = () => { S.view = 'soon'; render(); };
   }
   viewInv(app);
+  setTimeout(enrichItemPhotos, 400);   // fill in real product photos in the background
 }
 
 /* ---------------- view: PROFILE (the hub — everything findable in one place) ---------------- */
