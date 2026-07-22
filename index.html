@@ -322,7 +322,7 @@ dialog::backdrop{background:rgba(10,25,16,.44);backdrop-filter:blur(3px)}
 /* ---------------- storage: tiny IndexedDB wrapper ---------------- */
 const DB = (() => {
   let db;
-  const STORES = ['items','catalog','recipes','meta','log','shopping','plan'];
+  const STORES = ['items','catalog','recipes','meta','log','shopping','plan','saved'];
   const open = () => new Promise((res, rej) => {
     const r = indexedDB.open('coldroom', 1);
     r.onupgradeneeded = e => {
@@ -465,7 +465,7 @@ const mapCat = tags => {
 const CATS = Object.keys(SHELF);
 
 /* ---------------- state ---------------- */
-let S = { items: [], catalog: [], recipes: [], shopping: [], plan: [], household: null, cfg: {}, view: 'pantry', loc: 'all', who: null, q: '', cq: '', open: new Set() };
+let S = { items: [], catalog: [], recipes: [], shopping: [], plan: [], saved: [], household: null, cfg: {}, view: 'pantry', loc: 'all', who: null, q: '', cq: '', open: new Set() };
 
 const kindOf = id => (S.household?.locations.find(l => l.id === id)?.kind) || 'pantry';
 
@@ -748,6 +748,40 @@ async function planMeal(date, { name, emoji = '', uses = [], missing = [] }) {
   const m = { id: uid(), date, name: String(name).trim(), emoji, uses, missing, deleted: false };
   await savePlan(m);
   return m;
+}
+
+/* Saved recipe library (Module 4) — bookmark a suggestion and keep its full
+   data (title, image, steps, ingredients) locally + synced. */
+const isSaved = r => S.saved.some(x => !x.deleted && norm(x.name) === norm(r.name));
+async function saveRec(rec) {
+  rec.updatedAt = Date.now();
+  await DB.put('saved', rec);
+  const i = S.saved.findIndex(x => x.id === rec.id);
+  if (i > -1) S.saved[i] = rec; else S.saved.push(rec);
+  SYNC.push('saved', rec.id, rec);
+}
+async function toggleSaveRecipe(r) {
+  const ex = S.saved.find(x => !x.deleted && norm(x.name) === norm(r.name));
+  if (ex) {
+    ex.deleted = true; ex.updatedAt = Date.now();
+    await DB.put('saved', ex); S.saved = S.saved.filter(x => x.id !== ex.id);
+    SYNC.push('saved', ex.id, ex);
+    toast('Removed from saved');
+    return false;
+  }
+  const rec = { id: uid(), name: r.name, minutes: r.minutes || 0, uses: r.uses || [], missing: r.missing || [],
+    rescues: r.rescues || [], steps: r.steps || [], image: r.image || null, deleted: false };
+  await saveRec(rec);
+  toast(`Saved “${r.name}”`);
+  return true;
+}
+/* Recompute what's missing for a saved recipe against the CURRENT pantry, so
+   the library reflects today's stock, not what you had when you saved it. */
+function recomputeMissing(r) {
+  const live = S.items.filter(i => !i.deleted).map(i => norm(i.name));
+  const staples = (S.household?.staples || []).map(norm);
+  const have = name => { const q = norm(name); return live.some(x => x.includes(q) || q.includes(x)) || staples.some(x => x.includes(q) || q.includes(x)); };
+  return { ...r, missing: (r.uses || []).filter(u => !have(u)) };
 }
 
 /* how many of this (by fuzzy name) are actually in the house right now —
@@ -1061,6 +1095,11 @@ const SYNC = {
       if (r.deleted || r.data?.deleted) { if (i > -1) { S.plan.splice(i, 1); DB.del('plan', r.id); } return; }
       if (i > -1 && (S.plan[i].updatedAt || 0) >= ts) return;
       DB.put('plan', r.data); if (i > -1) S.plan[i] = r.data; else S.plan.push(r.data);
+    } else if (r.store === 'saved') {
+      const i = S.saved.findIndex(x => x.id === r.id);
+      if (r.deleted || r.data?.deleted) { if (i > -1) { S.saved.splice(i, 1); DB.del('saved', r.id); } return; }
+      if (i > -1 && (S.saved[i].updatedAt || 0) >= ts) return;
+      DB.put('saved', r.data); if (i > -1) S.saved[i] = r.data; else S.saved.push(r.data);
     } else if (r.store === 'meta' && r.id === 'household') {
       if ((S.household?.updatedAt || 0) >= ts) return;
       S.household = r.data; DB.put('meta', r.data);
@@ -1097,6 +1136,7 @@ const SYNC = {
     for (const c of S.catalog) await SYNC.push('catalog', c.id, c);
     for (const s of S.shopping) await SYNC.push('shopping', s.id, s);
     for (const m of S.plan) await SYNC.push('plan', m.id, m);
+    for (const rec of S.saved) await SYNC.push('saved', rec.id, rec);
     if (S.household) await SYNC.push('meta', 'household', S.household);
   },
 };
@@ -1900,9 +1940,11 @@ function recipeCardEl(r) {
         <button class="btn cold sm" data-a="how">View recipe</button>
         ${n ? `<button class="btn ghost sm" data-a="add">＋ Add missing</button>` : ''}
         <button class="btn ghost sm" data-a="plan">📅 Plan</button>
+        <button class="btn ghost sm" data-a="save">${isSaved(r) ? '★ Saved' : '☆ Save'}</button>
         <button class="btn ghost sm" data-a="cook">I made this</button>
       </div>
     </div></div>`);
+  card.querySelector('[data-a=save]').onclick = async () => { await toggleSaveRecipe(r); render(); };
   card.querySelector('[data-a=how]').onclick = () => {
     const dlg = document.getElementById('dlg');
     dlg.innerHTML = `<div class="banner recipe-card" style="border:none;box-shadow:none;margin:0 0 10px"><div class="banner" style="border-radius:14px">${emoji}</div></div>
@@ -1935,6 +1977,27 @@ function pickDayForRecipe(r) {
 }
 function viewCook(app) {
   const live = S.items.filter(i => !i.deleted);
+  const tab = S.cookTab || 'suggested';
+  const savedN = S.saved.filter(s => !s.deleted).length;
+
+  const seg = el(`<div class="chips" style="padding-bottom:14px">
+    <button class="chip" data-t="suggested" aria-pressed="${tab === 'suggested'}">Suggested</button>
+    <button class="chip" data-t="saved" aria-pressed="${tab === 'saved'}">★ Saved${savedN ? ` (${savedN})` : ''}</button>
+  </div>`);
+  seg.querySelectorAll('[data-t]').forEach(b => b.onclick = () => { S.cookTab = b.dataset.t; render(); });
+  app.appendChild(seg);
+
+  if (tab === 'saved') {
+    const saved = S.saved.filter(s => !s.deleted).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+    if (!saved.length) {
+      app.appendChild(el(`<div class="empty"><div class="big">No saved recipes yet</div>
+        <div class="sub">Tap <b>☆ Save</b> on any suggestion to keep it here — with its photo, steps and ingredients. Each one re-checks your pantry before you cook.</div></div>`));
+      return;
+    }
+    saved.forEach(s => app.appendChild(recipeCardEl(recomputeMissing(s))));
+    return;
+  }
+
   const btn = el(`<button class="btn cold" style="margin-bottom:16px">${recipeCache ? '↻ Suggest again' : '✨ Cook with what I have'}</button>`);
   const out = el(`<div></div>`);
   btn.onclick = async () => {
@@ -3100,10 +3163,10 @@ function render() {
   if (navigator.storage && navigator.storage.persist) {
     navigator.storage.persisted().then(p => { if (!p) return navigator.storage.persist(); }).catch(() => {});
   }
-  const [items, catalog, shopping, plan, household, cfg] = await Promise.all([
-    DB.all('items'), DB.all('catalog'), DB.all('shopping'), DB.all('plan'), DB.get('meta', 'household'), DB.get('meta', 'cfg')
+  const [items, catalog, shopping, plan, saved, household, cfg] = await Promise.all([
+    DB.all('items'), DB.all('catalog'), DB.all('shopping'), DB.all('plan'), DB.all('saved'), DB.get('meta', 'household'), DB.get('meta', 'cfg')
   ]);
-  S.items = items; S.catalog = catalog; S.shopping = shopping; S.plan = plan; S.household = household || null; S.cfg = cfg || {};
+  S.items = items; S.catalog = catalog; S.shopping = shopping; S.plan = plan; S.saved = saved; S.household = household || null; S.cfg = cfg || {};
   if (S.household) S.who = S.household.members.find(m => m.name === S.cfg.who) || S.household.members[0];
   document.getElementById('searchBtn').onclick = () => { S.view = 'pantry'; S.loc = 'all'; S.focusSearch = true; render(); };
   render();
