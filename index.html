@@ -13,162 +13,243 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
 /* ============================================================
-   SHELFLIFE — design tokens
-   Light, plain, easy to scan. Warm off-white surfaces, near-black
-   text, and one fresh-green accent for anything you tap. Green is
-   also "fresh/good", which is on-brand: the whole app is freshness,
-   so the accent and the good-state share a colour on purpose.
-   The rest of the freshness signal stays a simple traffic light:
-   green = fresh, amber = eat soon, red = past its date.
-   Colour is never decoration here — it means "act on me".
+   SHELFLIFE — design system
+   A clean, modern consumer app. One fresh-green brand colour on a
+   soft, green-tinted white. Sans-serif for everything human; the
+   mono face is kept only for dates, quantities and codes, where the
+   tabular look reads like real packaging. Green is both the brand
+   AND the "fresh/good" state — on purpose, the app IS freshness.
+   Freshness signal stays a traffic light: green fresh, amber soon,
+   red past. Soft elevation, generous radii, consistent spacing.
    ============================================================ */
 :root{
-  --void:#FBFAF7;      /* app background — warm off-white */
-  --shelf:#FFFFFF;     /* card surface — white */
-  --rime:#ECE7DE;      /* dividers, borders */
-  --rime-hi:#D9D2C5;   /* raised border */
-  --frost:#1C1813;     /* primary text — warm near-black */
-  --vapor:#726A5C;     /* secondary text */
-  --vapor-dim:#A69C8B; /* tertiary */
+  --void:#F3F6F2;       /* app background — soft green-tinted white */
+  --fog:#E9EFE9;        /* subtle fill — chips, thumbnails, wells */
+  --shelf:#FFFFFF;      /* card surface */
+  --rime:#E5ECE5;       /* hairline borders, dividers */
+  --rime-hi:#D2DBD2;    /* stronger border */
+  --frost:#14211A;      /* primary text — near-black green */
+  --vapor:#55655B;      /* secondary text */
+  --vapor-dim:#88968C;  /* tertiary text */
 
-  --cold:#159A55;      /* accent — fresh green (buttons, active tab, focus) */
-  --chill:#159A55;     /* good — green (success, nothing-missing) */
-  --thaw:#DD7A1E;      /* eat soon — amber */
-  --spoil:#D6453F;     /* past date — red */
-  --fresh:#2E8B57;     /* fresh — calm green */
+  --cold:#12A150;       /* BRAND green — primary actions, active nav, focus */
+  --cold-2:#0C7D3C;     /* deeper green — gradients, pressed */
+  --cold-soft:#E1F4E8;  /* green tint — soft fills, selected */
+  --chill:#12A150;      /* good — success, nothing-missing */
+  --thaw:#E2851F;       /* eat soon — amber */
+  --thaw-soft:#FBEEDA;
+  --spoil:#DE453D;      /* past date — red */
+  --spoil-soft:#FBE5E4;
+  --fresh:#2E8B57;      /* fresh — calm green (fresh rails) */
 
   --mono:ui-monospace,'SF Mono','Cascadia Mono','JetBrains Mono','Roboto Mono',Consolas,monospace;
-  --sans:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --sans:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',Roboto,system-ui,sans-serif;
 
   --pad:16px;
-  --r:10px;
-  --nav-h:64px;
+  --r:18px;             /* cards */
+  --r-sm:12px;          /* buttons, inputs, small tiles */
+  --nav-h:66px;
+  --shadow-sm:0 1px 2px rgba(18,50,30,.06);
+  --shadow:0 1px 2px rgba(18,50,30,.05),0 6px 20px rgba(18,50,30,.06);
+  --shadow-lg:0 10px 34px rgba(18,50,30,.12);
+  --shadow-fab:0 8px 22px rgba(18,161,80,.42);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;padding:0;background:var(--void);color:var(--frost);font-family:var(--sans);overscroll-behavior-y:contain}
+html,body{margin:0;padding:0;background:var(--void);color:var(--frost);font-family:var(--sans);
+  overscroll-behavior-y:contain;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 body{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom));min-height:100dvh}
 button{font-family:inherit;font-size:inherit;color:inherit;background:none;border:none;cursor:pointer}
-input,select,textarea{font-family:var(--mono);font-size:16px;background:var(--void);color:var(--frost);border:1px solid var(--rime-hi);border-radius:8px;padding:11px 12px;width:100%}
-input:focus,select,textarea:focus,button:focus-visible{outline:2px solid var(--cold);outline-offset:2px}
+input,select,textarea{font-family:var(--sans);font-size:16px;background:var(--shelf);color:var(--frost);
+  border:1.5px solid var(--rime-hi);border-radius:var(--r-sm);padding:12px 13px;width:100%;transition:border-color .15s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--cold)}
+button:focus-visible{outline:2px solid var(--cold);outline-offset:2px}
 ::placeholder{color:var(--vapor-dim)}
 
-/* ---- structural type: the manifest voice ---- */
-.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--vapor-dim)}
+/* ---- type ---- */
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--vapor-dim);font-weight:600}
 .code{font-family:var(--mono);font-variant-numeric:tabular-nums}
-h1{font-family:var(--mono);font-size:19px;font-weight:600;letter-spacing:-.02em;margin:0}
-h2{font-family:var(--mono);font-size:13px;font-weight:600;letter-spacing:.04em;margin:0;color:var(--vapor)}
+h1{font-size:22px;font-weight:800;letter-spacing:-.02em;margin:0;line-height:1.15}
+h2{font-size:16px;font-weight:750;letter-spacing:-.01em;margin:0;color:var(--frost)}
+h3{font-size:15px;font-weight:700;margin:0;letter-spacing:-.01em}
+a{color:var(--cold);text-decoration:none}
 
-/* ---- chrome ---- */
-header{position:sticky;top:0;z-index:20;background:rgba(251,250,247,.82);backdrop-filter:blur(14px);
-  border-bottom:1px solid var(--rime);padding:calc(env(safe-area-inset-top) + 12px) var(--pad) 12px;
-  display:flex;align-items:center;gap:12px}
+/* ---- header ---- */
+header{position:sticky;top:0;z-index:20;background:rgba(243,246,242,.86);backdrop-filter:saturate(1.4) blur(16px);
+  border-bottom:1px solid var(--rime);padding:calc(env(safe-area-inset-top) + 11px) var(--pad) 11px;
+  display:flex;align-items:center;gap:9px}
+header #title{font-size:20px;font-weight:800;letter-spacing:-.03em}
 header .who{display:flex;align-items:center;gap:6px;font-size:18px;
   background:var(--shelf);border:1px solid var(--rime-hi);border-radius:999px;padding:4px 10px}
-header #searchBtn{margin-left:auto;font-size:15px;background:var(--shelf);border:1px solid var(--rime-hi);
-  border-radius:999px;width:38px;height:34px;display:grid;place-items:center}
-header #cartBtn{font-size:15px;background:var(--shelf);border:1px solid var(--rime-hi);
-  border-radius:999px;width:38px;height:34px;display:grid;place-items:center}
-main{padding:var(--pad);max-width:640px;margin:0 auto}
+header #searchBtn{margin-left:auto}
+header #searchBtn,header #cartBtn,header #setBtn{font-size:16px;background:var(--shelf);border:1px solid var(--rime);
+  border-radius:999px;width:39px;height:39px;display:grid;place-items:center;box-shadow:var(--shadow-sm)}
+header #searchBtn:active,header #cartBtn:active,header #setBtn:active{background:var(--fog)}
+main{padding:var(--pad);max-width:660px;margin:0 auto}
 
+/* ---- bottom nav, with a raised centre Scan button ---- */
 nav{position:fixed;bottom:0;left:0;right:0;z-index:20;height:calc(var(--nav-h) + env(safe-area-inset-bottom));
-  padding-bottom:env(safe-area-inset-bottom);background:rgba(251,250,247,.92);backdrop-filter:blur(14px);
+  padding-bottom:env(safe-area-inset-bottom);background:rgba(255,255,255,.9);backdrop-filter:saturate(1.4) blur(16px);
   border-top:1px solid var(--rime);display:flex}
-nav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-  color:var(--vapor-dim);font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase}
-nav button svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.6}
+nav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  color:var(--vapor-dim);font-size:10px;font-weight:650;letter-spacing:.01em}
+nav button svg{width:23px;height:23px;stroke:currentColor;fill:none;stroke-width:1.7}
 nav button[aria-current="page"]{color:var(--cold)}
+nav button.fab svg{width:auto;height:24px;stroke:#fff;stroke-width:1.9;box-sizing:content-box;padding:13px;
+  background:linear-gradient(160deg,var(--cold),var(--cold-2));border-radius:50%;box-shadow:var(--shadow-fab);
+  margin-top:-20px;border:4px solid var(--void)}
+nav button.fab{color:var(--cold)}
+nav button.fab[aria-current="page"] svg{filter:brightness(1.05)}
 
-/* ---- the signature: freshness rail + inkjet date code ---- */
-.item{position:relative;display:flex;align-items:center;gap:11px;background:var(--shelf);
-  border:1px solid var(--rime);border-radius:var(--r);padding:10px 11px 10px 17px;margin-bottom:8px;overflow:hidden}
-.item::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--rail,var(--vapor-dim))}
-/* product thumbnail — real photo when we have one, first-letter tile when we don't */
-.item .thumb{width:44px;height:44px;flex:0 0 auto;border-radius:8px;overflow:hidden;background:var(--void);
+/* ---- item row: photo, name, freshness rail + date stamp ---- */
+.item{position:relative;display:flex;align-items:center;gap:12px;background:var(--shelf);
+  border:1px solid var(--rime);border-radius:var(--r);padding:11px 12px 11px 18px;margin-bottom:9px;
+  overflow:hidden;box-shadow:var(--shadow-sm)}
+.item::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--rail,var(--vapor-dim))}
+.item .thumb{width:48px;height:48px;flex:0 0 auto;border-radius:12px;overflow:hidden;background:var(--fog);
   border:1px solid var(--rime);display:grid;place-items:center}
 .item .thumb img{width:100%;height:100%;object-fit:cover;display:block}
-.item .thumb .ph{font-family:var(--mono);font-size:17px;font-weight:600;color:var(--vapor-dim);text-transform:uppercase}
-.item .thumb .emoji{font-size:25px;line-height:1}
+.item .thumb .ph{font-size:18px;font-weight:700;color:var(--vapor-dim);text-transform:uppercase}
+.item .thumb .emoji{font-size:26px;line-height:1}
 .item .body{flex:1;min-width:0}
-.item .nm{font-family:var(--mono);font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .nm{font-size:15px;font-weight:650;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .item .meta{display:flex;gap:8px;align-items:baseline;margin-top:3px}
-/* inkjet date stamp, lifted straight off real packaging */
-.stamp{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--rail,var(--vapor));
-  opacity:.9;text-transform:uppercase}
+.stamp{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--rail,var(--vapor));font-weight:600;text-transform:uppercase}
 .qty{font-family:var(--mono);font-size:11px;color:var(--vapor);white-space:nowrap}
-.item .act{display:flex;gap:5px;flex-shrink:0}
-.item .act button{width:33px;height:33px;border:1px solid var(--rime-hi);border-radius:8px;
-  display:grid;place-items:center;color:var(--vapor);font-family:var(--mono);font-size:16px;line-height:1}
-.item .act button:active{background:var(--rime)}
-.item .act button.plus{color:var(--fresh);border-color:var(--fresh)}
+.item .act{display:flex;gap:6px;flex-shrink:0}
+.item .act button{width:35px;height:35px;border:1px solid var(--rime-hi);border-radius:10px;
+  display:grid;place-items:center;color:var(--vapor);font-size:17px;line-height:1;background:var(--shelf)}
+.item .act button:active{background:var(--fog)}
+.item .act button.plus{color:var(--cold);border-color:var(--cold);background:var(--cold-soft)}
 
-/* level pips for bulk goods */
 .pips{display:inline-flex;gap:2px;vertical-align:middle}
-.pips i{width:5px;height:11px;border-radius:1px;background:var(--rime-hi)}
+.pips i{width:5px;height:12px;border-radius:2px;background:var(--rime-hi)}
 .pips i.on{background:var(--rail,var(--cold))}
 
-.card{background:var(--shelf);border:1px solid var(--rime);border-radius:var(--r);padding:14px;margin-bottom:10px}
-.btn{background:var(--frost);color:var(--void);border-radius:9px;padding:13px 16px;font-family:var(--mono);
-  font-size:13px;font-weight:600;letter-spacing:.03em;width:100%;display:block}
-.btn.ghost{background:none;color:var(--frost);border:1px solid var(--rime-hi)}
-.btn.cold{background:var(--cold);color:var(--void)}
+/* ---- cards & buttons ---- */
+.card{background:var(--shelf);border:1px solid var(--rime);border-radius:var(--r);padding:16px;margin-bottom:11px;box-shadow:var(--shadow-sm)}
+.btn{background:var(--frost);color:#fff;border-radius:var(--r-sm);padding:14px 16px;
+  font-size:14.5px;font-weight:700;letter-spacing:-.01em;width:100%;display:block;text-align:center;transition:transform .08s,filter .12s}
+.btn.ghost{background:var(--shelf);color:var(--frost);border:1.5px solid var(--rime-hi);box-shadow:none}
+.btn.cold{background:linear-gradient(160deg,var(--cold),var(--cold-2));color:#fff;box-shadow:0 4px 14px rgba(18,161,80,.28)}
+.btn.sm{padding:10px 12px;font-size:13px;border-radius:10px;width:auto}
 .btn:active{transform:translateY(1px)}
-.btn:disabled{opacity:.4}
-.row{display:flex;gap:8px}
-label{display:block;margin-bottom:14px}
-label .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--vapor);display:block;margin-bottom:6px}
+.btn.cold:active{filter:brightness(.96)}
+.btn:disabled{opacity:.45}
+.row{display:flex;gap:9px}
+label{display:block;margin-bottom:15px}
+label .lbl{font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--vapor);display:block;margin-bottom:7px}
 
-.chips{display:flex;gap:6px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.chips{display:flex;gap:7px;overflow-x:auto;padding:2px 0 11px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .chips::-webkit-scrollbar{display:none}
-.chip{flex-shrink:0;font-family:var(--mono);font-size:11px;letter-spacing:.04em;padding:7px 12px;border-radius:999px;
-  border:1px solid var(--rime-hi);color:var(--vapor);white-space:nowrap}
-.chip[aria-pressed="true"]{background:var(--frost);color:var(--void);border-color:var(--frost)}
+.chip{flex-shrink:0;font-size:12.5px;font-weight:600;padding:8px 14px;border-radius:999px;
+  border:1.5px solid var(--rime-hi);color:var(--vapor);white-space:nowrap;background:var(--shelf)}
+.chip[aria-pressed="true"]{background:var(--cold);color:#fff;border-color:var(--cold)}
 
-.empty{text-align:center;padding:56px 20px;color:var(--vapor-dim)}
-.empty .big{font-family:var(--mono);font-size:13px;color:var(--vapor);margin-bottom:6px}
-.empty .sub{font-size:13px;line-height:1.5;max-width:34ch;margin:0 auto}
+.empty{text-align:center;padding:60px 20px;color:var(--vapor-dim)}
+.empty .big{font-size:16px;font-weight:700;color:var(--frost);margin-bottom:6px}
+.empty .sub{font-size:13.5px;line-height:1.5;max-width:34ch;margin:0 auto}
+
+/* ---- home dashboard ---- */
+.greet{margin:2px 0 16px}
+.greet .hi{font-size:24px;font-weight:800;letter-spacing:-.03em}
+.greet .dt{font-size:13px;color:var(--vapor);font-weight:600;margin-top:2px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:22px}
+.stat{background:var(--shelf);border:1px solid var(--rime);border-radius:var(--r);padding:14px 12px;text-align:center;box-shadow:var(--shadow-sm)}
+.stat .num{font-size:24px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1}
+.stat .lbl{font-size:10.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--vapor-dim);margin-top:6px}
+.section{margin-bottom:24px}
+.section-head{display:flex;align-items:baseline;justify-content:space-between;margin:0 0 11px}
+.section-head .more{font-size:13px;font-weight:650;color:var(--cold)}
+.hscroll{display:flex;gap:11px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin:0 calc(var(--pad)*-1);padding:2px var(--pad) 6px}
+.hscroll::-webkit-scrollbar{display:none}
+.foodcard{flex:0 0 118px;background:var(--shelf);border:1px solid var(--rime);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow-sm)}
+.foodcard .top{height:80px;display:grid;place-items:center;background:var(--fog);font-size:38px}
+.foodcard .top img{width:100%;height:100%;object-fit:cover}
+.foodcard .lo{padding:9px 10px 11px}
+.foodcard .fn{font-size:13px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.01em}
+.foodcard .fd{font-family:var(--mono);font-size:10.5px;font-weight:600;margin-top:3px;letter-spacing:.03em}
+.qa{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.qa button{background:var(--shelf);border:1px solid var(--rime);border-radius:var(--r);padding:14px 6px 11px;
+  display:flex;flex-direction:column;align-items:center;gap:7px;box-shadow:var(--shadow-sm)}
+.qa button:active{background:var(--fog)}
+.qa .qi{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;background:var(--cold-soft);font-size:20px}
+.qa .ql{font-size:11px;font-weight:650;color:var(--frost);letter-spacing:-.01em}
+
+/* ---- pills (missing / uses) ---- */
+.pill{display:inline-block;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:999px;margin:0 5px 5px 0;
+  background:var(--fog);color:var(--vapor)}
+.pill.miss{background:var(--thaw-soft);color:#9a5a10}
+.pill.ok{background:var(--cold-soft);color:var(--cold-2)}
+
+/* ---- recipe cards ---- */
+.recipe-card{background:var(--shelf);border:1px solid var(--rime);border-radius:var(--r);overflow:hidden;margin-bottom:12px;box-shadow:var(--shadow-sm)}
+.recipe-card .banner{height:96px;display:flex;align-items:center;justify-content:center;font-size:46px;
+  background:linear-gradient(150deg,var(--cold-soft),#fff);position:relative}
+.recipe-card .banner .badge{position:absolute;top:10px;right:10px;font-size:11px;font-weight:700;padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.92);box-shadow:var(--shadow-sm)}
+.recipe-card .banner .badge.ok{color:var(--cold-2)}
+.recipe-card .banner .badge.miss{color:#9a5a10}
+.recipe-card .rc-body{padding:14px 15px 15px}
+.recipe-card .rc-body h3{margin-bottom:4px}
+.recipe-card .rc-meta{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--vapor-dim);letter-spacing:.03em;margin-bottom:10px}
+.recipe-card .rc-act{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+
+/* ---- meal planner ---- */
+.day{background:var(--shelf);border:1px solid var(--rime);border-radius:var(--r);padding:14px;margin-bottom:10px;box-shadow:var(--shadow-sm)}
+.day.today{border-color:var(--cold);box-shadow:0 0 0 3px var(--cold-soft)}
+.day .dh{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px}
+.day .dh .dw{font-size:15px;font-weight:750;letter-spacing:-.01em}
+.day .dh .dw small{font-weight:600;color:var(--vapor);font-size:12px;margin-left:6px}
+.day .dh .badge{font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--cold);background:var(--cold-soft);padding:3px 8px;border-radius:999px}
+.meal{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--rime)}
+.meal:first-child{border-top:none}
+.meal .mi{font-size:20px}
+.meal .mn{flex:1;min-width:0;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meal .mx{width:30px;height:30px;border:1px solid var(--rime-hi);border-radius:9px;color:var(--vapor);display:grid;place-items:center}
+.day .addmeal{width:100%;margin-top:8px;padding:10px;border:1.5px dashed var(--rime-hi);border-radius:var(--r-sm);
+  color:var(--vapor);font-size:13px;font-weight:650;background:var(--void)}
+.day .addmeal:active{background:var(--fog)}
 
 /* scanner */
-#scanwrap{position:relative;background:#000;border-radius:var(--r);overflow:hidden;aspect-ratio:4/3;margin-bottom:12px}
+#scanwrap{position:relative;background:#000;border-radius:var(--r);overflow:hidden;aspect-ratio:4/3;margin-bottom:12px;box-shadow:var(--shadow)}
 #video{width:100%;height:100%;object-fit:cover;display:block}
-.reticle{position:absolute;inset:16% 10%;border:1px solid rgba(21,154,85,.6);border-radius:6px;pointer-events:none}
-.reticle::after{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:var(--cold);
-  box-shadow:0 0 10px var(--cold);animation:sweep 2.6s ease-in-out infinite}
+.reticle{position:absolute;inset:16% 10%;border:2px solid rgba(18,161,80,.7);border-radius:10px;pointer-events:none}
+.reticle::after{content:"";position:absolute;left:0;right:0;top:50%;height:2px;background:var(--cold);
+  box-shadow:0 0 12px var(--cold);animation:sweep 2.6s ease-in-out infinite}
 @keyframes sweep{0%,100%{top:6%}50%{top:94%}}
-/* scan confirmation flash — on iOS this and the beep ARE the feedback (no vibration) */
 .reticle{transition:background .12s ease,border-color .12s ease}
-.reticle.hit{border-color:var(--chill);background:rgba(63,155,103,.18)}
-.reticle.miss{border-color:var(--spoil);background:rgba(214,69,63,.18)}
-/* torch toggle, only revealed when the camera track actually supports it */
-.torchbtn{position:absolute;top:10px;right:10px;width:40px;height:40px;border-radius:50%;
-  background:rgba(10,14,19,.55);border:1px solid var(--rime-hi);display:grid;place-items:center;
+.reticle.hit{border-color:var(--chill);background:rgba(18,161,80,.2)}
+.reticle.miss{border-color:var(--spoil);background:rgba(222,69,61,.2)}
+.torchbtn{position:absolute;top:10px;right:10px;width:42px;height:42px;border-radius:50%;
+  background:rgba(10,20,15,.5);border:1px solid rgba(255,255,255,.3);display:grid;place-items:center;
   font-size:18px;backdrop-filter:blur(6px);z-index:2}
-.torchbtn[aria-pressed="true"]{background:var(--frost)}
+.torchbtn[aria-pressed="true"]{background:var(--cold)}
 @media (prefers-reduced-motion:reduce){.reticle::after{animation:none}*{transition:none!important}}
 
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--nav-h) + 20px);z-index:60;
-  background:var(--frost);color:var(--void);font-family:var(--mono);font-size:12px;font-weight:600;
-  padding:11px 16px;border-radius:999px;display:flex;align-items:center;gap:12px;max-width:calc(100vw - 32px);
-  box-shadow:0 8px 30px rgba(28,24,19,.22)}
-.toast button{color:var(--cold);font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.08em;
-  background:var(--void);padding:5px 9px;border-radius:6px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--nav-h) + 22px);z-index:60;
+  background:var(--frost);color:#fff;font-size:13px;font-weight:650;
+  padding:13px 17px;border-radius:999px;display:flex;align-items:center;gap:13px;max-width:calc(100vw - 32px);
+  box-shadow:var(--shadow-lg)}
+.toast button{color:#fff;font-size:12px;font-weight:800;letter-spacing:.02em;
+  background:var(--cold);padding:6px 11px;border-radius:8px}
 
-dialog{border:none;background:var(--shelf);color:var(--frost);border:1px solid var(--rime-hi);border-radius:14px;
-  padding:18px;width:min(460px,calc(100vw - 28px));max-height:86dvh;overflow:auto;box-shadow:0 24px 70px rgba(28,24,19,.28)}
-dialog::backdrop{background:rgba(28,24,19,.42);backdrop-filter:blur(3px)}
+dialog{border:none;background:var(--shelf);color:var(--frost);border-radius:22px;
+  padding:20px;width:min(470px,calc(100vw - 24px));max-height:88dvh;overflow:auto;box-shadow:var(--shadow-lg)}
+dialog::backdrop{background:rgba(10,25,16,.44);backdrop-filter:blur(3px)}
 
-.recipe{border-left:4px solid var(--rail,var(--rime-hi));background:var(--shelf);border-radius:var(--r);
-  padding:13px 13px 13px 15px;margin-bottom:9px;border-top:1px solid var(--rime);
-  border-right:1px solid var(--rime);border-bottom:1px solid var(--rime)}
-.recipe h3{font-family:var(--mono);font-size:14px;margin:0 0 5px;font-weight:600}
-.gap{font-family:var(--mono);font-size:11px;color:var(--thaw)}
+.recipe{position:relative;background:var(--shelf);border:1px solid var(--rime);border-radius:var(--r);
+  padding:14px 14px 14px 17px;margin-bottom:10px;box-shadow:var(--shadow-sm);overflow:hidden}
+.recipe::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--rail,var(--rime-hi))}
+.recipe h3{font-size:15px;margin:0 0 5px;font-weight:700}
+.gap{font-size:12.5px;font-weight:600;color:var(--thaw)}
 .gap.none{color:var(--chill)}
-.tag{font-family:var(--mono);font-size:10px;color:var(--vapor-dim);letter-spacing:.06em}
-.spin{width:15px;height:15px;border:2px solid var(--rime-hi);border-top-color:var(--cold);border-radius:50%;
+.tag{font-family:var(--mono);font-size:10.5px;color:var(--vapor-dim);letter-spacing:.04em;font-weight:600}
+.spin{width:15px;height:15px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;
   animation:sp .7s linear infinite;display:inline-block;vertical-align:-2px}
+.btn.ghost .spin,.note .spin{border-color:var(--rime-hi);border-top-color:var(--cold)}
 @keyframes sp{to{transform:rotate(360deg)}}
 .hide{display:none!important}
-.note{font-size:12px;color:var(--vapor);line-height:1.55}
-.warn{border-left:3px solid var(--thaw);padding-left:10px;color:var(--thaw);font-size:12px;line-height:1.5}
+.note{font-size:13px;color:var(--vapor);line-height:1.55}
+.warn{border-left:3px solid var(--thaw);padding-left:11px;color:#9a5a10;font-size:12.5px;line-height:1.5}
 </style>
 </head>
 <body>
@@ -177,6 +258,7 @@ dialog::backdrop{background:rgba(28,24,19,.42);backdrop-filter:blur(3px)}
   <h1 id="title">ShelfLife</h1>
   <button id="searchBtn" class="hide" aria-label="Search everything you have">🔎</button>
   <button id="cartBtn" class="hide" aria-label="Shopping list">🛒</button>
+  <button id="setBtn" class="hide" aria-label="Settings">⚙️</button>
 </header>
 
 <main id="app"></main>
@@ -195,7 +277,7 @@ dialog::backdrop{background:rgba(28,24,19,.42);backdrop-filter:blur(3px)}
 /* ---------------- storage: tiny IndexedDB wrapper ---------------- */
 const DB = (() => {
   let db;
-  const STORES = ['items','catalog','recipes','meta','log','shopping'];
+  const STORES = ['items','catalog','recipes','meta','log','shopping','plan'];
   const open = () => new Promise((res, rej) => {
     const r = indexedDB.open('coldroom', 1);
     r.onupgradeneeded = e => {
@@ -338,7 +420,7 @@ const mapCat = tags => {
 const CATS = Object.keys(SHELF);
 
 /* ---------------- state ---------------- */
-let S = { items: [], catalog: [], recipes: [], shopping: [], household: null, cfg: {}, view: 'soon', loc: 'all', who: null, q: '', cq: '', open: new Set() };
+let S = { items: [], catalog: [], recipes: [], shopping: [], plan: [], household: null, cfg: {}, view: 'home', loc: 'all', who: null, q: '', cq: '', open: new Set() };
 
 const kindOf = id => (S.household?.locations.find(l => l.id === id)?.kind) || 'pantry';
 
@@ -597,6 +679,30 @@ async function saveHousehold() {
   S.household.updatedAt = Date.now();
   await DB.put('meta', S.household);
   SYNC.push('meta', 'household', S.household);
+}
+
+/* Meal plan — a synced store keyed by day. Each entry: {id, date:'YYYY-MM-DD',
+   name, emoji, uses:[], missing:[]}. Assigning a recipe to a day carries its
+   ingredient gaps so the week's shopping can be built in one tap. */
+async function savePlan(m) {
+  m.updatedAt = Date.now();
+  await DB.put('plan', m);
+  const i = S.plan.findIndex(x => x.id === m.id);
+  if (i > -1) S.plan[i] = m; else S.plan.push(m);
+  SYNC.push('plan', m.id, m);
+}
+async function removePlan(id) {
+  const m = S.plan.find(x => x.id === id);
+  if (!m) return;
+  m.deleted = true; m.updatedAt = Date.now();
+  await DB.put('plan', m);
+  S.plan = S.plan.filter(x => x.id !== id);
+  SYNC.push('plan', id, m);
+}
+async function planMeal(date, { name, emoji = '', uses = [], missing = [] }) {
+  const m = { id: uid(), date, name: String(name).trim(), emoji, uses, missing, deleted: false };
+  await savePlan(m);
+  return m;
 }
 
 /* how many of this (by fuzzy name) are actually in the house right now —
@@ -862,6 +968,11 @@ const SYNC = {
       const i = S.shopping.findIndex(x => x.id === r.id);
       if (i > -1 && (S.shopping[i].updatedAt || 0) >= ts) return;
       DB.put('shopping', r.data); if (i > -1) S.shopping[i] = r.data; else S.shopping.push(r.data);
+    } else if (r.store === 'plan') {
+      const i = S.plan.findIndex(x => x.id === r.id);
+      if (r.deleted || r.data?.deleted) { if (i > -1) { S.plan.splice(i, 1); DB.del('plan', r.id); } return; }
+      if (i > -1 && (S.plan[i].updatedAt || 0) >= ts) return;
+      DB.put('plan', r.data); if (i > -1) S.plan[i] = r.data; else S.plan.push(r.data);
     } else if (r.store === 'meta' && r.id === 'household') {
       if ((S.household?.updatedAt || 0) >= ts) return;
       S.household = r.data; DB.put('meta', r.data);
@@ -897,6 +1008,7 @@ const SYNC = {
     for (const it of S.items) await SYNC.push('items', it.id, it);
     for (const c of S.catalog) await SYNC.push('catalog', c.id, c);
     for (const s of S.shopping) await SYNC.push('shopping', s.id, s);
+    for (const m of S.plan) await SYNC.push('plan', m.id, m);
     if (S.household) await SYNC.push('meta', 'household', S.household);
   },
 };
@@ -1487,11 +1599,192 @@ function viewSoon(app) {
   }
 }
 
+/* ---------------- home dashboard ---------------- */
+const greetWord = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'; };
+const dayKey = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const daysLabel = n => n < 0 ? 'Expired' : n === 0 ? 'Today' : n === 1 ? '1 day' : `${n} days`;
+
+function viewHome(app) {
+  const live = S.items.filter(i => !i.deleted);
+  const soon = live.filter(i => freshness(i).left <= 3).sort((a, b) => a.expires - b.expires);
+  const rescued = S.items.filter(i => i.deleted && !i.wasted).length;
+  const wastedN = S.items.filter(i => i.wasted).length;
+  const rescuedPct = (rescued + wastedN) ? Math.round(rescued / (rescued + wastedN) * 100) : null;
+  const first = S.who?.name ? ', ' + S.who.name.split(' ')[0] : '';
+  const dt = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+
+  app.appendChild(el(`<div class="greet"><div class="hi">${greetWord()}${esc(first)}</div><div class="dt">${esc(dt)}</div></div>`));
+
+  app.appendChild(el(`<div class="stats">
+    <div class="stat"><div class="num">${live.length}</div><div class="lbl">In the house</div></div>
+    <div class="stat"><div class="num" style="color:${soon.length ? 'var(--thaw)' : 'var(--frost)'}">${soon.length}</div><div class="lbl">Expiring</div></div>
+    <div class="stat"><div class="num" style="color:var(--cold)">${rescuedPct != null ? rescuedPct + '%' : '—'}</div><div class="lbl">Rescued</div></div>
+  </div>`));
+
+  // Eat me first — horizontal cards
+  const sec1 = el(`<div class="section"><div class="section-head"><h2>Eat me first</h2>${soon.length ? '<button class="more" data-a="allsoon">See all</button>' : ''}</div></div>`);
+  if (soon.length) {
+    const sc = el(`<div class="hscroll"></div>`);
+    soon.slice(0, 10).forEach(it => {
+      const d = freshness(it).left;
+      const col = d <= 0 ? 'var(--spoil)' : d <= 2 ? 'var(--thaw)' : 'var(--fresh)';
+      const c = el(`<div class="foodcard"><div class="top">${it.image ? `<img src="${esc(it.image)}" alt="">` : (foodEmoji(it.name, it.cat) || '🍽️')}</div>
+        <div class="lo"><div class="fn">${esc(it.name)}</div><div class="fd" style="color:${col}">${daysLabel(d)}</div></div></div>`);
+      c.onclick = () => itemSheet(it);
+      sc.appendChild(c);
+    });
+    sec1.appendChild(sc);
+    sec1.querySelector('[data-a=allsoon]').onclick = () => { S.view = 'soon'; render(); };
+  } else {
+    sec1.appendChild(el(`<div class="card"><div class="note">Nothing's dying in the next few days. Nice — enjoy it while it's good.</div></div>`));
+  }
+  app.appendChild(sec1);
+
+  // Cook now
+  const sec2 = el(`<div class="section"><div class="section-head"><h2>Cook now</h2><button class="more" data-a="allcook">All recipes</button></div></div>`);
+  const box = el(`<div></div>`);
+  if (recipeCache?.length) {
+    [...recipeCache].sort((a, b) => a.missing.length - b.missing.length).slice(0, 2).forEach(r => box.appendChild(recipeCardEl(r)));
+  } else if (live.length) {
+    const b = el(`<button class="btn cold" data-a="gen">✨ Suggest meals from what I have</button>`);
+    b.onclick = async () => {
+      b.disabled = true; b.innerHTML = `<span class="spin"></span> Reading your shelves…`;
+      try { recipeCache = await suggestRecipes(); render(); }
+      catch (e) { b.disabled = false; b.textContent = 'Try again'; box.appendChild(el(`<div class="card"><div class="warn">${esc(e.message)}</div></div>`)); }
+    };
+    box.appendChild(b);
+  } else {
+    box.appendChild(el(`<div class="card"><div class="note">Scan a few things in and I'll suggest meals you can make right now.</div></div>`));
+  }
+  sec2.appendChild(box);
+  sec2.querySelector('[data-a=allcook]').onclick = () => { S.view = 'cook'; render(); };
+  app.appendChild(sec2);
+
+  // Quick actions
+  const qa = el(`<div class="section"><div class="section-head"><h2>Quick actions</h2></div>
+    <div class="qa">
+      <button data-q="scan"><div class="qi">📷</div><div class="ql">Scan</div></button>
+      <button data-q="add"><div class="qi">✏️</div><div class="ql">Add</div></button>
+      <button data-q="shop"><div class="qi">🛒</div><div class="ql">List</div></button>
+      <button data-q="cat"><div class="qi">📚</div><div class="ql">Catalog</div></button>
+    </div></div>`);
+  qa.querySelector('[data-q=scan]').onclick = () => { S.view = 'scan'; render(); };
+  qa.querySelector('[data-q=add]').onclick = () => manualSheet();
+  qa.querySelector('[data-q=shop]').onclick = () => { S.view = 'shop'; render(); };
+  qa.querySelector('[data-q=cat]').onclick = () => { S.view = 'cat'; render(); };
+  app.appendChild(qa);
+}
+
+/* ---------------- meal planner ---------------- */
+function viewPlan(app) {
+  app.appendChild(el(`<p class="note" style="margin:0 0 14px">Plan the week, then send everything you're missing to the shopping list in one tap.</p>`));
+
+  const planned = S.plan.filter(m => !m.deleted);
+  const weekMissing = [...new Set(planned.flatMap(m => m.missing || []))].filter(x => !itemInStock(x));
+  if (weekMissing.length) {
+    const b = el(`<button class="btn cold" style="margin-bottom:14px">🛒 Add this week's ${weekMissing.length} missing ingredient${weekMissing.length > 1 ? 's' : ''} to the list</button>`);
+    b.onclick = async () => { for (const m of weekMissing) await addToList(m); toast(`Added ${weekMissing.length} to your list`); render(); };
+    app.appendChild(b);
+  }
+
+  const start = today();
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(start + i * DAY);
+    const key = dayKey(d);
+    const meals = planned.filter(m => m.date === key);
+    const card = el(`<div class="day ${i === 0 ? 'today' : ''}">
+      <div class="dh"><div class="dw">${d.toLocaleDateString(undefined, { weekday: 'long' })}<small>${d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</small></div>${i === 0 ? '<span class="badge">Today</span>' : ''}</div>
+      <div class="meals"></div>
+      <button class="addmeal">＋ Add a meal</button></div>`);
+    const mbox = card.querySelector('.meals');
+    if (meals.length) meals.forEach(m => {
+      const row = el(`<div class="meal"><span class="mi">${m.emoji || '🍽️'}</span><span class="mn">${esc(m.name)}</span><button class="mx" aria-label="Remove">×</button></div>`);
+      row.querySelector('.mx').onclick = async () => { await removePlan(m.id); render(); };
+      mbox.appendChild(row);
+    });
+    else mbox.appendChild(el(`<div class="note" style="padding:2px 0 4px;color:var(--vapor-dim)">Nothing planned</div>`));
+    card.querySelector('.addmeal').onclick = () => addMealDialog(key);
+    app.appendChild(card);
+  }
+}
+
+function addMealDialog(dateKey) {
+  const dlg = document.getElementById('dlg');
+  const picks = (recipeCache || []).slice(0, 6);
+  dlg.innerHTML = `<div class="eyebrow">Add a meal</div><h1 style="margin:6px 0 14px">${new Date(dateKey + 'T00:00').toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</h1>
+    <label><span class="lbl">Meal</span><input id="mealnm" placeholder="Taco night, Leftovers, Salmon…" autocomplete="off"></label>
+    ${picks.length ? `<div class="note" style="margin:-4px 0 8px">Or pick a suggested recipe:</div><div style="margin-bottom:6px">${picks.map((r, i) => `<button class="chip" data-p="${i}" aria-pressed="false" style="margin:0 6px 8px 0">${esc(r.name)}</button>`).join('')}</div>` : ''}
+    <button class="btn cold" data-a="save" style="margin-top:8px">Add to plan</button>
+    <button class="btn ghost" data-a="c" style="margin-top:8px;border:none;color:var(--vapor)">Cancel</button>`;
+  const input = dlg.querySelector('#mealnm');
+  dlg.querySelectorAll('[data-p]').forEach(b => b.onclick = async () => {
+    const r = picks[+b.dataset.p];
+    await planMeal(dateKey, { name: r.name, emoji: foodEmoji(r.name, '') || '🍽️', uses: r.uses || [], missing: r.missing || [] });
+    dlg.close(); render(); toast(`${r.name} added${(r.missing || []).length ? ` · ${r.missing.length} to shop` : ''}`);
+  });
+  dlg.querySelector('[data-a=save]').onclick = async () => {
+    const name = input.value.trim();
+    if (!name) { input.focus(); return; }
+    await planMeal(dateKey, { name, emoji: foodEmoji(name, '') || '🍽️' });
+    dlg.close(); render();
+  };
+  dlg.querySelector('[data-a=c]').onclick = () => dlg.close();
+  dlg.showModal();
+}
+
 /* ---------------- view: cook ---------------- */
 let recipeCache = null;
+
+/* A single rich recipe card, shared by the Cook tab and the Home dashboard. */
+function recipeCardEl(r) {
+  const n = (r.missing || []).length;
+  const emoji = foodEmoji(r.name, '') || '🍳';
+  const card = el(`<div class="recipe-card">
+    <div class="banner">${emoji}<span class="badge ${n === 0 ? 'ok' : 'miss'}">${n === 0 ? '✓ Ready to cook' : 'Need ' + n}</span></div>
+    <div class="rc-body">
+      <h3>${esc(r.name)}</h3>
+      <div class="rc-meta">${r.minutes} MIN${r.rescues?.length ? ' · USES UP ' + esc(r.rescues.join(', ')).toUpperCase() : ''}</div>
+      <div>${n ? r.missing.map(m => `<span class="pill miss">${esc(m)}</span>`).join('') : `<span class="pill ok">Nothing missing — you have it all</span>`}</div>
+      <div class="rc-act">
+        <button class="btn cold sm" data-a="how">View recipe</button>
+        ${n ? `<button class="btn ghost sm" data-a="add">＋ Add missing</button>` : ''}
+        <button class="btn ghost sm" data-a="plan">📅 Plan</button>
+        <button class="btn ghost sm" data-a="cook">I made this</button>
+      </div>
+    </div></div>`);
+  card.querySelector('[data-a=how]').onclick = () => {
+    const dlg = document.getElementById('dlg');
+    dlg.innerHTML = `<div class="banner recipe-card" style="border:none;box-shadow:none;margin:0 0 10px"><div class="banner" style="border-radius:14px">${emoji}</div></div>
+      <div class="eyebrow">${r.minutes} min</div><h1 style="margin:6px 0 6px">${esc(r.name)}</h1>
+      <div style="margin-bottom:12px">${n ? r.missing.map(m => `<span class="pill miss">${esc(m)}</span>`).join('') : `<span class="pill ok">Nothing missing</span>`}</div>
+      <ol class="note" style="padding-left:18px;margin:0 0 14px">${r.steps.map(s => `<li style="margin-bottom:7px">${esc(s)}</li>`).join('')}</ol>
+      <button class="btn ghost" data-a="c">Close</button>`;
+    dlg.querySelector('[data-a=c]').onclick = () => dlg.close();
+    dlg.showModal();
+  };
+  const addBtn = card.querySelector('[data-a=add]');
+  if (addBtn) addBtn.onclick = async () => { for (const m of r.missing) await addToList(m); toast(`Added ${r.missing.length} to your list`); };
+  card.querySelector('[data-a=plan]').onclick = () => pickDayForRecipe(r);
+  card.querySelector('[data-a=cook]').onclick = () => cookDeduct(r);
+  return card;
+}
+
+function pickDayForRecipe(r) {
+  const dlg = document.getElementById('dlg');
+  const days = [...Array(7)].map((_, i) => new Date(today() + i * DAY));
+  dlg.innerHTML = `<div class="eyebrow">Add to meal plan</div><h1 style="margin:6px 0 14px">${esc(r.name)}</h1>
+    ${days.map((d, i) => `<button class="btn ghost" data-d="${dayKey(d)}" style="margin-bottom:8px;text-align:left">${i === 0 ? 'Today' : d.toLocaleDateString(undefined, { weekday: 'long' })} · ${d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</button>`).join('')}
+    <button class="btn ghost" data-a="c" style="margin-top:4px;border:none;color:var(--vapor)">Cancel</button>`;
+  dlg.querySelectorAll('[data-d]').forEach(b => b.onclick = async () => {
+    await planMeal(b.dataset.d, { name: r.name, emoji: foodEmoji(r.name, '') || '🍽️', uses: r.uses || [], missing: r.missing || [] });
+    dlg.close(); toast(`${r.name} planned${(r.missing || []).length ? ` · ${r.missing.length} to shop` : ''}`);
+  });
+  dlg.querySelector('[data-a=c]').onclick = () => dlg.close();
+  dlg.showModal();
+}
 function viewCook(app) {
   const live = S.items.filter(i => !i.deleted);
-  const btn = el(`<button class="btn cold" style="margin-bottom:14px">Cook with what I have</button>`);
+  const btn = el(`<button class="btn cold" style="margin-bottom:16px">${recipeCache ? '↻ Suggest again' : '✨ Cook with what I have'}</button>`);
   const out = el(`<div></div>`);
   btn.onclick = async () => {
     btn.disabled = true; btn.innerHTML = `<span class="spin"></span> Reading your shelves…`;
@@ -1501,10 +1794,11 @@ function viewCook(app) {
     } catch (e) {
       out.innerHTML = `<div class="card"><div class="warn">${esc(e.message)}</div></div>`;
     }
-    btn.disabled = false; btn.textContent = 'Try again';
+    btn.disabled = false; btn.textContent = '↻ Suggest again';
   };
   app.appendChild(btn);
   if (!live.length) app.appendChild(el(`<div class="card"><div class="note">Nothing in the inventory yet — there's nothing to cook with. Scan something in first.</div></div>`));
+  else if (!recipeCache) app.appendChild(el(`<div class="note" style="margin:-4px 0 16px">Ranked so the ones you can make right now — using what's about to expire — come first.</div>`));
   app.appendChild(out);
   if (recipeCache) renderRecipes(out);
 }
@@ -1512,31 +1806,7 @@ function viewCook(app) {
 function renderRecipes(out) {
   out.innerHTML = '';
   if (!recipeCache?.length) return;
-  const sorted = [...recipeCache].sort((a, b) => a.missing.length - b.missing.length);
-  sorted.forEach(r => {
-    const n = r.missing.length;
-    const rail = n === 0 ? 'var(--chill)' : n <= 2 ? 'var(--thaw)' : 'var(--vapor-dim)';
-    const gap = n === 0 ? `<span class="gap none">Nothing missing</span>`
-      : `<span class="gap">Missing ${n}: ${esc(r.missing.join(', '))}</span>`;
-    const card = el(`<div class="recipe" style="--rail:${rail}">
-      <h3>${esc(r.name)}</h3>
-      <div style="margin-bottom:7px">${gap}</div>
-      <div class="tag">${r.minutes} MIN${r.rescues?.length ? ` · USES UP ${esc(r.rescues.join(', ')).toUpperCase()}` : ''}</div>
-      <div class="row" style="margin-top:11px">
-        <button class="btn ghost" data-a="how" style="font-size:11px;padding:9px">How</button>
-        <button class="btn ghost" data-a="cook" style="font-size:11px;padding:9px">I made this</button>
-      </div></div>`);
-    card.querySelector('[data-a=how]').onclick = () => {
-      const dlg = document.getElementById('dlg');
-      dlg.innerHTML = `<div class="eyebrow">${r.minutes} min</div><h1 style="margin:6px 0 12px">${esc(r.name)}</h1>
-        <ol class="note" style="padding-left:18px;margin:0 0 14px">${r.steps.map(s => `<li style="margin-bottom:7px">${esc(s)}</li>`).join('')}</ol>
-        <button class="btn ghost" data-a="c">Close</button>`;
-      dlg.querySelector('[data-a=c]').onclick = () => dlg.close();
-      dlg.showModal();
-    };
-    card.querySelector('[data-a=cook]').onclick = () => cookDeduct(r);
-    out.appendChild(card);
-  });
+  [...recipeCache].sort((a, b) => a.missing.length - b.missing.length).forEach(r => out.appendChild(recipeCardEl(r)));
 }
 
 /* Auto-deduct on cook — but confirm first, because the recipe is
@@ -2468,14 +2738,16 @@ async function saveCfg() { await DB.put('meta', { id: 'cfg', ...S.cfg }); }
 
 /* ---------------- shell ---------------- */
 const ICONS = {
+  home:'<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/>',
   inv:'<path d="M5 3h14v18H5z"/><path d="M5 11h14M9 7v1M9 15v1"/>',
   soon:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   scan:'<path d="M3 8V5a2 2 0 012-2h3M16 3h3a2 2 0 012 2v3M21 16v3a2 2 0 01-2 2h-3M8 21H5a2 2 0 01-2-2v-3"/><path d="M3 12h18"/>',
   cook:'<path d="M12 3a4 4 0 014 4v1H8V7a4 4 0 014-4z"/><path d="M6 8h12l-1 12H7L6 8z"/>',
+  plan:'<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/>',
   set:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',
   cat:'<rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/>',
 };
-const TABS = [['inv','Shelves'],['soon','Expiring'],['scan','Scan'],['cat','Catalog'],['cook','Cook'],['set','Setup']];
+const TABS = [['home','Home'],['inv','Shelves'],['scan','Scan'],['cook','Cook'],['plan','Plan']];
 
 function render() {
   const app = document.getElementById('app');
@@ -2483,23 +2755,22 @@ function render() {
   if (S.view !== 'scan') stopCam();
   app.innerHTML = '';
 
-  const searchBtn = document.getElementById('searchBtn');
-  const cartBtn = document.getElementById('cartBtn');
-  if (!S.household) { nav.classList.add('hide'); searchBtn.classList.add('hide'); cartBtn.classList.add('hide'); return viewSetup(app); }
-  nav.classList.remove('hide'); searchBtn.classList.remove('hide'); cartBtn.classList.remove('hide');
+  const chrome = ['searchBtn', 'cartBtn', 'setBtn'].map(id => document.getElementById(id));
+  if (!S.household) { nav.classList.add('hide'); chrome.forEach(b => b.classList.add('hide')); return viewSetup(app); }
+  nav.classList.remove('hide'); chrome.forEach(b => b.classList.remove('hide'));
 
   const soonN = S.items.filter(i => !i.deleted && freshness(i).left <= 3).length;
   document.getElementById('title').textContent =
-    { inv: 'ShelfLife', soon: 'Eat me first', scan: 'Scan', cat: 'Catalog', cook: 'Cook', set: 'Setup', shop: 'Shopping' }[S.view];
+    { home: 'ShelfLife', inv: 'Shelves', soon: 'Eat me first', scan: 'Scan', cat: 'Catalog', cook: 'Cook', plan: 'Meal plan', set: 'Settings', shop: 'Shopping' }[S.view];
 
-  ({ inv: viewInv, soon: viewSoon, scan: viewScan, cat: viewCatalog, cook: viewCook, set: viewSet, shop: viewShopping })[S.view](app);
+  ({ home: viewHome, inv: viewInv, soon: viewSoon, scan: viewScan, cat: viewCatalog, cook: viewCook, plan: viewPlan, set: viewSet, shop: viewShopping })[S.view](app);
 
   nav.innerHTML = '';
   TABS.forEach(([id, label]) => {
-    const b = el(`<button ${S.view === id ? 'aria-current="page"' : ''}>
+    const b = el(`<button class="${id === 'scan' ? 'fab' : ''}" ${S.view === id ? 'aria-current="page"' : ''}>
       <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">${ICONS[id]}</svg>
-      <span>${label}${id === 'soon' && soonN ? ` ${soonN}` : ''}</span></button>`);
-    if (id === 'soon' && soonN) b.style.color = 'var(--thaw)';
+      <span>${label}${id === 'home' && soonN ? ` · ${soonN}` : ''}</span></button>`);
+    if (id === 'home' && soonN && S.view !== 'home') b.style.color = 'var(--thaw)';
     b.onclick = () => { S.view = id; render(); };
     nav.appendChild(b);
   });
@@ -2513,13 +2784,14 @@ function render() {
   if (navigator.storage && navigator.storage.persist) {
     navigator.storage.persisted().then(p => { if (!p) return navigator.storage.persist(); }).catch(() => {});
   }
-  const [items, catalog, shopping, household, cfg] = await Promise.all([
-    DB.all('items'), DB.all('catalog'), DB.all('shopping'), DB.get('meta', 'household'), DB.get('meta', 'cfg')
+  const [items, catalog, shopping, plan, household, cfg] = await Promise.all([
+    DB.all('items'), DB.all('catalog'), DB.all('shopping'), DB.all('plan'), DB.get('meta', 'household'), DB.get('meta', 'cfg')
   ]);
-  S.items = items; S.catalog = catalog; S.shopping = shopping; S.household = household || null; S.cfg = cfg || {};
+  S.items = items; S.catalog = catalog; S.shopping = shopping; S.plan = plan; S.household = household || null; S.cfg = cfg || {};
   if (S.household) S.who = S.household.members.find(m => m.name === S.cfg.who) || S.household.members[0];
   document.getElementById('searchBtn').onclick = () => { S.view = 'inv'; S.loc = 'all'; S.focusSearch = true; render(); };
   document.getElementById('cartBtn').onclick = () => { S.view = 'shop'; render(); };
+  document.getElementById('setBtn').onclick = () => { S.view = 'set'; render(); };
   render();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
   G.ensureModel();   // silently repair a discontinued Gemini model (e.g. the dead 2.0-flash)
