@@ -4,7 +4,7 @@
    App shell is cache-first. Live data is IndexedDB, so it never needs
    the network at all. Only barcode lookups and Gemini do. */
 
-const CACHE = 'shelflife-v19';      // app shell — wiped on each version bump
+const CACHE = 'shelflife-v20';      // app shell — wiped on each version bump
 const IMG = 'shelflife-img';        // product thumbnails — kept across app updates
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg', './apple-touch-icon.png', './zxing.min.js'];
 
