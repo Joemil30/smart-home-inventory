@@ -787,8 +787,10 @@ function recomputeMissing(r) {
 /* how many of this (by fuzzy name) are actually in the house right now —
    powers the shopping list's "you already have it" guard. */
 function itemInStock(name) {
-  const q = norm(name);
-  return S.items.filter(i => !i.deleted && (norm(i.name).includes(q) || q.includes(norm(i.name)))).length;
+  // fuzzy so a misspelled shopping entry ("chedar") still spots the real
+  // item ("Cheddar") in the pantry. Threshold a touch stricter to avoid
+  // false "you already have it" positives.
+  return S.items.filter(i => !i.deleted && fuzzyHit(name, i.name, 0.55)).length;
 }
 async function addToList(name, qty) {
   const ex = S.shopping.find(s => !s.deleted && !s.done && norm(s.name) === norm(name));
@@ -1568,7 +1570,54 @@ function dateSheet(it) {
 }
 
 /* ---------------- view: inventory ---------------- */
-const norm = s => String(s).toLowerCase().trim();
+const norm = s => String(s).toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+
+/* ---------------- typo-tolerant ("smart") search ----------------
+   No AI needed — that would be slow and burn quota. This is the same
+   kind of fuzzy matching a good search box uses: normalise, match by
+   token, and forgive small spelling mistakes with edit distance.
+   So "yoghrt", "spinch", "chedar", "milkk" all still find their item. */
+function editDistance(a, b) {
+  const m = a.length, n = b.length;
+  if (!m) return n; if (!n) return m;
+  let prev = Array.from({ length: n + 1 }, (_, i) => i);
+  for (let i = 1; i <= m; i++) {
+    const cur = [i];
+    for (let j = 1; j <= n; j++)
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    prev = cur;
+  }
+  return prev[n];
+}
+// how close two single words are, 0..1 (1 = identical). Forgiving of typos.
+function wordScore(q, w) {
+  if (q === w) return 1;
+  if (w.startsWith(q) || q.startsWith(w)) return 0.92;
+  if (w.includes(q) || q.includes(w)) return 0.8;
+  if (q[0] !== w[0]) return 0;                       // typos almost always keep the first letter
+  const tol = q.length <= 4 ? 1 : q.length <= 7 ? 2 : 3;
+  const d = editDistance(q, w);
+  return d <= tol ? 1 - d / Math.max(q.length, w.length) : 0;
+}
+// overall score of a query against a piece of text, 0..1. Every query word
+// must find a home in the text, or it's not a match.
+function fuzzyScore(query, text) {
+  const q = norm(query), t = norm(text);
+  if (!q) return 1;
+  if (t === q) return 1;
+  if (t.includes(q)) return 0.9;
+  const qtok = q.split(' ').filter(Boolean), ttok = t.split(' ').filter(Boolean);
+  if (!qtok.length || !ttok.length) return 0;
+  let total = 0;
+  for (const qt of qtok) {
+    let best = 0;
+    for (const tt of ttok) best = Math.max(best, wordScore(qt, tt));
+    if (best === 0) return 0;                         // this query word matched nothing
+    total += best;
+  }
+  return (total / qtok.length) * 0.85;
+}
+const fuzzyHit = (query, text, min = 0.45) => fuzzyScore(query, text) >= min;
 
 /* Restock hints, learned rather than assumed.
    The pantries hold DIFFERENT food — downstairs is not overflow of
@@ -1646,11 +1695,13 @@ function paintList(box) {
   const st = S.status || 'all';
   if (st !== 'all') live = live.filter(i => { const l = freshness(i).left; return st === 'expired' ? l < 0 : st === 'soon' ? (l >= 0 && l <= 3) : l > 3; });
 
-  /* searching: flat, ranked, capped */
+  /* searching: fuzzy (typo-tolerant), ranked by match quality then expiry, capped */
   if (S.q?.trim()) {
-    const q = norm(S.q);
-    const hits = live.filter(i => norm(i.name).includes(q) || norm(i.brand || '').includes(q))
-                     .sort((a, b) => a.expires - b.expires);
+    const hits = live
+      .map(i => ({ i, s: Math.max(fuzzyScore(S.q, i.name), fuzzyScore(S.q, i.brand || '') * 0.9) }))
+      .filter(x => x.s >= 0.4)
+      .sort((a, b) => b.s - a.s || a.i.expires - b.i.expires)
+      .map(x => x.i);
     if (!hits.length) return box.appendChild(el(`<div class="empty">
       <div class="big">No match for "${esc(S.q)}"</div>
       <div class="sub">If it's really in the house and not in here, the inventory has drifted. Scan it in.</div></div>`));
@@ -2599,8 +2650,11 @@ function paintCatalog(box) {
   box.innerHTML = '';
   let list = [...S.catalog].sort((a, b) => (b.learned || 0) - (a.learned || 0));   // newest first
   if (S.cq?.trim()) {
-    const q = norm(S.cq);
-    list = list.filter(c => norm(c.name).includes(q) || norm(c.brand || '').includes(q));
+    list = list
+      .map(c => ({ c, s: Math.max(fuzzyScore(S.cq, c.name), fuzzyScore(S.cq, c.brand || '') * 0.9) }))
+      .filter(x => x.s >= 0.4)
+      .sort((a, b) => b.s - a.s)
+      .map(x => x.c);
   }
   if (!list.length) {
     return box.appendChild(el(`<div class="empty"><div class="big">No match for "${esc(S.cq)}"</div>
