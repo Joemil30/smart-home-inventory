@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#FBFAF7">
+<meta name="theme-color" content="#F7F9F7">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="ShelfLife">
@@ -23,8 +23,8 @@
    red past. Soft elevation, generous radii, consistent spacing.
    ============================================================ */
 :root{
-  --void:#F3F6F2;       /* app background — soft green-tinted white */
-  --fog:#E9EFE9;        /* subtle fill — chips, thumbnails, wells */
+  --void:#F7F9F7;       /* app background — clean near-white */
+  --fog:#EEF2EE;        /* subtle fill — chips, thumbnails, wells */
   --shelf:#FFFFFF;      /* card surface */
   --rime:#E5ECE5;       /* hairline borders, dividers */
   --rime-hi:#D2DBD2;    /* stronger border */
@@ -250,18 +250,61 @@ dialog::backdrop{background:rgba(10,25,16,.44);backdrop-filter:blur(3px)}
 .hide{display:none!important}
 .note{font-size:13px;color:var(--vapor);line-height:1.55}
 .warn{border-left:3px solid var(--thaw);padding-left:11px;color:#9a5a10;font-size:12.5px;line-height:1.5}
+
+/* ---- floating add button (per screen, bottom-right) ---- */
+.fab-add{position:fixed;right:18px;bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 16px);z-index:40;
+  width:58px;height:58px;border-radius:50%;background:linear-gradient(160deg,var(--cold),var(--cold-2));
+  color:#fff;font-size:30px;font-weight:400;line-height:1;display:grid;place-items:center;box-shadow:var(--shadow-fab)}
+.fab-add:active{transform:scale(.94)}
+.fab-add svg{width:26px;height:26px;stroke:#fff;stroke-width:2.2;fill:none}
+
+/* ---- profile hub (Cooklist-style rows) ---- */
+.phead{display:flex;flex-direction:column;align-items:center;text-align:center;padding:14px 0 22px}
+.phead .avatar{width:84px;height:84px;border-radius:50%;background:var(--cold-soft);display:grid;place-items:center;
+  font-size:38px;margin-bottom:12px;border:2px solid var(--cold)}
+.phead .pname{font-size:22px;font-weight:800;letter-spacing:-.02em}
+.phead .psub{font-size:13px;color:var(--vapor);margin-top:3px;font-weight:600}
+.plist{background:var(--shelf);border:1px solid var(--rime);border-radius:var(--r);overflow:hidden;margin-bottom:16px;box-shadow:var(--shadow-sm)}
+.prow{display:flex;align-items:center;gap:14px;padding:15px 16px;border-top:1px solid var(--rime);width:100%;text-align:left;background:none}
+.prow:first-child{border-top:none}
+.prow:active{background:var(--fog)}
+.prow .pic{width:34px;height:34px;border-radius:10px;background:var(--cold-soft);display:grid;place-items:center;font-size:18px;flex:0 0 auto}
+.prow .pt{flex:1;min-width:0}
+.prow .ptt{font-size:15px;font-weight:650;letter-spacing:-.01em}
+.prow .pss{font-size:12px;color:var(--vapor);margin-top:2px}
+.prow .parr{color:var(--vapor-dim);font-size:20px;flex:0 0 auto}
+.prow .plink{color:var(--cold);font-weight:700;font-size:13px}
+.pgroup-label{font-size:12px;font-weight:750;letter-spacing:.04em;text-transform:uppercase;color:var(--vapor-dim);margin:6px 4px 9px}
+
+/* ---- section header with count + chevron (pantry categories) ---- */
+.cat-head{display:flex;align-items:center;justify-content:space-between;margin:18px 2px 10px}
+.cat-head .ct{font-size:17px;font-weight:750;letter-spacing:-.01em}
+.cat-head .cc{font-size:12px;font-weight:700;color:var(--vapor-dim);letter-spacing:.03em;display:flex;align-items:center;gap:4px}
+
+/* ---- onboarding welcome carousel ---- */
+.wc-wrap{position:fixed;inset:0;z-index:80;background:var(--void);display:flex;flex-direction:column;
+  padding:calc(env(safe-area-inset-top) + 20px) 24px calc(env(safe-area-inset-bottom) + 24px)}
+.wc-skip{align-self:flex-end;color:var(--vapor);font-size:14px;font-weight:600;padding:6px}
+.wc-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:8px}
+.wc-art{width:150px;height:150px;border-radius:36px;background:linear-gradient(160deg,var(--cold-soft),#fff);
+  display:grid;place-items:center;font-size:72px;margin-bottom:18px;box-shadow:var(--shadow);border:1px solid var(--rime)}
+.wc-title{font-size:26px;font-weight:800;letter-spacing:-.03em;max-width:16ch;line-height:1.12}
+.wc-sub{font-size:15px;color:var(--vapor);line-height:1.5;max-width:26ch;font-weight:500}
+.wc-dots{display:flex;gap:8px;justify-content:center;margin:20px 0}
+.wc-dots i{width:8px;height:8px;border-radius:50%;background:var(--rime-hi)}
+.wc-dots i.on{background:var(--cold);width:22px;border-radius:4px}
 </style>
 </head>
 <body>
 
 <header>
   <h1 id="title">ShelfLife</h1>
-  <button id="searchBtn" class="hide" aria-label="Search everything you have">🔎</button>
-  <button id="cartBtn" class="hide" aria-label="Shopping list">🛒</button>
-  <button id="setBtn" class="hide" aria-label="Settings">⚙️</button>
+  <button id="searchBtn" class="hide" aria-label="Search your pantry">🔎</button>
 </header>
 
 <main id="app"></main>
+
+<button id="fab" class="fab-add hide" aria-label="Add food"><svg viewBox="0 0 24 24" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
 
 <nav id="nav"></nav>
 
@@ -420,7 +463,7 @@ const mapCat = tags => {
 const CATS = Object.keys(SHELF);
 
 /* ---------------- state ---------------- */
-let S = { items: [], catalog: [], recipes: [], shopping: [], plan: [], household: null, cfg: {}, view: 'home', loc: 'all', who: null, q: '', cq: '', open: new Set() };
+let S = { items: [], catalog: [], recipes: [], shopping: [], plan: [], household: null, cfg: {}, view: 'pantry', loc: 'all', who: null, q: '', cq: '', open: new Set() };
 
 const kindOf = id => (S.household?.locations.find(l => l.id === id)?.kind) || 'pantry';
 
@@ -2726,7 +2769,7 @@ function viewSetup(app) {
     };
     await saveHousehold();
     S.who = S.household.members[0];
-    S.view = 'scan';
+    S.view = 'pantry';
     render();
   };
   app.appendChild(f);
@@ -2736,41 +2779,189 @@ function viewSetup(app) {
    Not security. Attribution + kid mode. A password would kill it dead. */
 async function saveCfg() { await DB.put('meta', { id: 'cfg', ...S.cfg }); }
 
+/* ---------------- add-food chooser (the one obvious way to add) ---------------- */
+function addFoodChooser() {
+  const dlg = document.getElementById('dlg');
+  dlg.innerHTML = `<div class="eyebrow">Add food</div><h1 style="margin:6px 0 15px">How do you want to add it?</h1>
+    <button class="btn ghost" data-a="barcode" style="margin-bottom:9px;text-align:left">📷&nbsp;&nbsp;Scan a barcode</button>
+    <button class="btn ghost" data-a="receipt" style="margin-bottom:9px;text-align:left">🧾&nbsp;&nbsp;Scan a receipt — a whole trip at once</button>
+    <button class="btn ghost" data-a="photo" style="margin-bottom:9px;text-align:left">🖼️&nbsp;&nbsp;Photograph a shelf</button>
+    <button class="btn ghost" data-a="type" style="margin-bottom:14px;text-align:left">✏️&nbsp;&nbsp;Type it in</button>
+    <input type="file" accept="image/*" capture="environment" id="afp" class="hide">
+    <input type="file" accept="image/*" id="afr" class="hide">
+    <button class="btn ghost" data-a="c" style="border:none;color:var(--vapor)">Cancel</button>`;
+  const close = () => dlg.close();
+  dlg.querySelector('[data-a=barcode]').onclick = () => { close(); S.cfg.scanMode = 'in'; S.view = 'scan'; render(); };
+  dlg.querySelector('[data-a=receipt]').onclick = () => dlg.querySelector('#afr').click();
+  dlg.querySelector('#afr').onchange = e => { const f = e.target.files[0]; if (f) { close(); receiptFlow(f); } };
+  dlg.querySelector('[data-a=photo]').onclick = () => dlg.querySelector('#afp').click();
+  dlg.querySelector('#afp').onchange = e => { const f = e.target.files[0]; if (f) { close(); photoFlow(f); } };
+  dlg.querySelector('[data-a=type]').onclick = () => { close(); manualSheet(); };
+  dlg.querySelector('[data-a=c]').onclick = close;
+  dlg.showModal();
+}
+
+/* ---------------- view: PANTRY (what's in the house) ---------------- */
+function viewPantry(app) {
+  const live = S.items.filter(i => !i.deleted);
+  if (!live.length) {
+    app.appendChild(el(`<div class="empty" style="padding-top:44px">
+      <div style="font-size:58px;margin-bottom:8px">🧺</div>
+      <div class="big">Your pantry is empty</div>
+      <div class="sub">Add what's in your kitchen — ShelfLife tracks what you have, warns you before it expires, and turns it into meals.</div></div>`));
+    const b = el(`<button class="btn cold" style="max-width:320px;margin:16px auto 0">＋ Add your first item</button>`);
+    b.onclick = () => addFoodChooser();
+    app.appendChild(b);
+    return;
+  }
+  const soon = live.filter(i => freshness(i).left <= 3).sort((a, b) => a.expires - b.expires);
+  if (soon.length) {
+    const sec = el(`<div class="section" style="margin-bottom:8px"><div class="section-head"><h2>Use soon</h2><button class="more" data-a="allsoon">See all</button></div></div>`);
+    const sc = el(`<div class="hscroll"></div>`);
+    soon.slice(0, 10).forEach(it => {
+      const d = freshness(it).left;
+      const col = d <= 0 ? 'var(--spoil)' : d <= 2 ? 'var(--thaw)' : 'var(--fresh)';
+      const c = el(`<div class="foodcard"><div class="top">${it.image ? `<img src="${esc(it.image)}" alt="">` : (foodEmoji(it.name, it.cat) || '🍽️')}</div>
+        <div class="lo"><div class="fn">${esc(it.name)}</div><div class="fd" style="color:${col}">${daysLabel(d)}</div></div></div>`);
+      c.onclick = () => itemSheet(it);
+      sc.appendChild(c);
+    });
+    sec.appendChild(sc);
+    app.appendChild(sec);
+    sec.querySelector('[data-a=allsoon]').onclick = () => { S.view = 'soon'; render(); };
+  }
+  viewInv(app);
+}
+
+/* ---------------- view: PROFILE (the hub — everything findable in one place) ---------------- */
+function viewProfile(app) {
+  const live = S.items.filter(i => !i.deleted);
+  const name = S.who?.name || S.household?.members?.[0]?.name || 'Your kitchen';
+  const ppl = S.household?.people || 1;
+  app.appendChild(el(`<div class="phead"><div class="avatar">${S.who?.emoji || '👤'}</div>
+    <div class="pname">${esc(name)}</div>
+    <div class="psub">${live.length} item${live.length === 1 ? '' : 's'} · ${ppl} in the household</div></div>`));
+
+  app.appendChild(el(`<div class="pgroup-label">Add & organize</div>`));
+  const g1 = el(`<div class="plist">
+    <button class="prow" data-a="receipt"><span class="pic">🧾</span><span class="pt"><div class="ptt">Scan a receipt</div><div class="pss">Add a whole shopping trip at once</div></span><span class="parr">›</span></button>
+    <button class="prow" data-a="recipes"><span class="pic">🍴</span><span class="pt"><div class="ptt">Recipes</div><div class="pss">Cook from what you already have</div></span><span class="parr">›</span></button>
+    <button class="prow" data-a="catalog"><span class="pic">📚</span><span class="pt"><div class="ptt">Product catalog</div><div class="pss">Your saved products & photos</div></span><span class="parr">›</span></button>
+  </div>`);
+  app.appendChild(g1);
+
+  app.appendChild(el(`<div class="pgroup-label">Settings</div>`));
+  const g2 = el(`<div class="plist">
+    <button class="prow" data-a="settings"><span class="pic">⚙️</span><span class="pt"><div class="ptt">Settings</div><div class="pss">AI scanner · Family sync · Backup · Alerts</div></span><span class="parr">›</span></button>
+  </div>`);
+  app.appendChild(g2);
+
+  app.appendChild(el(`<div class="pgroup-label">Help</div>`));
+  const g3 = el(`<div class="plist">
+    <button class="prow" data-a="how"><span class="pic">💡</span><span class="pt"><div class="ptt">How to use ShelfLife</div><div class="pss">A 60-second tour</div></span><span class="parr">›</span></button>
+  </div>`);
+  app.appendChild(g3);
+  app.appendChild(el(`<div class="note" style="text-align:center;color:var(--vapor-dim);margin:2px 0 8px">ShelfLife · local-first, works offline</div>`));
+
+  const rcpt = el(`<input type="file" accept="image/*" class="hide">`);
+  rcpt.onchange = e => { const f = e.target.files[0]; if (f) receiptFlow(f); };
+  app.appendChild(rcpt);
+  g1.querySelector('[data-a=receipt]').onclick = () => rcpt.click();
+  g1.querySelector('[data-a=recipes]').onclick = () => { S.view = 'cook'; render(); };
+  g1.querySelector('[data-a=catalog]').onclick = () => { S.view = 'cat'; render(); };
+  g2.querySelector('[data-a=settings]').onclick = () => { S.view = 'set'; render(); };
+  g3.querySelector('[data-a=how]').onclick = () => welcomeCarousel(() => {});
+}
+
+/* ---------------- first-run welcome tour (so a brand-new user gets it) ---------------- */
+const WELCOME = [
+  { art: '🥗', title: 'Welcome to ShelfLife', sub: 'Your kitchen, organized. Know what you have, what’s expiring, and what to cook — so food stops getting wasted.' },
+  { art: '📷', title: 'Add food in seconds', sub: 'Scan a barcode or a whole receipt, snap a photo of a shelf, or type it in. No long forms.' },
+  { art: '⏰', title: 'Never waste food again', sub: 'ShelfLife estimates the expiry date for you and shows what to eat first — right on the Pantry screen.' },
+  { art: '🍴', title: 'Cook & plan, effortlessly', sub: 'Get recipes from what you already have, then plan the week and send missing items to your shopping list in a tap.' },
+];
+function welcomeCarousel(onDone) {
+  document.getElementById('welcomeOverlay')?.remove();
+  let i = 0;
+  const ov = el(`<div class="wc-wrap" id="welcomeOverlay">
+    <button class="wc-skip">Skip</button>
+    <div class="wc-body">
+      <div class="wc-art"></div><div class="wc-title"></div><div class="wc-sub"></div>
+    </div>
+    <div class="wc-dots">${WELCOME.map(() => '<i></i>').join('')}</div>
+    <button class="btn cold" id="wcNext">Next</button></div>`);
+  const paint = () => {
+    ov.querySelector('.wc-art').textContent = WELCOME[i].art;
+    ov.querySelector('.wc-title').textContent = WELCOME[i].title;
+    ov.querySelector('.wc-sub').textContent = WELCOME[i].sub;
+    ov.querySelectorAll('.wc-dots i').forEach((d, n) => d.classList.toggle('on', n === i));
+    ov.querySelector('#wcNext').textContent = i === WELCOME.length - 1 ? 'Get started' : 'Next';
+  };
+  const done = () => { ov.remove(); onDone && onDone(); };
+  ov.querySelector('.wc-skip').onclick = done;
+  ov.querySelector('#wcNext').onclick = () => { if (i < WELCOME.length - 1) { i++; paint(); } else done(); };
+  paint();
+  document.body.appendChild(ov);
+}
+
 /* ---------------- shell ---------------- */
 const ICONS = {
-  home:'<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/>',
+  plan:'<path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r="1.3"/><circle cx="3.5" cy="12" r="1.3"/><circle cx="3.5" cy="18" r="1.3"/>',
+  shop:'<circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h3l2.3 11.4a1.5 1.5 0 001.5 1.2h8.2a1.5 1.5 0 001.5-1.2L21 7H6"/>',
+  pantry:'<path d="M12 8c-1.4-2.2-5-2.4-6.2.4C4.6 11 6 16 8.6 18.8c1 1.1 2.2 1.1 3.4 0M12 8c1.4-2.2 5-2.4 6.2.4C19.4 11 18 16 15.4 18.8c-1 1.1-2.2 1.1-3.4 0"/><path d="M12 8V5c0-1.4 1.1-2.5 2.6-2.5"/>',
+  cook:'<path d="M6 2v7a2 2 0 004 0V2M8 9v13"/><path d="M16 2c-1.4 0-2.3 1.6-2.3 4s.9 4 2.3 4v12"/>',
+  profile:'<circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c0-3.9 3.4-6 7.5-6s7.5 2.1 7.5 6"/>',
+  home:'<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>',
   inv:'<path d="M5 3h14v18H5z"/><path d="M5 11h14M9 7v1M9 15v1"/>',
   soon:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   scan:'<path d="M3 8V5a2 2 0 012-2h3M16 3h3a2 2 0 012 2v3M21 16v3a2 2 0 01-2 2h-3M8 21H5a2 2 0 01-2-2v-3"/><path d="M3 12h18"/>',
-  cook:'<path d="M12 3a4 4 0 014 4v1H8V7a4 4 0 014-4z"/><path d="M6 8h12l-1 12H7L6 8z"/>',
-  plan:'<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/>',
   set:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',
   cat:'<rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/>',
 };
-const TABS = [['home','Home'],['inv','Shelves'],['scan','Scan'],['cook','Cook'],['plan','Plan']];
+const TABS = [['plan','Plan'],['shop','Shop'],['pantry','Pantry'],['cook','Cook'],['profile','Profile']];
+const TITLES = { plan: 'Meal plan', shop: 'Shopping list', pantry: 'Pantry', cook: 'Cook', profile: 'Profile',
+  home: 'ShelfLife', inv: 'Pantry', soon: 'Use soon', scan: 'Add food', cat: 'Catalog', set: 'Settings' };
+const VIEWS = { plan: viewPlan, shop: viewShopping, pantry: viewPantry, cook: viewCook, profile: viewProfile,
+  home: viewPantry, inv: viewInv, soon: viewSoon, scan: viewScan, cat: viewCatalog, set: viewSet };
+// which tab in the bottom bar should read as active for non-tab sub-views
+const TAB_OF = { inv: 'pantry', soon: 'pantry', scan: 'pantry', cat: 'profile', set: 'profile', home: 'pantry' };
+let welcomed = false;
 
 function render() {
   const app = document.getElementById('app');
   const nav = document.getElementById('nav');
+  const fab = document.getElementById('fab');
   if (S.view !== 'scan') stopCam();
   app.innerHTML = '';
+  fab.classList.add('hide');
 
-  const chrome = ['searchBtn', 'cartBtn', 'setBtn'].map(id => document.getElementById(id));
-  if (!S.household) { nav.classList.add('hide'); chrome.forEach(b => b.classList.add('hide')); return viewSetup(app); }
-  nav.classList.remove('hide'); chrome.forEach(b => b.classList.remove('hide'));
+  const search = document.getElementById('searchBtn');
+  if (!S.household) {
+    nav.classList.add('hide'); search.classList.add('hide');
+    viewSetup(app);
+    if (!welcomed) welcomeCarousel(() => { welcomed = true; });   // first-run tour, over the setup form
+    return;
+  }
+  nav.classList.remove('hide');
+  // header search only makes sense on the pantry
+  search.classList.toggle('hide', !(S.view === 'pantry' || S.view === 'inv'));
 
   const soonN = S.items.filter(i => !i.deleted && freshness(i).left <= 3).length;
-  document.getElementById('title').textContent =
-    { home: 'ShelfLife', inv: 'Shelves', soon: 'Eat me first', scan: 'Scan', cat: 'Catalog', cook: 'Cook', plan: 'Meal plan', set: 'Settings', shop: 'Shopping' }[S.view];
+  document.getElementById('title').textContent = TITLES[S.view] || 'ShelfLife';
 
-  ({ home: viewHome, inv: viewInv, soon: viewSoon, scan: viewScan, cat: viewCatalog, cook: viewCook, plan: viewPlan, set: viewSet, shop: viewShopping })[S.view](app);
+  (VIEWS[S.view] || viewPantry)(app);
 
+  // per-screen add button, Cooklist-style
+  const fabFor = { pantry: () => addFoodChooser(), inv: () => addFoodChooser(), plan: () => addMealDialog(dayKey(new Date(today()))) };
+  if (fabFor[S.view]) { fab.classList.remove('hide'); fab.onclick = fabFor[S.view]; }
+
+  const active = TAB_OF[S.view] || S.view;
   nav.innerHTML = '';
   TABS.forEach(([id, label]) => {
-    const b = el(`<button class="${id === 'scan' ? 'fab' : ''}" ${S.view === id ? 'aria-current="page"' : ''}>
+    const b = el(`<button ${active === id ? 'aria-current="page"' : ''}>
       <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">${ICONS[id]}</svg>
-      <span>${label}${id === 'home' && soonN ? ` · ${soonN}` : ''}</span></button>`);
-    if (id === 'home' && soonN && S.view !== 'home') b.style.color = 'var(--thaw)';
+      <span>${label}${id === 'pantry' && soonN ? ` · ${soonN}` : ''}</span></button>`);
+    if (id === 'pantry' && soonN && active !== 'pantry') b.style.color = 'var(--thaw)';
     b.onclick = () => { S.view = id; render(); };
     nav.appendChild(b);
   });
@@ -2789,9 +2980,7 @@ function render() {
   ]);
   S.items = items; S.catalog = catalog; S.shopping = shopping; S.plan = plan; S.household = household || null; S.cfg = cfg || {};
   if (S.household) S.who = S.household.members.find(m => m.name === S.cfg.who) || S.household.members[0];
-  document.getElementById('searchBtn').onclick = () => { S.view = 'inv'; S.loc = 'all'; S.focusSearch = true; render(); };
-  document.getElementById('cartBtn').onclick = () => { S.view = 'shop'; render(); };
-  document.getElementById('setBtn').onclick = () => { S.view = 'set'; render(); };
+  document.getElementById('searchBtn').onclick = () => { S.view = 'pantry'; S.loc = 'all'; S.focusSearch = true; render(); };
   render();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
   G.ensureModel();   // silently repair a discontinued Gemini model (e.g. the dead 2.0-flash)
