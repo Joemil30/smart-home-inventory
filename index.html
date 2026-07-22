@@ -764,6 +764,49 @@ async function addToList(name, qty) {
   return it;
 }
 
+/* Rough category from a plain product name — good enough to seed the expiry
+   estimate when converting a shopping item into the pantry. */
+function guessCat(name) {
+  const n = String(name || '').toLowerCase();
+  const map = [
+    [/\bmilk\b/, 'dairy-milk'], [/cheese/, 'dairy-cheese-hard'], [/yog[hu]rt/, 'dairy-yogurt'], [/butter/, 'dairy-butter'],
+    [/\begg/, 'eggs'], [/chicken|turkey/, 'poultry-raw'], [/beef|pork|steak|lamb|\bmeat\b|sausage|bacon/, 'meat-raw'],
+    [/fish|salmon|tuna|shrimp|cod|tilapia/, 'fish-raw'], [/lettuce|spinach|kale|arugula|greens|salad/, 'produce-leafy'],
+    [/berr|strawber|blueber|raspber/, 'produce-berry'], [/apple|orange|lemon|lime|citrus|grapefruit/, 'produce-citrus'],
+    [/banana/, 'produce-banana'], [/avocado/, 'produce-avocado'], [/carrot|potato|onion|garlic|ginger|beet/, 'produce-root'],
+    [/broccoli|pepper|cucumber|tomato|zucchini|celery|cabbage/, 'produce-hardy'], [/bread|bagel|\bbun|roll|baguette/, 'bread'],
+    [/tortilla|wrap/, 'tortilla'], [/rice|pasta|noodle|spaghetti|macaroni/, 'dry-pasta-rice'], [/flour|sugar|\boat|grain|quinoa/, 'dry-grain-flour'],
+    [/cereal/, 'cereal'], [/chip|cracker|snack|pretzel|popcorn/, 'snack'], [/frozen/, 'frozen-meal'],
+    [/\bcan\b|soup|beans?\b|lentil/, 'canned'], [/sauce|salsa|ketchup|jam|jelly/, 'jarred-sauce'], [/oil|vinegar/, 'oil-vinegar'],
+    [/coffee|\btea\b/, 'coffee-tea'], [/juice|soda|drink|cola/, 'juice-drink'], [/nut|almond|peanut|cashew|walnut/, 'nuts-seeds'],
+  ];
+  for (const [re, c] of map) if (re.test(n)) return c;
+  return 'other';
+}
+
+/* Purchase conversion: a checked-off shopping item can flow straight into the
+   pantry (Module 1). Prompt for shelf + count, add it, and clear the line. */
+function shoppingToPantry(s) {
+  const dlg = document.getElementById('dlg');
+  const q = (s.qty && /^\d+$/.test(String(s.qty))) ? String(s.qty) : '1';
+  dlg.innerHTML = `<div class="eyebrow">Bought it?</div><h1 style="margin:6px 0 10px">${esc(s.name)}</h1>
+    <p class="note" style="margin:0 0 14px">Add it to your pantry so it's tracked — expiry is estimated for you.</p>
+    <label><span class="lbl">Shelf</span><select id="cloc">${S.household.locations.map(l => `<option value="${l.id}">${esc(l.name)}</option>`).join('')}</select></label>
+    <label><span class="lbl">How many</span><input type="number" id="cqty" value="${q}" min="1"></label>
+    <button class="btn cold" data-a="pantry">✓ Add to pantry &amp; clear from list</button>
+    <button class="btn ghost" data-a="just" style="margin-top:8px">Just check it off</button>
+    <button class="btn ghost" data-a="c" style="margin-top:8px;border:none;color:var(--vapor)">Cancel</button>`;
+  dlg.querySelector('#cloc').value = defaultLoc(guessCat(s.name));
+  dlg.querySelector('[data-a=pantry]').onclick = async () => {
+    await addItem({ name: s.name, cat: guessCat(s.name), loc: dlg.querySelector('#cloc').value, qty: parseInt(dlg.querySelector('#cqty').value) || 1 });
+    s.deleted = true; await saveShopping(s);
+    dlg.close(); render(); toast(`${s.name} added to your pantry`);
+  };
+  dlg.querySelector('[data-a=just]').onclick = async () => { s.done = true; await saveShopping(s); dlg.close(); render(); };
+  dlg.querySelector('[data-a=c]').onclick = () => dlg.close();
+  dlg.showModal();
+}
+
 async function addItem({ name, cat, loc, qty = 1, barcode = null, packSize = null, brand = '', image = null, expires = null, dateConfirmed = false }) {
   const mode = packSize ? 'pack' : unitModeFor(cat);
   const it = {
@@ -2632,6 +2675,19 @@ function viewShopping(app) {
   const doAdd = async () => {
     const inp = add.querySelector('#sadd'); const v = inp.value.trim();
     if (!v) return;
+    const have = itemInStock(v);
+    if (have) {   // duplicate-purchase guard
+      inp.value = '';
+      const dlg = document.getElementById('dlg');
+      dlg.innerHTML = `<div class="eyebrow">Heads up</div><h1 style="margin:6px 0 10px">Already in your pantry</h1>
+        <p class="note" style="margin:0 0 14px">You already have <b>${have}</b> of “${esc(v)}” in the house. Add it to the list anyway?</p>
+        <button class="btn cold" data-a="yes">Add anyway</button>
+        <button class="btn ghost" data-a="no" style="margin-top:8px;border:none;color:var(--vapor)">Never mind</button>`;
+      dlg.querySelector('[data-a=yes]').onclick = async () => { dlg.close(); await addToList(v); render(); };
+      dlg.querySelector('[data-a=no]').onclick = () => dlg.close();
+      dlg.showModal();
+      return;
+    }
     await addToList(v); render();
     setTimeout(() => document.getElementById('sadd')?.focus(), 0);
   };
@@ -2653,11 +2709,14 @@ function viewShopping(app) {
       <button class="thumb" data-a="chk" aria-label="Check off" style="cursor:pointer;font-size:20px;color:#fff;background:${s.done ? 'var(--fresh)' : 'var(--void)'}">${s.done ? '✓' : ''}</button>
       <div class="body">
         <div class="nm" style="${s.done ? 'text-decoration:line-through;color:var(--vapor-dim)' : ''}">${esc(s.name)}${s.qty ? ` <span class="qty">×${esc(s.qty)}</span>` : ''}</div>
-        <div class="meta">${have ? `<span class="stamp" style="--rail:var(--thaw)">ALREADY HAVE ${have}</span>` : `<span class="qty" style="color:var(--vapor-dim)">not in the house</span>`}${s.by ? ` <span class="qty">· ${esc(s.by)}</span>` : ''}</div>
+        <div class="meta">${have ? `<span class="stamp" style="--rail:var(--chill)">✓ In pantry: ${have}</span>` : `<span class="qty" style="color:var(--vapor-dim)">not in the house</span>`}${s.by ? ` <span class="qty">· ${esc(s.by)}</span>` : ''}</div>
       </div>
       <div class="act"><button data-a="del" aria-label="Remove ${esc(s.name)}">×</button></div>
     </div>`);
-    row.querySelector('[data-a=chk]').onclick = async () => { s.done = !s.done; await saveShopping(s); render(); };
+    row.querySelector('[data-a=chk]').onclick = async () => {
+      if (s.done) { s.done = false; await saveShopping(s); render(); }   // untick
+      else shoppingToPantry(s);                                          // tick -> offer to add to pantry
+    };
     row.querySelector('[data-a=del]').onclick = async () => { s.deleted = true; await saveShopping(s); render(); };
     app.appendChild(row);
   });
