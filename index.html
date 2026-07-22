@@ -1606,6 +1606,22 @@ function viewInv(app) {
     chips.appendChild(mk(l.id, `${l.name} (${live.filter(i => i.loc === l.id).length})`)));
   app.appendChild(chips);
 
+  /* Expiration-status filter (Module 2) — counts respect the shelf filter. */
+  const scoped = S.loc === 'all' ? live : live.filter(i => i.loc === S.loc);
+  const st = S.status || 'all';
+  const statusChips = el(`<div class="chips"></div>`);
+  const stat = (id, label) => {
+    const b = el(`<button class="chip" aria-pressed="${st === id}">${label}</button>`);
+    b.onclick = () => { S.status = id; render(); };
+    return b;
+  };
+  const cnt = f => scoped.filter(f).length;
+  statusChips.appendChild(stat('all', 'Any date'));
+  statusChips.appendChild(stat('expired', `🔴 Expired (${cnt(i => freshness(i).left < 0)})`));
+  statusChips.appendChild(stat('soon', `🟡 Soon (${cnt(i => { const l = freshness(i).left; return l >= 0 && l <= 3; })})`));
+  statusChips.appendChild(stat('fresh', `🟢 Fresh (${cnt(i => freshness(i).left > 3)})`));
+  app.appendChild(statusChips);
+
   /* At 500 items search isn't a nicety, it's the primary way in. */
   const sb = el(`<input id="q" placeholder="Search ${live.length} items…" value="${esc(S.q || '')}"
     style="margin-bottom:12px" autocomplete="off" enterkeyhint="search">`);
@@ -1627,6 +1643,8 @@ function paintList(box) {
   box.innerHTML = '';
   let live = S.items.filter(i => !i.deleted);
   if (S.loc !== 'all') live = live.filter(i => i.loc === S.loc);
+  const st = S.status || 'all';
+  if (st !== 'all') live = live.filter(i => { const l = freshness(i).left; return st === 'expired' ? l < 0 : st === 'soon' ? (l >= 0 && l <= 3) : l > 3; });
 
   /* searching: flat, ranked, capped */
   if (S.q?.trim()) {
