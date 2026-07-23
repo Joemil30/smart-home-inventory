@@ -1215,16 +1215,20 @@ async function visionMatch(b64, mime, mode) {
    into readable names and tag a category (which is what auto-sets the
    expiry date downstream — no dates ever get typed or photographed). */
 async function visionReceipt(b64, mime) {
-  const prompt = `This is a photo of a grocery store receipt. List only the actual food and grocery PRODUCTS purchased.
+  const prompt = `You are reading a photo of a grocery store receipt. Work top to bottom, ONE LINE AT A TIME, and extract every food/grocery PRODUCT line.
 
-Expand common receipt abbreviations into clear names (e.g. "KS ORG WHL MLK" -> "Kirkland Organic Whole Milk", "BNLS CHKN BRST" -> "Boneless Chicken Breast", "GRND BF 93/7" -> "Ground Beef 93/7").
+READING RULES:
+- Each product line usually has an item description on the left and a price on the right. Use the price column to tell where one item ends and the next begins.
+- Expand receipt shorthand into clear, real product names: "KS ORG WHL MLK" -> "Kirkland Organic Whole Milk", "BNLS CHKN BRST" -> "Boneless Chicken Breast", "GRND BF 93/7" -> "Ground Beef 93/7", "BANANA" -> "Bananas".
+- Quantity: if a line shows "2 @ 3.99" or "QTY 3" or a leading count, use that number; otherwise 1. Weighted items (e.g. "0.94 LB") are quantity 1.
+- If unsure of a faint character, choose the most likely real grocery product; do not invent items that aren't there.
 
-IGNORE everything that is not a purchasable food/household product: store name and address, phone, date/time, cashier, member number, subtotal, tax, total, tender, change, cash, card, savings, coupons, discounts, and bag fees.
+IGNORE everything that is not a purchasable food/household product: store name/address/phone, date/time, cashier, register, member/account number, subtotal, tax, total, balance, tender, change, cash, credit/debit, card digits, AID/auth, savings, coupons, discounts, loyalty points, and bag/bottle fees.
 
-For each product pick the best category from this list:
+For each product pick the best category from this list (use "other" if unsure):
 ${CATS.join(', ')}
 
-Give the quantity if the receipt shows one (else 1). If a printed expiration or "best by" date appears for an item, return it in "expiry" as YYYY-MM-DD; otherwise omit it (do not guess).`;
+If a printed expiration or "best by" date appears for an item, return it in "expiry" as YYYY-MM-DD; otherwise omit it (never guess a date).`;
   const schema = { type: 'OBJECT', properties: { found: { type: 'ARRAY', items: { type: 'OBJECT', properties: {
     name: { type: 'STRING' }, cat: { type: 'STRING' }, count: { type: 'INTEGER' }, expiry: { type: 'STRING' }
   }, required: ['name', 'cat'] } } }, required: ['found'] };
@@ -1400,6 +1404,46 @@ function downscaleImage(file, max = 240) {
     img.src = URL.createObjectURL(file);
   });
 }
+/* Receipt pre-processing — this is what makes the reader accurate. Phone
+   photos of thermal receipts are big, low-contrast and slightly skewed. We
+   scale to a legible size, convert to grayscale and stretch the contrast so
+   faint ink becomes crisp black-on-white before the model ever sees it. */
+function prepReceipt(file, max = 1600) {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.onload = () => {
+      const s = Math.min(1, max / Math.max(img.width, img.height));
+      const w = Math.max(1, Math.round(img.width * s)), h = Math.max(1, Math.round(img.height * s));
+      const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+      const ctx = cv.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(img.src);
+      try {
+        const im = ctx.getImageData(0, 0, w, h), d = im.data;
+        // 1st pass: grayscale + gather luminance range
+        let lo = 255, hi = 0;
+        for (let i = 0; i < d.length; i += 4) {
+          const g = (d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11) | 0;
+          d[i] = d[i + 1] = d[i + 2] = g;
+          if (g < lo) lo = g; if (g > hi) hi = g;
+        }
+        // 2nd pass: contrast stretch (ignore the extreme 2% so specular dots don't skew it)
+        const span = Math.max(1, (hi - lo) * 0.96);
+        const off = lo + (hi - lo) * 0.02;
+        for (let i = 0; i < d.length; i += 4) {
+          let v = ((d[i] - off) / span) * 255;
+          v = v < 0 ? 0 : v > 255 ? 255 : v;
+          d[i] = d[i + 1] = d[i + 2] = v;
+        }
+        ctx.putImageData(im, 0, 0);
+        res({ b64: cv.toDataURL('image/jpeg', 0.9).split(',')[1], mime: 'image/jpeg' });
+      } catch (e) { rej(e); }
+    };
+    img.onerror = () => { URL.revokeObjectURL(img.src); rej(new Error('Could not read that image')); };
+    img.src = URL.createObjectURL(file);
+  });
+}
+
 async function setItemPhoto(it, file) {
   try {
     const url = await downscaleImage(file);
@@ -1572,11 +1616,11 @@ function dateSheet(it) {
 /* ---------------- view: inventory ---------------- */
 const norm = s => String(s).toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
 
-/* ---------------- typo-tolerant ("smart") search ----------------
-   No AI needed — that would be slow and burn quota. This is the same
-   kind of fuzzy matching a good search box uses: normalise, match by
-   token, and forgive small spelling mistakes with edit distance.
-   So "yoghrt", "spinch", "chedar", "milkk" all still find their item. */
+/* ---------------- smart search ----------------
+   The things that make Google's search box feel smart, done locally so
+   it's instant and offline: forgive typos (edit distance), ignore
+   plurals (stemming), and understand common grocery synonyms
+   ("pop"→soda, "scallions"→green onion, "aubergine"→eggplant). */
 function editDistance(a, b) {
   const m = a.length, n = b.length;
   if (!m) return n; if (!n) return m;
@@ -1589,7 +1633,39 @@ function editDistance(a, b) {
   }
   return prev[n];
 }
-// how close two single words are, 0..1 (1 = identical). Forgiving of typos.
+// singular/plural + common endings so "tomatoes"=="tomato", "eggs"=="egg"
+function stem(w) {
+  if (w.length <= 3) return w;
+  if (w.endsWith('ies')) return w.slice(0, -3) + 'y';
+  if (w.endsWith('ves')) return w.slice(0, -3) + 'f';
+  if (w.endsWith('oes')) return w.slice(0, -2);
+  if (/(ches|shes|sses|xes|zes)$/.test(w)) return w.slice(0, -2);
+  if (w.endsWith('s') && !w.endsWith('ss') && !w.endsWith('us') && !w.endsWith('is')) return w.slice(0, -1);
+  return w;
+}
+// grocery synonyms — each group collapses to its first term
+const SYN = [
+  ['soda', 'pop', 'soft drink', 'cola'], ['scallion', 'green onion', 'spring onion'],
+  ['cilantro', 'coriander'], ['eggplant', 'aubergine'], ['zucchini', 'courgette'],
+  ['chickpea', 'garbanzo'], ['shrimp', 'prawn', 'prawns'], ['arugula', 'rocket'],
+  ['bell pepper', 'capsicum', 'sweet pepper'], ['ground beef', 'minced beef', 'beef mince', 'hamburger meat'],
+  ['powdered sugar', 'confectioners sugar', 'icing sugar'], ['sparkling water', 'seltzer', 'club soda', 'soda water'],
+  ['green bean', 'string bean'], ['tomato sauce', 'marinara', 'pasta sauce'], ['peanut butter', 'pb'],
+  ['soy sauce', 'shoyu'], ['corn', 'maize'], ['garbanzo bean', 'chickpea'], ['heavy cream', 'double cream'],
+  ['ground turkey', 'minced turkey'], ['bell peppers', 'peppers'], ['oatmeal', 'porridge', 'oats'],
+];
+// normalise -> stem every word -> collapse synonym phrases to their canonical
+// form, so "green onions" and "scallions" and "scallion" all become one thing.
+function canon(s) {
+  const stemmed = arr => arr.split(' ').filter(Boolean).map(stem).join(' ');
+  let t = ' ' + stemmed(norm(s)) + ' ';
+  for (const g of SYN) {
+    const target = ' ' + stemmed(g[0]) + ' ';
+    for (let k = 1; k < g.length; k++) t = t.split(' ' + stemmed(g[k]) + ' ').join(target);
+  }
+  return t.trim();
+}
+// how close two single (already stemmed) words are, 0..1
 function wordScore(q, w) {
   if (q === w) return 1;
   if (w.startsWith(q) || q.startsWith(w)) return 0.92;
@@ -1599,14 +1675,15 @@ function wordScore(q, w) {
   const d = editDistance(q, w);
   return d <= tol ? 1 - d / Math.max(q.length, w.length) : 0;
 }
-// overall score of a query against a piece of text, 0..1. Every query word
-// must find a home in the text, or it's not a match.
+// overall relevance of a query against a piece of text, 0..1
 function fuzzyScore(query, text) {
-  const q = norm(query), t = norm(text);
+  const q = canon(query), t = canon(text);
   if (!q) return 1;
   if (t === q) return 1;
-  if (t.includes(q)) return 0.9;
-  const qtok = q.split(' ').filter(Boolean), ttok = t.split(' ').filter(Boolean);
+  if ((' ' + t + ' ').includes(' ' + q + ' ')) return 0.95;
+  if (t.includes(q)) return 0.88;
+  const qtok = q.split(' ').filter(Boolean).map(stem);
+  const ttok = t.split(' ').filter(Boolean).map(stem);
   if (!qtok.length || !ttok.length) return 0;
   let total = 0;
   for (const qt of qtok) {
@@ -1615,7 +1692,7 @@ function fuzzyScore(query, text) {
     if (best === 0) return 0;                         // this query word matched nothing
     total += best;
   }
-  return (total / qtok.length) * 0.85;
+  return (total / qtok.length) * 0.9;
 }
 const fuzzyHit = (query, text, min = 0.45) => fuzzyScore(query, text) >= min;
 
@@ -2562,31 +2639,47 @@ async function addReceiptItems(items, sel) {
 async function receiptFlow(file) {
   const dlg = document.getElementById('dlg');
   dlg.innerHTML = `<h1 style="margin:0 0 12px"><span class="spin"></span> Reading receipt…</h1>
-    <p class="note">Pulling the items off your receipt — one photo, the whole trip.</p>`;
+    <p class="note">Sharpening the photo and pulling the items off — one photo, the whole trip.</p>`;
   dlg.showModal();
   try {
-    const { b64, mime } = await toB64(file);
-    const found = await visionReceipt(b64, mime);
+    let payload;
+    try { payload = await prepReceipt(file); }        // sharpen for accuracy; fall back to raw if it fails
+    catch (e) { payload = await toB64(file); }
+    const found = await visionReceipt(payload.b64, payload.mime);
     if (!found.length) {
       dlg.innerHTML = `<h1 style="margin:0 0 10px">Nothing readable</h1>
-        <p class="note" style="margin-bottom:14px">Couldn't pull items off that photo. Try a flatter, brighter shot of the whole receipt.</p>
+        <p class="note" style="margin-bottom:14px">Couldn't pull items off that photo. Lay the receipt flat on a dark surface, fill the frame, and avoid glare — then try again.</p>
         <button class="btn ghost" onclick="document.getElementById('dlg').close()">Close</button>`;
       return;
     }
+    const catOpts = sel => CATS.map(c => `<option value="${c}"${c === sel ? ' selected' : ''}>${esc(CAT_LABEL(c))}</option>`).join('');
     dlg.innerHTML = `<div class="eyebrow">From your receipt</div>
       <h1 style="margin:6px 0 6px">Found ${found.length}</h1>
-      <p class="note" style="margin:0 0 12px">Untick anything that isn't food. <b>Expiry dates are set automatically by type</b> — no typing.</p>
-      ${found.map((f, i) => `<label style="display:flex;gap:10px;align-items:center;margin-bottom:9px;font-family:var(--mono);font-size:13px">
-        <input type="checkbox" checked data-i="${i}" style="width:19px;height:19px;flex:0 0 auto">
-        <span style="flex:1;min-width:0">${esc(f.name)} <span style="color:var(--vapor-dim)">×${f.count || 1}</span></span>
-        <span class="tag">${esc(CAT_LABEL(CATS.includes(f.cat) ? f.cat : 'other'))}</span></label>`).join('')}
-      <label style="margin-top:6px"><span class="lbl">Put them on</span><select id="loc">
+      <p class="note" style="margin:0 0 12px">Check the reads — <b>tap any name to fix a typo</b>, tweak the count, untick non-food. Expiry is set automatically by type.</p>
+      <div id="rlist">${found.map((f, i) => `<div class="card" data-row="${i}" style="padding:10px;margin-bottom:8px;display:flex;gap:9px;align-items:center">
+        <input type="checkbox" checked data-i="${i}" style="width:20px;height:20px;flex:0 0 auto">
+        <div style="flex:1;min-width:0">
+          <input class="rnm" data-i="${i}" value="${esc(f.name)}" style="padding:7px 9px;font-size:14px;font-weight:600;margin-bottom:5px">
+          <div style="display:flex;gap:6px">
+            <select class="rcat" data-i="${i}" style="flex:1;padding:6px 8px;font-size:12px">${catOpts(CATS.includes(f.cat) ? f.cat : 'other')}</select>
+            <input class="rqty" data-i="${i}" type="number" min="1" value="${f.count || 1}" style="width:60px;padding:6px 8px;font-size:12px" aria-label="Quantity">
+          </div>
+        </div></div>`).join('')}</div>
+      <label style="margin-top:2px"><span class="lbl">Put them on</span><select id="loc">
         <option value="auto" selected>Auto — by food type</option>
         ${S.household.locations.map(l => `<option value="${l.id}">${esc(l.name)}</option>`).join('')}</select></label>
       <button class="btn cold" data-a="go">Add to inventory</button>
       <button class="btn ghost" data-a="c" style="margin-top:8px;border:none;color:var(--vapor)">Cancel</button>`;
     dlg.querySelector('[data-a=go]').onclick = async () => {
-      const picks = [...dlg.querySelectorAll('input:checked')].map(c => found[+c.dataset.i]);
+      const picks = [...dlg.querySelectorAll('#rlist input[type=checkbox]:checked')].map(c => {
+        const i = +c.dataset.i;
+        return {
+          name: (dlg.querySelector(`.rnm[data-i="${i}"]`).value || found[i].name).trim(),
+          cat: dlg.querySelector(`.rcat[data-i="${i}"]`).value,
+          count: parseInt(dlg.querySelector(`.rqty[data-i="${i}"]`).value) || 1,
+          expiry: found[i].expiry,
+        };
+      }).filter(p => p.name);
       const added = await addReceiptItems(picks, dlg.querySelector('#loc').value);
       toast(`${added.length} added from receipt`);
       if (!verifyNudge(added)) { dlg.close(); render(); }   // nudge replaces the sheet when there's something risky to check
