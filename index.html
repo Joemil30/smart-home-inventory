@@ -1656,14 +1656,23 @@ const SYN = [
 ];
 // normalise -> stem every word -> collapse synonym phrases to their canonical
 // form, so "green onions" and "scallions" and "scallion" all become one thing.
+// Memoised: the same item names get canonicalised on every list render, so
+// caching keeps search + the shopping in-stock badge instant even with 500 items.
+const _canonCache = new Map();
 function canon(s) {
+  const key = String(s ?? '');
+  const hit = _canonCache.get(key);
+  if (hit !== undefined) return hit;
   const stemmed = arr => arr.split(' ').filter(Boolean).map(stem).join(' ');
-  let t = ' ' + stemmed(norm(s)) + ' ';
+  let t = ' ' + stemmed(norm(key)) + ' ';
   for (const g of SYN) {
     const target = ' ' + stemmed(g[0]) + ' ';
     for (let k = 1; k < g.length; k++) t = t.split(' ' + stemmed(g[k]) + ' ').join(target);
   }
-  return t.trim();
+  t = t.trim();
+  if (_canonCache.size > 3000) _canonCache.clear();
+  _canonCache.set(key, t);
+  return t;
 }
 // how close two single (already stemmed) words are, 0..1
 function wordScore(q, w) {
@@ -2894,40 +2903,45 @@ function renderSyncCard(sc) {
 
 /* ---------------- view: shopping list ---------------- */
 function viewShopping(app) {
-  const list = S.shopping.filter(s => !s.deleted)
-    .sort((a, b) => (a.done ? 1 : 0) - (b.done ? 1 : 0) || (b.updatedAt || 0) - (a.updatedAt || 0));
-
+  // The input row is built ONCE and stays mounted; only the list below
+  // repaints on changes. That keeps the Add button instant and never steals
+  // focus or drops a keystroke mid-type.
   const add = el(`<div class="row" style="margin-bottom:12px">
     <input id="sadd" placeholder="Add an item…" autocomplete="off" enterkeyhint="done" style="flex:1">
     <button class="btn cold" data-a="add" style="width:auto;padding:0 18px">Add</button></div>`);
+  const inp = add.querySelector('#sadd');
+  const listBox = el(`<div id="shoplist"></div>`);
+
+  let adding = false;
   const doAdd = async () => {
-    const inp = add.querySelector('#sadd'); const v = inp.value.trim();
-    if (!v) return;
-    const have = itemInStock(v);
-    if (have) {   // duplicate-purchase guard
-      inp.value = '';
-      const dlg = document.getElementById('dlg');
-      dlg.innerHTML = `<div class="eyebrow">Heads up</div><h1 style="margin:6px 0 10px">Already in your pantry</h1>
-        <p class="note" style="margin:0 0 14px">You already have <b>${have}</b> of “${esc(v)}” in the house. Add it to the list anyway?</p>
-        <button class="btn cold" data-a="yes">Add anyway</button>
-        <button class="btn ghost" data-a="no" style="margin-top:8px;border:none;color:var(--vapor)">Never mind</button>`;
-      dlg.querySelector('[data-a=yes]').onclick = async () => { dlg.close(); await addToList(v); render(); };
-      dlg.querySelector('[data-a=no]').onclick = () => dlg.close();
-      dlg.showModal();
-      return;
-    }
-    await addToList(v); render();
-    setTimeout(() => document.getElementById('sadd')?.focus(), 0);
+    const v = inp.value.trim();
+    if (!v || adding) return;
+    adding = true;
+    inp.value = '';                       // clear immediately — feels instant
+    try {
+      const existed = S.shopping.some(s => !s.deleted && !s.done && norm(s.name) === norm(v));
+      await addToList(v);                 // dedup handled inside; never blocks on the network
+      paintShopping(listBox);             // repaint just the list, not the whole app
+      if (!existed) { const have = itemInStock(v); if (have) toast(`Added — heads up, you have ${have} in the pantry`); }
+    } finally { adding = false; inp.focus(); }
   };
   add.querySelector('[data-a=add]').onclick = doAdd;
-  add.querySelector('#sadd').onkeydown = e => { if (e.key === 'Enter') doAdd(); };
+  inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); doAdd(); } };
   app.appendChild(add);
 
   if (!SYNC.configured())
     app.appendChild(el(`<div class="note" style="margin:0 0 12px">This list is on this phone only. Turn on <b>Setup → Family sync</b> and the whole family shares one list.</div>`));
 
+  app.appendChild(listBox);
+  paintShopping(listBox);
+}
+
+function paintShopping(box) {
+  box.innerHTML = '';
+  const list = S.shopping.filter(s => !s.deleted)
+    .sort((a, b) => (a.done ? 1 : 0) - (b.done ? 1 : 0) || (b.updatedAt || 0) - (a.updatedAt || 0));
   if (!list.length) {
-    app.appendChild(el(`<div class="empty"><div class="big">List is empty</div>
+    box.appendChild(el(`<div class="empty"><div class="big">List is empty</div>
       <div class="sub">Add what you need. Each line shows if you <b>already have it</b> in the house, so nobody double-buys.</div></div>`));
     return;
   }
@@ -2942,16 +2956,16 @@ function viewShopping(app) {
       <div class="act"><button data-a="del" aria-label="Remove ${esc(s.name)}">×</button></div>
     </div>`);
     row.querySelector('[data-a=chk]').onclick = async () => {
-      if (s.done) { s.done = false; await saveShopping(s); render(); }   // untick
-      else shoppingToPantry(s);                                          // tick -> offer to add to pantry
+      if (s.done) { s.done = false; await saveShopping(s); paintShopping(box); }   // untick
+      else shoppingToPantry(s);                                                    // tick -> offer to add to pantry
     };
-    row.querySelector('[data-a=del]').onclick = async () => { s.deleted = true; await saveShopping(s); render(); };
-    app.appendChild(row);
+    row.querySelector('[data-a=del]').onclick = async () => { s.deleted = true; await saveShopping(s); paintShopping(box); };
+    box.appendChild(row);
   });
   if (list.some(s => s.done)) {
     const clr = el(`<button class="btn ghost" style="margin-top:8px">Clear checked-off</button>`);
-    clr.onclick = async () => { for (const s of list.filter(x => x.done)) { s.deleted = true; await saveShopping(s); } render(); };
-    app.appendChild(clr);
+    clr.onclick = async () => { for (const s of list.filter(x => x.done)) { s.deleted = true; await saveShopping(s); } paintShopping(box); };
+    box.appendChild(clr);
   }
 }
 
