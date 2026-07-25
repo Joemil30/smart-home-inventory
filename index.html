@@ -934,7 +934,14 @@ async function learnProduct(p) {
    (OpenRouter's free models are the no-Google fallback). Same gen(parts,
    schema) signature everywhere; only the internals branch. */
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const verNum = id => { const m = String(id).match(/(\d+\.\d+)/); return m ? parseFloat(m[1]) : 0; };
+/* "gemini-3-flash" -> 3, "gemini-2.5-flash" -> 2.5, "gemini-1.5-flash" -> 1.5.
+   Newer families dropped the minor version, so a plain \d+\.\d+ match scored
+   them 0 and sorted the NEWEST model dead last — which is how this app kept
+   defaulting to a discontinued model with no free quota. */
+const verNum = id => {
+  const m = String(id).match(/gemini-(\d+)(?:[.-](\d+))?/i) || String(id).match(/(\d+)(?:\.(\d+))?/);
+  return m ? parseFloat(m[1]) + (m[2] ? parseFloat('0.' + m[2]) : 0) : 0;
+};
 const retryDelayMs = msg => { const m = String(msg).match(/retry in ([\d.]+)\s*s/i) || String(msg).match(/retryDelay["'\s:=]+([\d.]+)s/i); return m ? Math.ceil(parseFloat(m[1]) * 1000) : null; };
 const onlyJson = t => { const s = t.indexOf('{'), a = t.indexOf('['); const st = s < 0 ? a : (a < 0 ? s : Math.min(s, a)); if (st < 0) return t; const e = Math.max(t.lastIndexOf('}'), t.lastIndexOf(']')); return e > st ? t.slice(st, e + 1) : t.slice(st); };
 
@@ -961,22 +968,79 @@ const G = {
       .map(m => ({ id: m.name.replace('models/', ''), label: m.displayName }));
   },
 
-  /* pick the best default: newest live Flash for Gemini; a free vision model for OpenRouter */
-  pick(models) {
+  /* "limit: 0" means the model exists but grants this key no free quota —
+     discontinued, or paid-tier only. It reads like "you're out of tokens",
+     but nothing was ever spent. Worth saying plainly in the UI. */
+  _zeroQuota: msg => /limit:?\s*0\b|quota_limit_value["'\s:]*["']?0\b/i.test(String(msg)),
+
+  /* Ranked shortlist, best first. Flash carries the free vision tier; Flash-Lite
+     is the fallback (lower quality, but the most generous daily allowance). */
+  candidates(models) {
     if (G.provider() === 'openai') {
-      return (models.find(m => /:free/i.test(m.id) && /(vision|-vl|gemini|llava|qwen.*vl|llama.*(vision|scout|maverick)|pixtral|gemma)/i.test(m.id))
-        || models.find(m => /:free/i.test(m.id)) || models[0])?.id;
+      const free = models.filter(m => /:free/i.test(m.id));
+      const vis = free.filter(m => /(vision|-vl|gemini|llava|qwen.*vl|llama.*(vision|scout|maverick)|pixtral|gemma)/i.test(m.id));
+      return [...vis, ...free.filter(m => !vis.includes(m)), ...models.filter(m => !free.includes(m))].map(m => m.id);
     }
-    const flash = models.filter(m => /flash/i.test(m.id) && !/lite|image|preview|thinking|8b/i.test(m.id) && !G._dead(m.id));
-    flash.sort((a, b) => verNum(b.id) - verNum(a.id));
-    return (flash[0] || models.find(m => !G._dead(m.id)) || models[0])?.id;
+    const live = models.filter(m => !G._dead(m.id) && !/image|preview|thinking|8b|embedding/i.test(m.id));
+    const newest = a => a.sort((x, y) => verNum(y.id) - verNum(x.id));
+    const flash = newest(live.filter(m => /flash/i.test(m.id) && !/lite/i.test(m.id)));
+    const lite = newest(live.filter(m => /flash/i.test(m.id) && /lite/i.test(m.id)));
+    const rest = newest(live.filter(m => !/flash/i.test(m.id)));
+    return [...flash, ...lite, ...rest].map(m => m.id);
   },
 
-  /* heal a stale/dead saved Gemini model at boot without any user action */
+  pick(models) { return G.candidates(models)[0]; },
+
+  /* The only way to know a model really works is to spend one tiny call on it.
+     A model can sit in the /models list and still answer "limit: 0". Better to
+     find that out here, in Settings, than halfway through scanning a receipt. */
+  async probe(id) {
+    try {
+      let r;
+      if (G.provider() === 'openai') {
+        r = await fetch(`${G.base()}/chat/completions`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${G.key()}`, 'HTTP-Referer': location.origin, 'X-Title': 'ShelfLife' },
+          body: JSON.stringify({ model: id, messages: [{ role: 'user', content: 'hi' }], max_tokens: 1 }),
+        });
+      } else {
+        r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${id}:generateContent?key=${G.key()}`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: 'hi' }] }], generationConfig: { maxOutputTokens: 1 } }),
+        });
+      }
+      if (r.ok) return { ok: true };
+      const j = await r.json().catch(() => ({}));
+      const msg = j.error?.message || `HTTP ${r.status}`;
+      return { ok: false, msg, status: r.status, zero: G._zeroQuota(msg) };
+    } catch (e) { return { ok: false, msg: e.message || 'network error' }; }
+  },
+
+  /* Walk the shortlist, one tiny call each, and settle on the first model that
+     actually answers. This is what makes "it hit the limit before I sent
+     anything" impossible to reach by accident. */
+  async pickWorking(models, onStep) {
+    const list = G.candidates(models).slice(0, 6);
+    if (!list.length) throw new Error('This key returned no usable models.');
+    let last = '';
+    for (const id of list) {
+      if (onStep) onStep(id);
+      const r = await G.probe(id);
+      if (r.ok) return id;
+      last = r.zero ? `${id} gives this key no free quota.` : r.msg;
+    }
+    throw new Error(last || 'No model on this key answered.');
+  },
+
+  /* Heal a missing or known-dead saved model at boot, with no user action.
+     Only fires when the app is already broken, so the probe calls are the cost
+     of un-breaking someone rather than a tax on every launch. Once per load. */
+  _healed: false,
   async ensureModel() {
-    if (G.provider() !== 'gemini' || !G.key()) return;
-    if (G.model() && !G._dead(G.model())) return;
-    try { const id = G.pick(await G.models()); if (id) await G.setModel(id); } catch (e) {}
+    if (G._healed || !G.key()) return;
+    if (G.model() && !(G.provider() === 'gemini' && G._dead(G.model()))) return;
+    G._healed = true;
+    try { const id = await G.pickWorking(await G.models()); if (id) await G.setModel(id); } catch (e) {}
   },
 
   async gen(parts, jsonSchema) {
@@ -995,7 +1059,14 @@ const G = {
         const wait = retryDelayMs(msg);
         if (wait && wait <= 6000) { await sleep(wait + 300); continue; }
       }
-      if (r.status === 429) throw new Error(msg + '\n\nTip: your free quota is spent or the model is discontinued. Wait a bit, or Setup → pick another model / switch to OpenRouter.');
+      if (r.status === 429) {
+        // "limit: 0" is not "slow down" — it's "this model will never work on
+        // this key". Sending someone off to wait out a cooldown that doesn't
+        // exist is how you convince them their free key is worthless.
+        if (G._zeroQuota(msg)) throw new Error(
+          `${G.model()} gives your key no free quota — it's discontinued or paid-only. Nothing of yours was used up.\n\nSettings → "Check my key & find a model that works".`);
+        throw new Error(msg + "\n\nThat's your real daily free quota, now spent. It resets on Google's clock — or Settings → switch model.");
+      }
       throw new Error(msg);
     }
   },
@@ -2981,31 +3052,59 @@ function viewSet(app) {
       <button class="chip" data-p="openai" aria-pressed="${prov === 'openai'}">OpenRouter (free)</button>
     </div>
     <div class="note" style="margin:0 0 12px">${prov === 'gemini'
-      ? `Free key from <b>aistudio.google.com</b>. If scanning says "quota" or "limit: 0", your model was discontinued — tap <b>Fetch models</b> to grab a live one.`
-      : `Free key from <b>openrouter.ai → Keys</b>. Then pick a model ending in <b>:free</b>. No Google account needed.`}</div>
+      ? `Free key from <b>aistudio.google.com</b> → Get API key. No card needed. <b>Leave billing off</b> on the Google Cloud project — switching it on removes the free tier entirely. The button below spends one tiny test call per model until it finds one that genuinely answers, so "limit: 0" can't ambush you mid-scan.`
+      : `Free key from <b>openrouter.ai → Keys</b>. Models ending in <b>:free</b> cost nothing. No Google account needed.`}</div>
     ${prov === 'openai' ? `<label><span class="lbl">API base URL</span><input id="ob" value="${esc(c.openaiBase || 'https://openrouter.ai/api/v1')}"></label>` : ''}
     <label><span class="lbl">API key</span><input id="gk" type="password" value="${esc((prov === 'openai' ? c.openaiKey : c.geminiKey) || '')}" placeholder="${prov === 'openai' ? 'sk-or-…' : 'AIza…'}"></label>
-    <button class="btn ghost" data-a="load">Fetch models this key can use</button>
+    <button class="btn ghost" data-a="load">Check my key &amp; find a model that works</button>
     <div id="ms" style="margin-top:12px">${G.model() ? `<div class="note">Using <b class="code">${esc(G.model())}</b></div>` : ''}</div>
   </div>`);
   card.querySelectorAll('[data-p]').forEach(b => b.onclick = async () => { S.cfg.aiProvider = b.dataset.p; await saveCfg(); render(); });
+
+  /* Draw the model picker with a live Test button. Selecting a model by hand
+     is allowed, but we verify it — a model can be listed and still be dead. */
+  const drawModels = (box, ms) => {
+    const cur = G.model();
+    box.innerHTML = `<label><span class="lbl">Model${prov === 'openai' ? ' — the :free ones cost nothing' : ' — Flash tiers are the free ones'}</span>
+      <select id="mm">${ms.map(m => `<option value="${esc(m.id)}" ${m.id === cur ? 'selected' : ''}>${esc(m.id)}</option>`).join('')}</select></label>
+      <button class="btn ghost" data-a="test" style="margin-top:6px">Test this model</button>
+      <div id="tr" style="margin-top:10px"></div>`;
+    const out = box.querySelector('#tr');
+    const test = async id => {
+      out.innerHTML = `<span class="spin"></span> <span class="note">Testing ${esc(id)}&hellip;</span>`;
+      const r = await G.probe(id);
+      out.innerHTML = r.ok
+        ? `<div class="note" style="color:var(--chill)"><b>✓ Working.</b> ${esc(id)} answered. You're set.</div>`
+        : `<div class="warn">${r.zero
+            ? `<b>${esc(id)} gives your key no free quota.</b> Nothing was used up — this model is discontinued or paid-only. Tap the button above to find a live one.`
+            : esc(r.msg)}</div>`;
+    };
+    box.querySelector('#mm').onchange = async e => { await G.setModel(e.target.value); test(e.target.value); };
+    box.querySelector('[data-a=test]').onclick = () => test(G.model() || box.querySelector('#mm').value);
+    return test;
+  };
+
   card.querySelector('[data-a=load]').onclick = async () => {
     if (prov === 'openai') { S.cfg.openaiBase = card.querySelector('#ob').value.trim() || 'https://openrouter.ai/api/v1'; S.cfg.openaiKey = card.querySelector('#gk').value.trim(); }
     else S.cfg.geminiKey = card.querySelector('#gk').value.trim();
     await saveCfg();
     const box = card.querySelector('#ms');
-    box.innerHTML = `<span class="spin"></span>`;
+    box.innerHTML = `<span class="spin"></span> <span class="note">Checking your key&hellip;</span>`;
     try {
       const ms = await G.models();
-      const cur = G.model();
-      box.innerHTML = `<label><span class="lbl">Model${prov === 'openai' ? ' — pick one ending in :free' : ' — Flash tiers are free'}</span>
-        <select id="mm">${ms.map(m => `<option value="${esc(m.id)}" ${m.id === cur ? 'selected' : ''}>${esc(m.id)}</option>`).join('')}</select></label>`;
-      box.querySelector('#mm').onchange = async e => { await G.setModel(e.target.value); toast('Model set'); };
-      if (!cur || (prov === 'gemini' && G._dead(cur)) || !ms.some(m => m.id === cur)) {
-        const id = G.pick(ms);
-        if (id) { await G.setModel(id); box.querySelector('#mm').value = id; toast('Picked ' + id); }
-      }
-    } catch (e) { box.innerHTML = `<div class="warn">${esc(e.message)}</div>`; }
+      // Don't just take the first plausible name — spend one tiny call per
+      // candidate until something actually answers, so the first real scan
+      // can't be the moment you discover the model was dead.
+      const id = await G.pickWorking(ms, t => {
+        box.innerHTML = `<span class="spin"></span> <span class="note">Testing ${esc(t)}&hellip;</span>`;
+      });
+      await G.setModel(id);
+      const test = drawModels(box, ms);
+      box.querySelector('#tr').innerHTML = `<div class="note" style="color:var(--chill)"><b>✓ Working.</b> Using <b class="code">${esc(id)}</b> — tested, real quota.</div>`;
+      toast('Ready — ' + id);
+    } catch (e) {
+      box.innerHTML = `<div class="warn">${esc(e.message)}</div>`;
+    }
   };
   app.appendChild(card);
 
