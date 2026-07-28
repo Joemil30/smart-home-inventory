@@ -8,7 +8,7 @@
    phone that already installed the app keeps serving the shell it cached
    until this string changes — if sw.js is byte-identical the browser never
    even re-registers, and shipped fixes silently never arrive. */
-const CACHE = 'stocked-v38';      // app shell — wiped on each version bump
+const CACHE = 'stocked-v39';      // app shell — wiped on each version bump
 // Deliberately still 'shelflife-' after the rename: this cache holds every
 // product thumbnail already downloaded. Renaming it would orphan the lot and
 // blank out photos for anyone offline.

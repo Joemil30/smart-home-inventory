@@ -4598,6 +4598,40 @@ function viewSet(app) {
   });
   app.appendChild(tc);
 
+  app.appendChild(el(`<h2 style="margin:22px 0 10px">App version</h2>`));
+  const vc = el(`<div class="card">
+    <div class="note" style="margin-bottom:10px">The app updates itself in the background and tells you when a new
+      version is ready. This is here so you can check on demand rather than wonder.</div>
+    <div class="note" id="vnow" style="margin-bottom:10px">&hellip;</div>
+    <button class="btn ghost" data-a="chk">${icon('refresh')}Check for updates</button>
+    <div id="vst" style="margin-top:10px"></div>
+    <div class="eyebrow" style="margin:18px 0 6px">Still on an old version?</div>
+    <div class="note" style="margin-bottom:9px">Throws away the stored copy of the app and downloads it fresh.
+      <b>Your pantry, lists, history and settings are untouched</b> — they're kept separately from the app itself.</div>
+    <button class="btn ghost" data-a="hard">Force a clean reinstall</button>
+  </div>`);
+  shellVersion().then(v => {
+    const n = vc.querySelector('#vnow');
+    n.innerHTML = v
+      ? `Installed: <b class="code">${esc(v)}</b>${navigator.onLine ? '' : ' · offline, so a check will have to wait'}`
+      : `Running straight from the web — nothing cached yet.`;
+  });
+  vc.querySelector('[data-a=chk]').onclick = () => checkForUpdate(vc.querySelector('#vst'));
+  vc.querySelector('[data-a=hard]').onclick = () => {
+    const dlg = document.getElementById('dlg');
+    dlg.innerHTML = `<div class="eyebrow">Clean reinstall</div>
+      <h1 style="margin:6px 0 10px">Download the app again?</h1>
+      <p class="note" style="margin:0 0 14px">This clears the stored copy of the app and fetches it fresh from the
+        server. <b>Nothing in your pantry, lists, meal plan or history is deleted</b> — that data lives in a separate
+        store this doesn't touch. You'll need a connection for the next few seconds.</p>
+      <button class="btn cold" data-a="go">Reinstall the app</button>
+      <button class="btn ghost" data-a="c" style="margin-top:8px;border:none;color:var(--vapor)">Cancel</button>`;
+    dlg.querySelector('[data-a=go]').onclick = () => { dlg.close(); hardRefresh(); };
+    dlg.querySelector('[data-a=c]').onclick = () => dlg.close();
+    dlg.showModal();
+  };
+  app.appendChild(vc);
+
   app.appendChild(el(`<h2 style="margin:22px 0 10px">Household</h2>`));
   const h = S.household;
   const hc = el(`<div class="card">
@@ -5225,6 +5259,66 @@ function render() {
    again. So: check on every launch, and when a genuinely newer worker takes
    over, say so and offer the reload rather than yanking the page out from
    under a half-typed item. */
+/* Report the shell version actually on this device, read from the cache the
+   worker installed — not a constant in the page, which would happily claim
+   a version the phone never received. That claim is the whole problem. */
+async function shellVersion() {
+  try {
+    const ks = await caches.keys();
+    const hit = ks.find(k => /^stocked-v\d+$/.test(k)) || ks.find(k => /-v\d+$/.test(k));
+    return hit ? hit.replace(/^.*?-(v\d+)$/, '$1') : null;
+  } catch (e) { return null; }
+}
+
+/* Ask the server whether there's a newer build, and say plainly which of the
+   two answers came back. Updates already install on their own; this exists
+   because "am I actually on the latest?" was unanswerable from the phone. */
+async function checkForUpdate(out) {
+  out.innerHTML = `<span class="spin"></span> <span class="note">Checking&hellip;</span>`;
+  if (!('serviceWorker' in navigator)) {
+    out.innerHTML = `<div class="note">This browser doesn't do background updates — reload the page to get the latest.</div>`;
+    return 'unsupported';
+  }
+  let reg = null;
+  try { reg = await navigator.serviceWorker.getRegistration(); } catch (e) {}
+  if (!reg) {
+    out.innerHTML = `<div class="note">Nothing cached yet, so there's nothing to update. Reloading&hellip;</div>`;
+    setTimeout(() => location.reload(), 800);
+    return 'none';
+  }
+  // Either signal means a newer worker turned up. Cap the wait so a dead
+  // network ends in an answer rather than a spinner that never resolves.
+  const appeared = new Promise(res => {
+    const hit = () => res(true);
+    reg.addEventListener('updatefound', hit, { once: true });
+    navigator.serviceWorker.addEventListener('controllerchange', hit, { once: true });
+    setTimeout(() => res(false), 8000);
+  });
+  try { await reg.update(); } catch (e) {}
+  if (await appeared) {
+    out.innerHTML = `<div class="note" style="color:var(--chill)"><b>New version found.</b> Installing, then reloading&hellip;</div>`;
+    setTimeout(() => location.reload(), 1500);
+    return 'updated';
+  }
+  const v = await shellVersion();
+  out.innerHTML = `<div class="note" style="color:var(--chill)"><b>&#10003; Up to date.</b>${v ? ` You're on <b class="code">${esc(v)}</b>.` : ''}</div>`;
+  return 'current';
+}
+
+/* The escape hatch: throw away the stored copy of the app and take it from
+   the server again. Deliberately leaves the image cache and IndexedDB alone —
+   the pantry, lists and history are not part of "the app" here, and losing
+   them to fix a stale build would be a terrible trade. */
+async function hardRefresh() {
+  try {
+    const ks = await caches.keys();
+    await Promise.all(ks.filter(k => k !== 'shelflife-img').map(k => caches.delete(k)));
+    const reg = await navigator.serviceWorker?.getRegistration();
+    if (reg) await reg.unregister();
+  } catch (e) {}
+  location.reload();
+}
+
 function registerSW() {
   if (!('serviceWorker' in navigator)) return;
   navigator.serviceWorker.register('sw.js').then(reg => {
