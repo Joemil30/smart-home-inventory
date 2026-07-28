@@ -53,7 +53,8 @@
   --shadow-sm:0 1px 2px rgba(18,50,30,.06);
   --shadow:0 1px 2px rgba(18,50,30,.05),0 6px 20px rgba(18,50,30,.06);
   --shadow-lg:0 10px 34px rgba(18,50,30,.12);
-  --shadow-fab:0 8px 22px rgba(18,161,80,.4);
+  /* Neutral, not a green halo. Coloured glow shadows read as a template. */
+  --shadow-fab:0 6px 16px rgba(18,50,30,.22);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0;background:var(--void);color:var(--frost);font-family:var(--sans);
@@ -66,9 +67,13 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--cold)}
 button:focus-visible{outline:2px solid var(--cold);outline-offset:2px}
 ::placeholder{color:var(--vapor-dim)}
 
-/* ---- type ---- */
-.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--vapor-dim);font-weight:600}
-.code{font-family:var(--mono);font-variant-numeric:tabular-nums}
+/* ---- type ----
+   Monospace is for DATA — barcodes, quantities, dates — where the tabular
+   figures do real work. Using it for labels ("3× · COSTCO") is a developer
+   habit that reads as a prototype, not a product. Labels are sans with tight
+   tracking, which is what shipped apps use. */
+.eyebrow{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--vapor-dim);font-weight:700}
+.code{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:.94em}
 h1{font-size:22px;font-weight:800;letter-spacing:-.02em;margin:0;line-height:1.15}
 h2{font-size:16px;font-weight:750;letter-spacing:-.01em;margin:0;color:var(--frost)}
 h3{font-size:15px;font-weight:700;margin:0;letter-spacing:-.01em}
@@ -96,7 +101,7 @@ nav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-
 nav button svg{width:23px;height:23px;stroke:currentColor;fill:none;stroke-width:1.7}
 nav button[aria-current="page"]{color:var(--cold)}
 nav button.fab svg{width:auto;height:24px;stroke:#fff;stroke-width:1.9;box-sizing:content-box;padding:13px;
-  background:linear-gradient(160deg,var(--cold),var(--cold-2));border-radius:50%;box-shadow:var(--shadow-fab);
+  background:var(--cold);border-radius:50%;box-shadow:var(--shadow-fab);
   margin-top:-20px;border:4px solid var(--void)}
 nav button.fab{color:var(--cold)}
 nav button.fab[aria-current="page"] svg{filter:brightness(1.05)}
@@ -104,7 +109,7 @@ nav button.fab[aria-current="page"] svg{filter:brightness(1.05)}
 /* ---- item row: photo, name, freshness rail + date stamp ---- */
 .item{position:relative;display:flex;align-items:center;gap:12px;background:var(--shelf);
   border:1px solid var(--rime);border-radius:var(--r);padding:11px 12px 11px 18px;margin-bottom:9px;
-  overflow:hidden;box-shadow:var(--shadow-sm)}
+  overflow:hidden}
 .item::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--rail,var(--vapor-dim))}
 .item .thumb{width:48px;height:48px;flex:0 0 auto;border-radius:12px;overflow:hidden;background:var(--fog);
   border:1px solid var(--rime);display:grid;place-items:center}
@@ -114,8 +119,8 @@ nav button.fab[aria-current="page"] svg{filter:brightness(1.05)}
 .item .body{flex:1;min-width:0}
 .item .nm{font-size:15px;font-weight:650;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .item .meta{display:flex;gap:8px;align-items:baseline;margin-top:3px}
-.stamp{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--rail,var(--vapor));font-weight:600;text-transform:uppercase}
-.qty{font-family:var(--mono);font-size:11px;color:var(--vapor);white-space:nowrap}
+.stamp{font-size:11.5px;letter-spacing:0;color:var(--rail,var(--vapor));font-weight:650}
+.qty{font-size:11.5px;color:var(--vapor);white-space:nowrap;font-variant-numeric:tabular-nums}
 .item .act{display:flex;gap:6px;flex-shrink:0}
 .item .act button{width:35px;height:35px;border:1px solid var(--rime-hi);border-radius:10px;
   display:grid;place-items:center;color:var(--vapor);font-size:17px;line-height:1;background:var(--shelf)}
@@ -127,11 +132,23 @@ nav button.fab[aria-current="page"] svg{filter:brightness(1.05)}
 .pips i.on{background:var(--rail,var(--cold))}
 
 /* ---- cards & buttons ---- */
-.card{background:var(--shelf);border:1px solid var(--rime);border-radius:var(--r);padding:16px;margin-bottom:11px;box-shadow:var(--shadow-sm)}
-.btn{background:linear-gradient(160deg,var(--cold),var(--cold-2));color:var(--ink);border-radius:var(--r-sm);padding:14px 16px;
-  font-size:14.5px;font-weight:750;letter-spacing:-.01em;width:100%;display:block;text-align:center;transition:transform .08s,filter .12s;box-shadow:0 4px 14px rgba(47,224,122,.2)}
+.card{background:var(--shelf);border:1px solid var(--rime);border-radius:var(--r);padding:16px;margin-bottom:11px}
+/* Flat fill, no gradient, no coloured glow. A green button that casts a green
+   shadow is a template signature — real buttons cast neutral shadows or none. */
+.btn{background:var(--cold);color:var(--ink);border-radius:var(--r-sm);padding:14px 16px;
+  font-size:14.5px;font-weight:700;letter-spacing:-.01em;width:100%;
+  display:flex;align-items:center;justify-content:center;gap:9px;
+  text-align:center;transition:transform .08s,filter .12s;box-shadow:none}
 .btn.ghost{background:var(--shelf);color:var(--frost);border:1.5px solid var(--rime-hi);box-shadow:none}
-.btn.cold{background:linear-gradient(160deg,var(--cold),var(--cold-2));color:var(--ink);box-shadow:0 4px 14px rgba(47,224,122,.22)}
+.btn.cold{background:var(--cold);color:var(--ink);box-shadow:none}
+.btn.danger{color:var(--spoil);border-color:#F0C9C6;background:var(--shelf)}
+/* Sheet menus read as a list of choices, so they left-align with the icon
+   acting as the bullet — the pattern every iOS/Android action sheet uses. */
+.btn.left{justify-content:flex-start;gap:12px;padding-left:15px}
+.btn.ghost.on{border-color:var(--cold);color:var(--cold);background:var(--cold-soft)}
+.btn.ghost.on .ico{fill:currentColor}
+.ico{flex:0 0 auto;display:block}
+.chip .ico,.sect .ico{margin-right:-1px}
 .btn.sm{padding:10px 12px;font-size:13px;border-radius:10px;width:auto}
 .btn:active{transform:translateY(1px)}
 .btn.cold:active{filter:brightness(.96)}
@@ -142,20 +159,26 @@ label .lbl{font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:up
 
 .chips{display:flex;gap:7px;overflow-x:auto;padding:2px 0 11px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .chips::-webkit-scrollbar{display:none}
-.chip{flex-shrink:0;font-size:12.5px;font-weight:600;padding:8px 14px;border-radius:999px;
-  border:1.5px solid var(--rime-hi);color:var(--vapor);white-space:nowrap;background:var(--shelf)}
+.chip{flex-shrink:0;font-size:12.5px;font-weight:650;padding:8px 14px;border-radius:999px;
+  border:1.5px solid var(--rime-hi);color:var(--vapor);white-space:nowrap;background:var(--shelf);
+  display:inline-flex;align-items:center;gap:5px}
 .chip[aria-pressed="true"]{background:var(--cold);color:var(--ink);border-color:var(--cold)}
 
-.empty{text-align:center;padding:60px 20px;color:var(--vapor-dim)}
-.empty .big{font-size:16px;font-weight:700;color:var(--frost);margin-bottom:6px}
-.empty .sub{font-size:13.5px;line-height:1.5;max-width:34ch;margin:0 auto}
+/* Quieter than the usual generated empty state: a muted icon at text scale,
+   one line of plain fact, and a single action if there is one. A 58px emoji
+   over two lines of encouragement is decoration where an instruction belongs. */
+.empty{text-align:center;padding:46px 20px;color:var(--vapor-dim)}
+.empty .ei{width:34px;height:34px;margin:0 auto 12px;color:var(--rime-hi)}
+.empty .ei svg{width:34px;height:34px;stroke-width:1.4}
+.empty .big{font-size:15.5px;font-weight:700;color:var(--frost);margin-bottom:5px;letter-spacing:-.01em}
+.empty .sub{font-size:13.5px;line-height:1.5;max-width:32ch;margin:0 auto}
 
 /* ---- home dashboard ---- */
 .greet{margin:2px 0 16px}
 .greet .hi{font-size:24px;font-weight:800;letter-spacing:-.03em}
 .greet .dt{font-size:13px;color:var(--vapor);font-weight:600;margin-top:2px}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:22px}
-.stat{background:var(--shelf);border:1px solid var(--rime);border-radius:var(--r);padding:14px 12px;text-align:center;box-shadow:var(--shadow-sm)}
+.stat{background:var(--shelf);border:1px solid var(--rime);border-radius:var(--r);padding:14px 12px;text-align:center}
 .stat .num{font-size:24px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1}
 .stat .lbl{font-size:10.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--vapor-dim);margin-top:6px}
 .section{margin-bottom:24px}
@@ -163,12 +186,12 @@ label .lbl{font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:up
 .section-head .more{font-size:13px;font-weight:650;color:var(--cold)}
 .hscroll{display:flex;gap:11px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin:0 calc(var(--pad)*-1);padding:2px var(--pad) 6px}
 .hscroll::-webkit-scrollbar{display:none}
-.foodcard{flex:0 0 118px;background:var(--shelf);border:1px solid var(--rime);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow-sm)}
+.foodcard{flex:0 0 118px;background:var(--shelf);border:1px solid var(--rime);border-radius:var(--r);overflow:hidden}
 .foodcard .top{height:80px;display:grid;place-items:center;background:var(--fog);font-size:38px}
 .foodcard .top img{width:100%;height:100%;object-fit:cover}
 .foodcard .lo{padding:9px 10px 11px}
 .foodcard .fn{font-size:13px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.01em}
-.foodcard .fd{font-family:var(--mono);font-size:10.5px;font-weight:600;margin-top:3px;letter-spacing:.03em}
+.foodcard .fd{font-size:11px;font-weight:650;margin-top:3px;letter-spacing:0}
 .qa{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
 .qa button{background:var(--shelf);border:1px solid var(--rime);border-radius:var(--r);padding:14px 6px 11px;
   display:flex;flex-direction:column;align-items:center;gap:7px;box-shadow:var(--shadow-sm)}
@@ -183,7 +206,7 @@ label .lbl{font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:up
 .pill.ok{background:var(--cold-soft);color:var(--cold)}
 
 /* ---- recipe cards ---- */
-.recipe-card{background:var(--shelf);border:1px solid var(--rime);border-radius:var(--r);overflow:hidden;margin-bottom:12px;box-shadow:var(--shadow-sm)}
+.recipe-card{background:var(--shelf);border:1px solid var(--rime);border-radius:var(--r);overflow:hidden;margin-bottom:12px}
 .recipe-card .banner{height:120px;display:flex;align-items:center;justify-content:center;font-size:46px;
   background:linear-gradient(150deg,var(--cold-soft),var(--shelf));position:relative}
 .recipe-card .banner.photo{background-size:cover;background-position:center;background-repeat:no-repeat}
@@ -192,7 +215,7 @@ label .lbl{font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:up
 .recipe-card .banner .badge.miss{color:#9a5a10}
 .recipe-card .rc-body{padding:14px 15px 15px}
 .recipe-card .rc-body h3{margin-bottom:4px}
-.recipe-card .rc-meta{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--vapor-dim);letter-spacing:.03em;margin-bottom:10px}
+.recipe-card .rc-meta{font-size:11.5px;font-weight:650;color:var(--vapor-dim);letter-spacing:0;margin-bottom:10px}
 .recipe-card .rc-act{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
 
 /* ---- tiles: the app's main visual unit ----
@@ -202,8 +225,11 @@ label .lbl{font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:up
    that a real shopping list doesn't turn into a mile of scrolling. */
 .tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:14px}
 .tiles.one{grid-template-columns:1fr}
+/* Flat surface + hairline. Elevation is a signal that something FLOATS above
+   the page — sheets, the FAB, a toast. When every card carries the same
+   shadow it stops meaning anything and just muddies the screen. */
 .tile{position:relative;background:var(--shelf);border:1px solid var(--rime);border-radius:var(--r);
-  overflow:hidden;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;text-align:left;width:100%}
+  overflow:hidden;display:flex;flex-direction:column;text-align:left;width:100%}
 .tile .tt{padding:11px 12px 9px}
 .tile .tn{font-size:15px;font-weight:750;letter-spacing:-.015em;line-height:1.25;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -220,8 +246,9 @@ label .lbl{font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:up
 .tile .tp img{width:100%;height:100%;object-fit:cover;display:block}
 .tile .tp .emoji{font-size:46px;line-height:1}
 .tiles.one .tp .emoji{font-size:64px}
-.tile .tb{position:absolute;top:8px;left:8px;font-size:10.5px;font-weight:750;padding:5px 9px;
-  border-radius:999px;background:rgba(255,255,255,.95);box-shadow:var(--shadow-sm);letter-spacing:.02em}
+.tile .tb{position:absolute;top:8px;left:8px;font-size:11px;font-weight:700;padding:5px 9px;
+  border-radius:999px;background:rgba(255,255,255,.94);letter-spacing:0;
+  box-shadow:0 1px 3px rgba(18,50,30,.16)}
 .tile .tc{display:flex;align-items:center;gap:9px;padding:11px 12px;border-top:1px solid var(--rime);
   font-size:13.5px;font-weight:700;color:var(--vapor);background:var(--shelf);width:100%}
 .tile .tc .box{width:24px;height:24px;border-radius:8px;border:2px solid var(--rime-hi);
@@ -242,10 +269,20 @@ label .lbl{font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:up
 .tile .tc .box.pop{animation:tpop .34s cubic-bezier(.2,.9,.3,1.35)}
 @keyframes tflash{from{background:var(--cold-soft)}to{background:var(--shelf)}}
 .tile.added{animation:tflash .9s ease-out}
-@media (prefers-reduced-motion:reduce){.tile .tc .box.pop,.tile.added{animation:none}}
-.tile .tx{position:absolute;top:8px;right:8px;width:29px;height:29px;border-radius:999px;
-  background:rgba(255,255,255,.95);box-shadow:var(--shadow-sm);display:grid;place-items:center;
-  font-size:16px;color:var(--vapor);line-height:1}
+/* Checked items leave rather than teleport into another section. Without the
+   transition the list just silently rearranges and you lose your place. */
+@keyframes tleave{to{opacity:0;transform:scale(.94)}}
+.tile.leaving{animation:tleave .22s ease-in forwards;pointer-events:none}
+.tiles{transition:none}
+@media (prefers-reduced-motion:reduce){
+  .tile .tc .box.pop,.tile.added,.tile.leaving{animation:none}
+  .tile.leaving{opacity:0}
+}
+/* 36px, not 29 — this sits on a photo that is itself tappable, so a near
+   miss used to open a file picker instead of doing what you asked. */
+.tile .tx{position:absolute;top:7px;right:7px;width:36px;height:36px;border-radius:999px;
+  background:rgba(255,255,255,.94);box-shadow:0 1px 3px rgba(18,50,30,.16);
+  display:grid;place-items:center;color:var(--vapor);line-height:1}
 
 /* status tags — the "you're out of this" signal, read at a glance */
 .tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:750;
@@ -259,10 +296,10 @@ label .lbl{font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:up
 /* section headings, so Completed reads as a place rather than a leftover */
 .sect{display:flex;align-items:baseline;justify-content:space-between;margin:22px 0 10px}
 .sect h3{font-size:15px;font-weight:800;letter-spacing:-.015em}
-.sect .n{font-family:var(--mono);font-size:11px;color:var(--vapor);font-weight:600}
+.sect .n{font-size:12px;color:var(--vapor-dim);font-weight:650;font-variant-numeric:tabular-nums}
 
 /* ---- meal planner ---- */
-.day{background:var(--shelf);border:1px solid var(--rime);border-radius:var(--r);padding:14px;margin-bottom:10px;box-shadow:var(--shadow-sm)}
+.day{background:var(--shelf);border:1px solid var(--rime);border-radius:var(--r);padding:14px;margin-bottom:10px}
 .day.today{border-color:var(--cold);box-shadow:0 0 0 3px var(--cold-soft)}
 .day .dh{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px}
 .day .dh .dw{font-size:15px;font-weight:750;letter-spacing:-.01em}
@@ -274,7 +311,8 @@ label .lbl{font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:up
 .meal .mn{flex:1;min-width:0;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .meal .mx{width:30px;height:30px;border:1px solid var(--rime-hi);border-radius:9px;color:var(--vapor);display:grid;place-items:center}
 .day .addmeal{width:100%;margin-top:8px;padding:10px;border:1.5px dashed var(--rime-hi);border-radius:var(--r-sm);
-  color:var(--vapor);font-size:13px;font-weight:650;background:var(--void)}
+  color:var(--vapor);font-size:13px;font-weight:650;background:var(--void);
+  display:flex;align-items:center;justify-content:center;gap:7px}
 .day .addmeal:active{background:var(--fog)}
 
 /* scanner */
@@ -310,7 +348,7 @@ dialog::backdrop{background:rgba(10,25,16,.44);backdrop-filter:blur(3px)}
 .recipe h3{font-size:15px;margin:0 0 5px;font-weight:700}
 .gap{font-size:12.5px;font-weight:600;color:var(--thaw)}
 .gap.none{color:var(--chill)}
-.tag{font-family:var(--mono);font-size:10.5px;color:var(--vapor-dim);letter-spacing:.04em;font-weight:600}
+.tag{font-size:11px;color:var(--vapor-dim);letter-spacing:0;font-weight:650}
 .spin{width:15px;height:15px;border:2px solid rgba(6,20,12,.3);border-top-color:var(--ink);border-radius:50%;
   animation:sp .7s linear infinite;display:inline-block;vertical-align:-2px}
 .btn.ghost .spin,.note .spin{border-color:var(--rime-hi);border-top-color:var(--cold)}
@@ -917,9 +955,9 @@ function shoppingToPantry(s, after) {
     <p class="note" style="margin:0 0 14px">Add it to your pantry so it's tracked — expiry is estimated for you.</p>
     <label><span class="lbl">Shelf</span><select id="cloc">${S.household.locations.map(l => `<option value="${l.id}">${esc(l.name)}</option>`).join('')}</select></label>
     <label><span class="lbl">How many</span><input type="number" id="cqty" value="${q}" min="1"></label>
-    <button class="btn cold" data-a="pantry">✓ Add to pantry</button>
-    <button class="btn ghost" data-a="just" style="margin-top:8px">Just check it off</button>
-    <button class="btn ghost" data-a="miss" style="margin-top:8px">🚫&nbsp;&nbsp;They didn't have it</button>
+    <button class="btn cold" data-a="pantry">${icon('check')}Add to pantry</button>
+    <button class="btn ghost left" data-a="just" style="margin-top:8px">Just check it off</button>
+    <button class="btn ghost left" data-a="miss" style="margin-top:8px">${icon('ban')}They didn't have it</button>
     <button class="btn ghost" data-a="c" style="margin-top:8px;border:none;color:var(--vapor)">Cancel</button>`;
   dlg.querySelector('#cloc').value = s.lastLoc || catalogFind(s.name)?.lastLoc || defaultLoc(guessCat(s.name));
   dlg.querySelector('[data-a=pantry]').onclick = async () => {
@@ -1569,7 +1607,7 @@ function pickPhoto(rec, after) {
    shopping checklist, the meal picker and the pantry grid without forking. */
 function tileEl({ name, meta = '', image = null, emoji = '🍽️', badge = '', checked = false,
                   checkLabel = '', onCheck = null, onTap = null, stick = false, stickLabel = 'Added ✓',
-                  checkClass = 'done', onCorner = null, cornerIcon = '×', cornerLabel = 'Remove', sel = false }) {
+                  checkClass = 'done', onCorner = null, cornerIcon = icon('x',16), cornerLabel = 'Remove', sel = false }) {
   // "done" crosses it out (bought, finished). "got" just marks it handled —
   // something already ON your list isn't cancelled, and shouldn't read that way.
   const t = el(`<div class="tile${checked ? ' ' + checkClass : ''}${sel ? ' sel' : ''}">
@@ -1579,7 +1617,7 @@ function tileEl({ name, meta = '', image = null, emoji = '🍽️', badge = '', 
       : `<span class="emoji">${emoji}</span>`}
       ${badge ? `<span class="tb">${badge}</span>` : ''}
       ${onCorner ? `<button class="tx" data-a="rm" aria-label="${esc(cornerLabel)} ${esc(name)}">${cornerIcon}</button>` : ''}</div>
-    ${onCheck ? `<button class="tc" data-a="chk"><span class="box">${checked ? '✓' : ''}</span><span class="lb">${esc(checkLabel || (checked ? 'Got it' : 'Check off'))}</span></button>` : ''}
+    ${onCheck ? `<button class="tc" data-a="chk"><span class="box">${checked ? icon('check', 15) : ''}</span><span class="lb">${esc(checkLabel || (checked ? 'Got it' : 'Check off'))}</span></button>` : ''}
   </div>`);
   if (onTap) {
     t.querySelector('.tt').onclick = onTap;
@@ -1600,7 +1638,7 @@ function tileEl({ name, meta = '', image = null, emoji = '🍽️', badge = '', 
       if (stick) {
         t.classList.add('got');
         const box = ck.querySelector('.box');
-        box.textContent = '✓';
+        box.innerHTML = icon('check', 15);
         box.classList.remove('pop'); void box.offsetWidth; box.classList.add('pop');
         ck.querySelector('.lb').textContent = stickLabel;
       }
@@ -1611,7 +1649,7 @@ function tileEl({ name, meta = '', image = null, emoji = '🍽️', badge = '', 
 
 /* The inline "what does the pantry say about this" pill. */
 const STOCK_TAG = {
-  have: n => `<span class="tag have">✓ Have ${n}</span>`,
+  have: n => `<span class="tag have">Have ${n}</span>`,
   low:  n => `<span class="tag low">Running low</span>`,
   out:  () => `<span class="tag out">You're out</span>`,
   new:  () => '',
@@ -1645,6 +1683,49 @@ const el = (h) => { const d = document.createElement('div'); d.innerHTML = h.tri
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const firstLetter = n => esc((String(n || '?').trim()[0] || '?'));
+
+/* ---- icons ----
+   One stroke set on a 24×24 grid, which is what every shipped app actually
+   uses (SF Symbols, Lucide, Feather). Emoji in UI chrome is the loudest tell
+   that nobody designed a screen: they render differently on every OS, have no
+   weight relationship to the type beside them, sit off the baseline, and
+   can't take currentColor — so a "disabled" or "danger" button keeps a
+   cheerful full-colour glyph. Food emoji stay, but only where a photo would
+   go: a category glyph standing in for a missing image is a real pattern. */
+const ICON = {
+  cart:    '<circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2.5 3.5h2.2l2.6 11.2a1.6 1.6 0 0 0 1.6 1.3h8.4a1.6 1.6 0 0 0 1.6-1.2L21 7.6H6"/>',
+  plus:    '<path d="M12 5.5v13M5.5 12h13"/>',
+  check:   '<path d="M20 6.5 9.5 17 4.5 12"/>',
+  x:       '<path d="M18 6 6 18M6 6l12 12"/>',
+  camera:  '<path d="M14.6 4.2H9.4L8 6.6H4.6A1.6 1.6 0 0 0 3 8.2v9.6a1.6 1.6 0 0 0 1.6 1.6h14.8a1.6 1.6 0 0 0 1.6-1.6V8.2a1.6 1.6 0 0 0-1.6-1.6H16z"/><circle cx="12" cy="12.6" r="3.4"/>',
+  trash:   '<path d="M3.8 6.6h16.4M9.6 10.8v6.4M14.4 10.8v6.4M5.4 6.6l1 12.2a1.6 1.6 0 0 0 1.6 1.5h8a1.6 1.6 0 0 0 1.6-1.5l1-12.2M8.8 6.6V4.4a1.6 1.6 0 0 1 1.6-1.6h3.2a1.6 1.6 0 0 1 1.6 1.6v2.2"/>',
+  calendar:'<rect x="3.2" y="5" width="17.6" height="16" rx="2.2"/><path d="M16 2.8v4.4M8 2.8v4.4M3.2 10.4h17.6"/>',
+  search:  '<circle cx="10.8" cy="10.8" r="6.8"/><path d="m20 20-4.4-4.4"/>',
+  clock:   '<circle cx="12" cy="12" r="8.8"/><path d="M12 6.8v5.6l3.6 2.1"/>',
+  more:    '<circle cx="5" cy="12" r="1.35"/><circle cx="12" cy="12" r="1.35"/><circle cx="19" cy="12" r="1.35"/>',
+  store:   '<path d="M4 9.2h16v10.4a1.4 1.4 0 0 1-1.4 1.4H5.4A1.4 1.4 0 0 1 4 19.6z"/><path d="M3.4 9.2 5 3.6h14l1.6 5.6z"/><path d="M9.4 21v-5.6h5.2V21"/>',
+  receipt: '<path d="M5 2.8h14v18.4l-2.8-1.6-2.8 1.6-2.8-1.6-2.8 1.6L5 21.2z"/><path d="M8.6 7.6h6.8M8.6 11.6h6.8M8.6 15.6h4"/>',
+  image:   '<rect x="3" y="4.4" width="18" height="15.2" rx="2.2"/><circle cx="8.6" cy="9.6" r="1.7"/><path d="m3.6 17.6 4.9-4.6a1.8 1.8 0 0 1 2.4 0l5.2 4.9M14.4 14.2l1.5-1.4a1.8 1.8 0 0 1 2.4 0l2.1 1.9"/>',
+  pencil:  '<path d="M4 20h4.2L19.4 8.8a2.1 2.1 0 0 0 0-3l-1.2-1.2a2.1 2.1 0 0 0-3 0L4 15.8z"/><path d="m14.6 5.4 4 4"/>',
+  barcode: '<path d="M3.4 5.4v13.2M6.8 5.4v13.2M10.6 5.4v13.2M14 5.4v13.2M17.4 5.4v13.2M20.6 5.4v13.2"/>',
+  utensils:'<path d="M6.2 2.8v7.4a2.6 2.6 0 0 0 5.2 0V2.8M8.8 10.2V21M17.4 2.8c-1.5 1.3-2.2 3.2-2.2 5.4 0 1.9.6 3 2.2 3.4V21"/>',
+  star:    '<path d="m12 3.6 2.7 5.5 6.1.9-4.4 4.3 1 6-5.4-2.9-5.4 2.9 1-6L3.2 10l6.1-.9z"/>',
+  grid:    '<rect x="3.4" y="3.4" width="7" height="7" rx="1.6"/><rect x="13.6" y="3.4" width="7" height="7" rx="1.6"/><rect x="3.4" y="13.6" width="7" height="7" rx="1.6"/><rect x="13.6" y="13.6" width="7" height="7" rx="1.6"/>',
+  rows:    '<path d="M3.6 6.4h16.8M3.6 12h16.8M3.6 17.6h16.8"/>',
+  refresh: '<path d="M20.4 11.4a8.4 8.4 0 1 0-.6 4.4"/><path d="M20.8 5.6v5.8h-5.8"/>',
+  ban:     '<circle cx="12" cy="12" r="8.8"/><path d="m5.8 5.8 12.4 12.4"/>',
+  save:    '<path d="M20.4 15.6v3.2a1.8 1.8 0 0 1-1.8 1.8H5.4a1.8 1.8 0 0 1-1.8-1.8v-3.2"/><path d="M7.4 10.6 12 15.2l4.6-4.6M12 15.2V3.4"/>',
+  mic:     '<rect x="9" y="2.6" width="6" height="11.4" rx="3"/><path d="M5.4 11.4a6.6 6.6 0 0 0 13.2 0M12 18v3.4"/>',
+  user:    '<circle cx="12" cy="8" r="4.2"/><path d="M4.4 20.6a7.6 7.6 0 0 1 15.2 0"/>',
+  gear:    '<circle cx="12" cy="12" r="3.2"/><path d="M19.2 14.6a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1v.3a2 2 0 1 1-4 0v-.2a1.6 1.6 0 0 0-2.8-1.1l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H3a2 2 0 1 1 0-4h.2a1.6 1.6 0 0 0 1.1-2.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.2a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1h.3a2 2 0 1 1 0 4h-.2a1.6 1.6 0 0 0-1.5 1z"/>',
+  help:    '<circle cx="12" cy="12" r="8.8"/><path d="M9.6 9.4a2.5 2.5 0 0 1 4.9.8c0 1.7-2.5 2.5-2.5 2.5"/><path d="M12 16.6h.01"/>',
+  book:    '<path d="M4 4.4A1.6 1.6 0 0 1 5.6 2.8H19a1 1 0 0 1 1 1v14.4a1 1 0 0 1-1 1H5.6A1.6 1.6 0 0 0 4 20.8z"/><path d="M4 17.6a1.6 1.6 0 0 1 1.6-1.6H20"/>',
+  chevron: '<path d="m9.4 5.6 6.4 6.4-6.4 6.4"/>',
+  box:     '<path d="M20.6 7.8v8.4a1.8 1.8 0 0 1-.9 1.6l-6.8 3.8a1.8 1.8 0 0 1-1.8 0l-6.8-3.8a1.8 1.8 0 0 1-.9-1.6V7.8a1.8 1.8 0 0 1 .9-1.6l6.8-3.8a1.8 1.8 0 0 1 1.8 0l6.8 3.8a1.8 1.8 0 0 1 .9 1.6z"/><path d="m3.6 7 8.4 4.7L20.4 7M12 21v-9.3"/>',
+};
+const icon = (n, size = 19) =>
+  `<svg class="ico" viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor"
+    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[n] || ''}</svg>`;
 
 /* Auto thumbnails without any photography: a food emoji chosen from the
    item's name (specific), then its category (fallback). So produce/deli/
@@ -1693,7 +1774,7 @@ function thumbHtml(o) {
 }
 const bigPicHtml = o => o.image
   ? `<img src="${esc(o.image)}" alt="" style="width:52px;height:52px;border-radius:9px;object-fit:cover;border:1px solid var(--rime);flex:0 0 auto">`
-  : `<div style="width:52px;height:52px;border-radius:9px;background:var(--void);border:1px solid var(--rime);display:grid;place-items:center;font-size:${foodEmoji(o.name,o.cat)?'26px':'20px'};font-family:var(--mono);font-weight:600;color:var(--vapor-dim);flex:0 0 auto">${foodEmoji(o.name,o.cat) || firstLetter(o.name)}</div>`;
+  : `<div style="width:52px;height:52px;border-radius:9px;background:var(--void);border:1px solid var(--rime);display:grid;place-items:center;font-size:${foodEmoji(o.name,o.cat)?'26px':'20px'};font-weight:700;color:var(--vapor-dim);flex:0 0 auto">${foodEmoji(o.name,o.cat) || firstLetter(o.name)}</div>`;
 
 /* Upload / change a photo. Downscaled to a small JPEG data-URL so 500 of
    them stay tiny in storage and always show offline. */
@@ -1817,7 +1898,7 @@ function itemTile(it) {
     badge: esc(q) + (it.opened ? ' · opened' : ''),
     onTap: () => itemSheet(it),
     checkLabel: 'Used one', onCheck: async () => { await deplete(it); render(); },
-    onCorner: () => itemSheet(it), cornerIcon: '⋯', cornerLabel: 'Options for',
+    onCorner: () => itemSheet(it), cornerIcon: icon('more',17), cornerLabel: 'Options for',
   });
 }
 
@@ -1921,7 +2002,7 @@ function itemSheet(it) {
     <button class="btn ghost" data-a="scandate" style="margin-bottom:8px">📅 Scan the date — live camera (free)</button>
     <input type="file" accept="image/*" capture="environment" id="itdate" class="hide">
     <div class="row" style="margin-bottom:8px">
-      <button class="btn ghost" data-a="plus">＋ Add one back</button>
+      <button class="btn ghost" data-a="plus">${icon('plus')}Add one back</button>
       ${!it.opened ? `<button class="btn ghost" data-a="open">Just opened it</button>` : `<button class="btn ghost" data-a="date">Fix the date</button>`}
     </div>
     <div class="row" style="margin-bottom:8px">
@@ -2255,7 +2336,7 @@ function viewInv(app) {
   const srow = el(`<div class="row" style="margin-bottom:12px">
     <input id="q" placeholder="Search ${live.length} items…" value="${esc(S.q || '')}" style="flex:1" autocomplete="off" enterkeyhint="search">
     <button class="btn ghost" data-a="vt" title="${swap}" aria-label="${swap}"
-      style="width:auto;padding:0 15px;font-size:18px">${grid ? '☰' : '▦'}</button></div>`);
+      style="width:auto;padding:0 15px">${grid ? icon('rows') : icon('grid')}</button></div>`);
   const sb = srow.querySelector('#q');
   sb.oninput = e => {
     S.q = e.target.value;
@@ -2388,14 +2469,17 @@ async function handleVoice(text) {
 function voiceButton() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) return null;
-  const idle = '🎤 Say "finished the milk"';
-  const b = el(`<button class="btn ghost" style="margin-bottom:12px">${idle}</button>`);
+  const label = t => icon('mic', 16) + t;
+  const idle = 'Say "finished the milk"';
+  const b = el(`<button class="btn ghost" style="margin-bottom:12px">${label(idle)}</button>`);
+  let state = 'idle';
+  const set = (s, t) => { state = s; b.innerHTML = label(t); };
   b.onclick = () => {
     const rec = new SR(); rec.lang = 'en-US'; rec.interimResults = false; rec.maxAlternatives = 1;
-    b.textContent = '🎤 Listening…'; b.disabled = true;
-    rec.onresult = e => { b.disabled = false; b.textContent = idle; handleVoice(e.results[0][0].transcript); };
-    rec.onerror = () => { b.disabled = false; b.textContent = '🎤 mic blocked — tap to retry'; };
-    rec.onend = () => { b.disabled = false; if (b.textContent === '🎤 Listening…') b.textContent = idle; };
+    set('listening', 'Listening…'); b.disabled = true;
+    rec.onresult = e => { b.disabled = false; set('idle', idle); handleVoice(e.results[0][0].transcript); };
+    rec.onerror = () => { b.disabled = false; set('idle', 'Mic blocked — tap to retry'); };
+    rec.onend = () => { b.disabled = false; if (state === 'listening') set('idle', idle); };
     try { rec.start(); } catch (e) { b.disabled = false; }
   };
   return b;
@@ -2429,7 +2513,7 @@ function viewSoon(app) {
   }
 
   if (!soon.length) {
-    app.appendChild(el(`<div class="empty"><div class="big">Nothing dying</div>
+    app.appendChild(el(`<div class="empty"><div class="ei">${icon('check', 34)}</div><div class="big">Nothing dying</div>
       <div class="sub">Everything in the house has more than a week. Enjoy it.</div></div>`));
   } else {
     const dead = soon.filter(i => freshness(i).left < 0);
@@ -2548,7 +2632,7 @@ function viewPlan(app) {
     const card = el(`<div class="day ${i === 0 ? 'today' : ''}">
       <div class="dh"><div class="dw">${d.toLocaleDateString(undefined, { weekday: 'long' })}<small>${d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</small></div>${i === 0 ? '<span class="badge">Today</span>' : ''}</div>
       <div class="meals"></div>
-      <button class="addmeal">＋ Add a meal</button></div>`);
+      <button class="addmeal">${icon('plus',16)}Add a meal</button></div>`);
     const mbox = card.querySelector('.meals');
     if (meals.length) {
       const g = el(`<div class="tiles one" style="margin-bottom:4px"></div>`);
@@ -2574,7 +2658,7 @@ function viewPlan(app) {
           // miss it on a phone and you get a photo browser instead of a
           // removed meal, which reads as "it won't let me delete this".
           onTap: () => plannedMealSheet(m),
-          onCorner: () => plannedMealSheet(m), cornerIcon: '⋯', cornerLabel: 'Options for',
+          onCorner: () => plannedMealSheet(m), cornerIcon: icon('more',17), cornerLabel: 'Options for',
         }));
       });
       mbox.appendChild(g);
@@ -2594,7 +2678,7 @@ function addMealDialog(dateKey) {
   dlg.innerHTML = `<div class="eyebrow">Add a meal</div><h1 style="margin:6px 0 14px">${new Date(dateKey + 'T00:00').toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</h1>
     <label><span class="lbl">Meal</span><input id="mealnm" placeholder="Taco night, Leftovers, Salmon…" autocomplete="off"></label>
     <button class="btn cold" data-a="save">Add to plan</button>
-    ${anyHistory ? `<button class="btn ghost" data-a="all" style="margin-top:8px">🔎&nbsp;&nbsp;Search meals you've made</button>` : ''}
+    ${anyHistory ? `<button class="btn ghost left" data-a="all" style="margin-top:8px">${icon('search')}Search meals you've made</button>` : ''}
     ${picks.length ? `<div class="note" style="margin:16px 0 8px">Or something you can cook right now:</div>
       <div>${picks.map((r, i) => `<button class="chip" data-p="${i}" aria-pressed="false" style="margin:0 6px 8px 0">${esc(r.name)}</button>`).join('')}</div>` : ''}
     <button class="btn ghost" data-a="c" style="margin-top:8px;border:none;color:var(--vapor)">Cancel</button>`;
@@ -2628,10 +2712,10 @@ function plannedMealSheet(m) {
   const day = new Date(m.date + 'T00:00').toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
   dlg.innerHTML = `<div class="eyebrow">${esc(day)}${known?.count ? ` · made ${known.count}×` : ''}</div>
     <h1 style="margin:6px 0 14px">${esc(m.name)}</h1>
-    <button class="btn ${m.made ? 'ghost' : 'cold'}" data-a="made">${m.made ? '↩︎  Not made after all' : '✓  I made this'}</button>
-    <button class="btn ghost" data-a="photo" style="margin-top:8px">📷&nbsp;&nbsp;${m.image ? 'Change the photo' : 'Add a photo'}</button>
-    <button class="btn ghost" data-a="move" style="margin-top:8px">📅&nbsp;&nbsp;Move to another day</button>
-    <button class="btn ghost" data-a="rm" style="margin-top:8px;color:var(--spoil);border-color:var(--spoil)">🗑&nbsp;&nbsp;Remove from the plan</button>
+    <button class="btn ${m.made ? 'ghost' : 'cold'}" data-a="made">${m.made ? icon('refresh') + 'Not made after all' : icon('check') + 'I made this'}</button>
+    <button class="btn ghost left" data-a="photo" style="margin-top:8px">${icon('camera')}${m.image ? 'Change the photo' : 'Add a photo'}</button>
+    <button class="btn ghost left" data-a="move" style="margin-top:8px">${icon('calendar')}Move to another day</button>
+    <button class="btn ghost left danger" data-a="rm" style="margin-top:8px">${icon('trash')}Remove from the plan</button>
     <button class="btn ghost" data-a="c" style="margin-top:8px;border:none;color:var(--vapor)">Close</button>`;
   dlg.querySelector('[data-a=made]').onclick = async () => {
     m.made = !m.made; await savePlan(m);
@@ -2666,16 +2750,16 @@ function recipeCardEl(r) {
   const emoji = foodEmoji(r.name, '') || '🍳';
   const bannerStyle = r.image ? ` class="banner photo" style="background-image:url('${esc(r.image)}')"` : ' class="banner"';
   const card = el(`<div class="recipe-card">
-    <div${bannerStyle}>${r.image ? '' : emoji}<span class="badge ${n === 0 ? 'ok' : 'miss'}">${n === 0 ? '✓ Ready to cook' : 'Need ' + n}</span></div>
+    <div${bannerStyle}>${r.image ? '' : emoji}<span class="badge ${n === 0 ? 'ok' : 'miss'}">${n === 0 ? 'Ready to cook' : 'Need ' + n}</span></div>
     <div class="rc-body">
       <h3>${esc(r.name)}</h3>
       <div class="rc-meta">${r.minutes} MIN${r.rescues?.length ? ' · USES UP ' + esc(r.rescues.join(', ')).toUpperCase() : ''}</div>
       <div>${n ? r.missing.map(m => `<span class="pill miss">${esc(m)}</span>`).join('') : `<span class="pill ok">Nothing missing — you have it all</span>`}</div>
       <div class="rc-act">
         <button class="btn cold sm" data-a="how">View recipe</button>
-        ${n ? `<button class="btn ghost sm" data-a="add">＋ Add missing</button>` : ''}
+        ${n ? `<button class="btn ghost sm" data-a="add">${icon('plus',15)}Add missing</button>` : ''}
         <button class="btn ghost sm" data-a="plan">📅 Plan</button>
-        <button class="btn ghost sm" data-a="save">${isSaved(r) ? '★ Saved' : '☆ Save'}</button>
+        <button class="btn ghost sm${isSaved(r) ? ' on' : ''}" data-a="save">${icon('star', 15)}${isSaved(r) ? 'Saved' : 'Save'}</button>
         <button class="btn ghost sm" data-a="cook">I made this</button>
       </div>
     </div></div>`);
@@ -2722,8 +2806,8 @@ function viewCook(app) {
 
   const seg = el(`<div class="chips" style="padding-bottom:14px">
     <button class="chip" data-t="suggested" aria-pressed="${tab === 'suggested'}">Suggested</button>
-    <button class="chip" data-t="made" aria-pressed="${tab === 'made'}">🍽️ Made${madeN ? ` (${madeN})` : ''}</button>
-    <button class="chip" data-t="saved" aria-pressed="${tab === 'saved'}">★ Saved${savedN ? ` (${savedN})` : ''}</button>
+    <button class="chip" data-t="made" aria-pressed="${tab === 'made'}">${icon('utensils',15)} Made${madeN ? ` (${madeN})` : ''}</button>
+    <button class="chip" data-t="saved" aria-pressed="${tab === 'saved'}">${icon('star',15)} Saved${savedN ? ` (${savedN})` : ''}</button>
   </div>`);
   seg.querySelectorAll('[data-t]').forEach(b => b.onclick = () => { S.cookTab = b.dataset.t; render(); });
   app.appendChild(seg);
@@ -2745,15 +2829,16 @@ function viewCook(app) {
   if (tab === 'saved') {
     const saved = S.saved.filter(s => !s.deleted).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
     if (!saved.length) {
-      app.appendChild(el(`<div class="empty"><div class="big">No saved recipes yet</div>
-        <div class="sub">Tap <b>☆ Save</b> on any suggestion to keep it here — with its photo, steps and ingredients. Each one re-checks your pantry before you cook.</div></div>`));
+      app.appendChild(el(`<div class="empty"><div class="ei">${icon('star', 34)}</div><div class="big">No saved recipes yet</div>
+        <div class="sub">Tap <b>Save</b> on any suggestion to keep it here — with its photo, steps and ingredients. Each one re-checks your pantry before you cook.</div></div>`));
       return;
     }
     saved.forEach(s => app.appendChild(recipeCardEl(recomputeMissing(s))));
     return;
   }
 
-  const btn = el(`<button class="btn cold" style="margin-bottom:16px">${recipeCache ? '↻ Suggest again' : '✨ Cook with what I have'}</button>`);
+  const btn = el(`<button class="btn cold" style="margin-bottom:16px">${recipeCache
+    ? icon('refresh') + 'Suggest again' : icon('utensils') + 'Cook with what I have'}</button>`);
   const out = el(`<div></div>`);
   btn.onclick = async () => {
     btn.disabled = true; btn.innerHTML = `<span class="spin"></span> Reading your shelves…`;
@@ -2763,7 +2848,7 @@ function viewCook(app) {
     } catch (e) {
       out.innerHTML = `<div class="card"><div class="warn">${esc(e.message)}</div></div>`;
     }
-    btn.disabled = false; btn.textContent = '↻ Suggest again';
+    btn.disabled = false; btn.innerHTML = icon('refresh') + 'Suggest again';
   };
   app.appendChild(btn);
   if (!live.length) app.appendChild(el(`<div class="card"><div class="note">Nothing in the inventory yet — there's nothing to cook with. Scan something in first.</div></div>`));
@@ -2783,7 +2868,7 @@ function paintMade(box) {
   box.innerHTML = '';
   const rows = catalogList(CAT_MEAL, { q: S.mq || '' });
   if (!rows.length) {
-    box.appendChild(el(`<div class="empty"><div class="big">${S.mq ? 'No match' : 'Nothing cooked yet'}</div>
+    box.appendChild(el(`<div class="empty"><div class="ei">${icon('utensils', 34)}</div><div class="big">${S.mq ? 'No match' : 'Nothing cooked yet'}</div>
       <div class="sub">${S.mq ? 'Nothing you\'ve made looks like that.'
         : 'Every meal you plan or mark as made lands here — with its photo — so next week you can just tap it again.'}</div></div>`));
     return;
@@ -2796,7 +2881,7 @@ function paintMade(box) {
     checkLabel: '📅 Plan it',
     onCheck: () => pickDayForRecipe({ name: c.name, image: c.image, uses: [], missing: [] }),
     onTap: () => madeMealSheet(c),
-    onCorner: () => madeMealSheet(c), cornerIcon: '⋯', cornerLabel: 'Options for',
+    onCorner: () => madeMealSheet(c), cornerIcon: icon('more',17), cornerLabel: 'Options for',
   })));
   box.appendChild(g);
 }
@@ -2812,9 +2897,9 @@ function madeMealSheet(c) {
   const dlg = document.getElementById('dlg');
   dlg.innerHTML = `<div class="eyebrow">Made ${c.count || 0}×${c.last ? ` · last ${esc(agoLabel(c.last))}` : ''}</div>
     <h1 style="margin:6px 0 14px">${esc(c.name)}</h1>
-    <button class="btn cold" data-a="plan">📅&nbsp;&nbsp;Plan it for a day</button>
-    <button class="btn ghost" data-a="photo" style="margin-top:8px">📷&nbsp;&nbsp;${c.image ? 'Change the photo' : 'Add a photo'}</button>
-    <button class="btn ghost" data-a="forget" style="margin-top:8px;color:var(--spoil);border-color:var(--spoil)">🗑&nbsp;&nbsp;Forget this meal</button>
+    <button class="btn cold" data-a="plan">${icon('calendar')}Plan it for a day</button>
+    <button class="btn ghost left" data-a="photo" style="margin-top:8px">${icon('camera')}${c.image ? 'Change the photo' : 'Add a photo'}</button>
+    <button class="btn ghost left danger" data-a="forget" style="margin-top:8px">${icon('trash')}Forget this meal</button>
     <button class="btn ghost" data-a="c" style="margin-top:8px;border:none;color:var(--vapor)">Close</button>`;
   dlg.querySelector('[data-a=plan]').onclick = () => {
     dlg.close(); pickDayForRecipe({ name: c.name, image: c.image, uses: [], missing: [] });
@@ -2849,7 +2934,7 @@ function cookDeduct(r) {
   const dlg = document.getElementById('dlg');
   dlg.innerHTML = `<div class="eyebrow">Made it</div><h1 style="margin:6px 0 6px">${esc(r.name)}</h1>
     <p class="note" style="margin:0 0 14px">Untick anything you didn't actually use up.</p>
-    ${hits.map(i => `<label style="display:flex;gap:10px;align-items:center;margin-bottom:9px;font-family:var(--mono);font-size:13px">
+    ${hits.map(i => `<label style="display:flex;gap:10px;align-items:center;margin-bottom:9px;font-size:14px;font-weight:600">
       <input type="checkbox" checked data-id="${i.id}" style="width:19px;height:19px;flex:0 0 auto">${esc(i.name)}</label>`).join('') ||
       `<div class="note" style="margin-bottom:14px">Couldn't match anything to your inventory — nothing will change.</div>`}
     <button class="btn cold" data-a="go">Deduct these</button>
@@ -3010,7 +3095,7 @@ function paintRapidList(box) {
     <button class="btn ghost" data-a="done" style="margin-top:8px">Done — clear list</button></div>`);
   const list = card.querySelector('#rl-items');
   rapidLog.slice(0, 12).forEach(r => {
-    const row = el(`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;font-family:var(--mono);font-size:12px">
+    const row = el(`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:13px">
       <span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.name)}</span>
       <span class="code" style="color:var(--vapor-dim);font-size:10px">${esc(locName(r.loc))}</span>
       <button data-x="${r.id}" aria-label="Remove ${esc(r.name)}" style="width:30px;height:30px;flex:0 0 auto;border:1px solid var(--rime-hi);border-radius:7px;color:var(--vapor)">×</button></div>`);
@@ -3196,7 +3281,7 @@ function unknownSheet(code) {
       dlg.querySelector('#cat').value = CATS.includes(r.cat) ? r.cat : 'other';
       if (r.packSize) dlg.querySelector('#pk').value = r.packSize;
       dlg.querySelector('#loc').value = defaultLoc(r.cat);
-      btn.textContent = '✓ Got it — check below';
+      btn.innerHTML = icon('check') + 'Got it — check below';
     } catch (err) { btn.textContent = '📷 Try again'; toast(err.message); }
   };
   dlg.querySelector('[data-a=save]').onclick = async () => {
@@ -3234,7 +3319,7 @@ async function photoFlow(file) {
     dlg.innerHTML = `<div class="eyebrow">${mode === 'add' ? 'Putting away' : 'Using these up'}</div>
       <h1 style="margin:6px 0 6px">Found ${found.length}</h1>
       <p class="note" style="margin:0 0 14px">Untick anything it got wrong.</p>
-      ${found.map((f, i) => `<label style="display:flex;gap:10px;align-items:center;margin-bottom:9px;font-family:var(--mono);font-size:13px">
+      ${found.map((f, i) => `<label style="display:flex;gap:10px;align-items:center;margin-bottom:9px;font-size:14px;font-weight:600">
         <input type="checkbox" checked data-i="${i}" style="width:19px;height:19px;flex:0 0 auto">
         ${esc(f.name)} <span style="color:var(--vapor-dim)">×${f.count || 1}</span></label>`).join('')}
       ${mode === 'add' ? `<label style="margin-top:6px"><span class="lbl">Onto which shelf</span><select id="loc">${S.household.locations.map(l => `<option value="${l.id}">${esc(l.name)}</option>`).join('')}</select></label>` : ''}
@@ -3423,7 +3508,7 @@ function paintCatalog(box) {
       .map(x => x.c);
   }
   if (!list.length) {
-    return box.appendChild(el(`<div class="empty"><div class="big">No match for "${esc(S.cq)}"</div>
+    return box.appendChild(el(`<div class="empty"><div class="ei">${icon('search', 34)}</div><div class="big">No match for "${esc(S.cq)}"</div>
       <div class="sub">It's not in the scan memory yet. Scan it once and it's yours forever.</div></div>`));
   }
   const inStock = c => S.items.some(i => !i.deleted && i.barcode === c.id);
@@ -3438,7 +3523,7 @@ function paintCatalog(box) {
         <div class="nm">${esc(c.name)}</div>
         <div class="meta"><span class="qty">${sub}</span>${stock}</div>
       </div>
-      <div class="act"><button class="plus" data-a="add" aria-label="Add ${esc(c.name)} to a shelf">＋</button></div>
+      <div class="act"><button class="plus" data-a="add" aria-label="Add ${esc(c.name)} to a shelf">${icon('plus',17)}</button></div>
     </div>`);
     const img = c.image && row.querySelector('.thumb img');
     if (img) img.onerror = () => { img.parentNode.innerHTML = `<span class="ph">${firstLetter(c.name)}</span>`; };
@@ -3462,10 +3547,10 @@ function catalogSheet(c) {
       </div>
     </div>
     <div class="note" style="margin:0 0 14px">Barcode <span class="code">${esc(c.id)}</span> — learned ${c.learned ? new Date(c.learned).toLocaleDateString() : 'a while ago'}.</div>
-    <button class="btn cold" data-a="add">＋ Add to a shelf</button>
-    <button class="btn ghost" data-a="photo" style="margin-top:8px">📷 Change photo</button>
+    <button class="btn cold" data-a="add">${icon('plus')}Add to a shelf</button>
+    <button class="btn ghost left" data-a="photo" style="margin-top:8px">📷 Change photo</button>
     <input type="file" accept="image/*" id="cphoto" class="hide">
-    <button class="btn ghost" data-a="forget" style="margin-top:8px;color:var(--spoil);border-color:var(--spoil)">Forget this product</button>
+    <button class="btn ghost left danger" data-a="forget" style="margin-top:8px">Forget this product</button>
     <button class="btn ghost" data-a="close" style="margin-top:8px;border:none;color:var(--vapor)">Close</button>`;
   dlg.querySelector('[data-a=add]').onclick = () => { dlg.close(); confirmAdd({ ...c, source: 'yours' }, c.id); };
   dlg.querySelector('[data-a=photo]').onclick = () => dlg.querySelector('#cphoto').click();
@@ -3546,7 +3631,7 @@ function renderSyncCard(sc) {
       SYNC.cli = null; await loadSupabase();
       const { error } = await SYNC.client().from('sync').select('household').limit(1);
       if (error) throw error;
-      box.innerHTML = `<div class="note" style="margin-bottom:8px">Connected ✓ Create a new household, or join one with its code.</div>
+      box.innerHTML = `<div class="note" style="margin-bottom:8px">Connected. Create a new household, or join one with its code.</div>
         <button class="btn cold" data-a="create">Create new household</button>
         <div class="eyebrow" style="text-align:center;margin:10px 0 8px">or join</div>
         <div class="row"><input id="jc" placeholder="household code" style="flex:1"><button class="btn ghost" data-a="join" style="width:auto;padding:0 14px">Join</button></div>`;
@@ -3640,7 +3725,7 @@ function catalogPicker({ kind = CAT_PRODUCT, store = '', onPick, multi = true })
     rows = rows.slice(0, 24);
     listBox.innerHTML = '';
     if (!rows.length) {
-      listBox.appendChild(el(`<div class="empty" style="padding:34px 10px"><div class="big">${q ? 'No match' : 'Nothing yet'}</div>
+      listBox.appendChild(el(`<div class="empty" style="padding:30px 10px"><div class="ei">${icon('clock', 34)}</div><div class="big">${q ? 'No match' : 'Nothing yet'}</div>
         <div class="sub">${q ? 'Nothing in your history looks like that.'
           : meal ? 'Meals land here once you plan or cook them.'
                  : 'Things land here once you buy or stock them.'}</div></div>`));
@@ -3665,7 +3750,7 @@ function catalogPicker({ kind = CAT_PRODUCT, store = '', onPick, multi = true })
         added.add(c.id); count();
         if (!multi) dlg.close();
       },
-      onCorner: () => pickPhoto(c, () => paint()), cornerIcon: '📷', cornerLabel: 'Set a photo for',
+      onCorner: () => pickPhoto(c, () => paint()), cornerIcon: icon('camera',16), cornerLabel: 'Set a photo for',
     })));
     listBox.appendChild(g);
   };
@@ -3686,7 +3771,7 @@ function viewShopping(app) {
   const tabs = el(`<div class="chips">
     <button class="chip" data-s="" aria-pressed="${!store}">General</button>
     ${stores.map(s => `<button class="chip" data-s="${esc(s.id)}" aria-pressed="${store === s.id}">${s.emoji || '🏬'} ${esc(s.name)}</button>`).join('')}
-    <button class="chip" data-a="stores" aria-pressed="false">＋ Store</button></div>`);
+    <button class="chip" data-a="stores" aria-pressed="false">${icon('plus',16)} Store</button></div>`);
   tabs.querySelectorAll('[data-s]').forEach(b => b.onclick = () => { S.store = b.dataset.s; render(); });
   tabs.querySelector('[data-a=stores]').onclick = () => storeSheet();
   app.appendChild(tabs);
@@ -3713,7 +3798,8 @@ function viewShopping(app) {
   app.appendChild(add);
 
   const out = restockList(store, 99).length;
-  const hist = el(`<button class="btn ghost" style="margin-bottom:14px">🕘&nbsp;&nbsp;Add from what you've bought before${out ? ` · ${out} you're out of` : ''}</button>`);
+  // "Buy it again" is the phrase every grocery app already trained people on.
+  const hist = el(`<button class="btn ghost" style="margin-bottom:14px">${icon('clock')}Buy it again${out ? ` · ${out} you're out of` : ''}</button>`);
   hist.onclick = () => catalogPicker({ kind: CAT_PRODUCT, store,
     onPick: async c => { await addToList(c.name, '', store); paintShopping(listBox); } });
   app.appendChild(hist);
@@ -3744,7 +3830,9 @@ function shopTile(s, box, flash = false) {
     checkLabel: s.done ? 'Undo' : 'Got it',
     onCheck: async () => {
       if (s.done) { s.done = false; s.missing = false; await saveShopping(s); paintShopping(box); }
-      else shoppingToPantry(s, () => paintShopping(box));
+      // Let it animate out of the active list before the repaint moves it to
+      // Bought, so the change is something you watch rather than discover.
+      else shoppingToPantry(s, () => { t.classList.add('leaving'); setTimeout(() => paintShopping(box), 210); });
     },
     onCorner: async () => { s.deleted = true; await saveShopping(s); paintShopping(box); },
   });
@@ -3766,7 +3854,7 @@ function paintShopping(box, flashId = '') {
     todo.forEach(s => g.appendChild(shopTile(s, box, s.id === flashId)));
     box.appendChild(g);
   } else {
-    box.appendChild(el(`<div class="empty"><div class="big">${done.length ? 'All done' : 'Nothing on the list'}</div>
+    box.appendChild(el(`<div class="empty"><div class="ei">${icon('cart', 34)}</div><div class="big">${done.length ? 'All done' : 'Nothing on the list'}</div>
       <div class="sub">${done.length ? "Everything here is in the cart."
         : "Add what you need — or pull from what you've bought before."}</div></div>`));
   }
@@ -3900,7 +3988,7 @@ function viewSet(app) {
     The app itself lives at its web address — reinstalling is just opening that link and
     tapping <b>Add to Home Screen</b> again. These files are your <b>data</b>.</div>`));
 
-  const snap = el(`<button class="btn cold" style="margin-top:4px">💾&nbsp;&nbsp;Save the whole app + my data (1 file)</button>`);
+  const snap = el(`<button class="btn cold" style="margin-top:4px">${icon('save')}Save the whole app + my data (1 file)</button>`);
   snap.onclick = async () => {
     try {
       const html = await snapshotHTML();
@@ -4083,10 +4171,10 @@ async function saveCfg() { await DB.put('meta', { id: 'cfg', ...S.cfg }); }
 function addFoodChooser() {
   const dlg = document.getElementById('dlg');
   dlg.innerHTML = `<div class="eyebrow">Add food</div><h1 style="margin:6px 0 15px">How do you want to add it?</h1>
-    <button class="btn ghost" data-a="barcode" style="margin-bottom:9px;text-align:left">📷&nbsp;&nbsp;Scan a barcode</button>
-    <button class="btn ghost" data-a="receipt" style="margin-bottom:9px;text-align:left">🧾&nbsp;&nbsp;Scan a receipt — a whole trip at once</button>
-    <button class="btn ghost" data-a="photo" style="margin-bottom:9px;text-align:left">🖼️&nbsp;&nbsp;Photograph a shelf</button>
-    <button class="btn ghost" data-a="type" style="margin-bottom:14px;text-align:left">✏️&nbsp;&nbsp;Type it in</button>
+    <button class="btn ghost left" data-a="barcode" style="margin-bottom:9px">${icon('camera')}Scan a barcode</button>
+    <button class="btn ghost left" data-a="receipt" style="margin-bottom:9px">${icon('receipt')}Scan a receipt — a whole trip at once</button>
+    <button class="btn ghost left" data-a="photo" style="margin-bottom:9px">${icon('image')}Photograph a shelf</button>
+    <button class="btn ghost left" data-a="type" style="margin-bottom:14px">${icon('pencil')}Type it in</button>
     <input type="file" accept="image/*" capture="environment" id="afp" class="hide">
     <input type="file" accept="image/*" id="afr" class="hide">
     <button class="btn ghost" data-a="c" style="border:none;color:var(--vapor)">Cancel</button>`;
@@ -4105,11 +4193,11 @@ function addFoodChooser() {
 function viewPantry(app) {
   const live = S.items.filter(i => !i.deleted);
   if (!live.length) {
-    app.appendChild(el(`<div class="empty" style="padding-top:44px">
-      <div style="font-size:58px;margin-bottom:8px">🧺</div>
-      <div class="big">Your pantry is empty</div>
-      <div class="sub">Add what's in your kitchen — ShelfLife tracks what you have, warns you before it expires, and turns it into meals.</div></div>`));
-    const b = el(`<button class="btn cold" style="max-width:320px;margin:16px auto 0">＋ Add your first item</button>`);
+    app.appendChild(el(`<div class="empty" style="padding-top:40px">
+      <div class="ei">${icon('box', 34)}</div>
+      <div class="big">Nothing in the pantry yet</div>
+      <div class="sub">Scan a barcode, photograph a shelf, or type something in.</div></div>`));
+    const b = el(`<button class="btn cold" style="max-width:320px;margin:16px auto 0">${icon('plus',17)}Add your first item</button>`);
     b.onclick = () => addFoodChooser();
     app.appendChild(b);
     return;
@@ -4161,7 +4249,7 @@ function pantryHistory(app) {
       await addToList(c.name, '', S.store || ''); toast(`${c.name} on the list`);
     },
     onTap: () => restockSheet(c),
-    onCorner: () => pickPhoto(c, () => render()), cornerIcon: '📷', cornerLabel: 'Set a photo for',
+    onCorner: () => pickPhoto(c, () => render()), cornerIcon: icon('camera',16), cornerLabel: 'Set a photo for',
   })));
   app.appendChild(g);
 }
@@ -4176,9 +4264,9 @@ function restockSheet(c) {
       `<option value="${l.id}">${esc(l.name)}</option>`).join('')}</select></label>
     <label><span class="lbl">How many</span><input type="number" id="rq" value="1" min="1"></label>
     <button class="btn cold" data-a="stock">✓ Put it back in the pantry</button>
-    <button class="btn ghost" data-a="list" style="margin-top:8px">🛒&nbsp;&nbsp;Just add it to the shopping list</button>
-    <button class="btn ghost" data-a="photo" style="margin-top:8px">📷&nbsp;&nbsp;Set a photo</button>
-    <button class="btn ghost" data-a="forget" style="margin-top:8px;color:var(--spoil);border-color:var(--spoil)">🗑&nbsp;&nbsp;Forget this — stop suggesting it</button>
+    <button class="btn ghost left" data-a="list" style="margin-top:8px">${icon('cart')}Just add it to the shopping list</button>
+    <button class="btn ghost left" data-a="photo" style="margin-top:8px">${icon('camera')}Set a photo</button>
+    <button class="btn ghost left danger" data-a="forget" style="margin-top:8px">${icon('trash')}Forget this — stop suggesting it</button>
     <button class="btn ghost" data-a="c" style="margin-top:8px;border:none;color:var(--vapor)">Cancel</button>`;
   if (c.lastLoc) dlg.querySelector('#rloc2').value = c.lastLoc;
   dlg.querySelector('[data-a=forget]').onclick = async () => {
@@ -4209,21 +4297,21 @@ function viewProfile(app) {
 
   app.appendChild(el(`<div class="pgroup-label">Add & organize</div>`));
   const g1 = el(`<div class="plist">
-    <button class="prow" data-a="receipt"><span class="pic">🧾</span><span class="pt"><div class="ptt">Scan a receipt</div><div class="pss">Add a whole shopping trip at once</div></span><span class="parr">›</span></button>
-    <button class="prow" data-a="recipes"><span class="pic">🍴</span><span class="pt"><div class="ptt">Recipes</div><div class="pss">Cook from what you already have</div></span><span class="parr">›</span></button>
-    <button class="prow" data-a="catalog"><span class="pic">📚</span><span class="pt"><div class="ptt">Product catalog</div><div class="pss">Your saved products & photos</div></span><span class="parr">›</span></button>
+    <button class="prow" data-a="receipt"><span class="pic">${icon('receipt',20)}</span><span class="pt"><div class="ptt">Scan a receipt</div><div class="pss">Add a whole shopping trip at once</div></span><span class="parr">›</span></button>
+    <button class="prow" data-a="recipes"><span class="pic">${icon('utensils',20)}</span><span class="pt"><div class="ptt">Recipes</div><div class="pss">Cook from what you already have</div></span><span class="parr">›</span></button>
+    <button class="prow" data-a="catalog"><span class="pic">${icon('book',20)}</span><span class="pt"><div class="ptt">Product catalog</div><div class="pss">Your saved products & photos</div></span><span class="parr">›</span></button>
   </div>`);
   app.appendChild(g1);
 
   app.appendChild(el(`<div class="pgroup-label">Settings</div>`));
   const g2 = el(`<div class="plist">
-    <button class="prow" data-a="settings"><span class="pic">⚙️</span><span class="pt"><div class="ptt">Settings</div><div class="pss">AI scanner · Family sync · Backup · Alerts</div></span><span class="parr">›</span></button>
+    <button class="prow" data-a="settings"><span class="pic">${icon('gear',20)}</span><span class="pt"><div class="ptt">Settings</div><div class="pss">AI scanner · Family sync · Backup · Alerts</div></span><span class="parr">›</span></button>
   </div>`);
   app.appendChild(g2);
 
   app.appendChild(el(`<div class="pgroup-label">Help</div>`));
   const g3 = el(`<div class="plist">
-    <button class="prow" data-a="how"><span class="pic">💡</span><span class="pt"><div class="ptt">How to use ShelfLife</div><div class="pss">A 60-second tour</div></span><span class="parr">›</span></button>
+    <button class="prow" data-a="how"><span class="pic">${icon('help',20)}</span><span class="pt"><div class="ptt">How to use ShelfLife</div><div class="pss">A 60-second tour</div></span><span class="parr">›</span></button>
   </div>`);
   app.appendChild(g3);
   app.appendChild(el(`<div class="note" style="text-align:center;color:var(--vapor-dim);margin:2px 0 8px">ShelfLife · local-first, works offline</div>`));
