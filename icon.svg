@@ -1,18 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- ShelfLife. Green + white: a single fresh leaf, the simplest possible
-       mark for "keep food fresh." Full-bleed green so it reads as one clean
-       shape on the home screen. -->
+  <!-- Stocked. Two shapes, no fine detail, so it survives every size a home
+       screen throws at it: a bowl (the food half the name doesn't say) under a
+       check (handled, in stock, ticked off the list).
+
+       Dark ground with the app's own dark-mode accent, so the icon and the app
+       are visibly the same product.
+
+       Geometry is maskable-safe: every painted pixel sits inside the centre
+       circle of radius 204 that Android crops to, so nothing is clipped when
+       the launcher applies its own mask. The bowl's lowest point is 184 from
+       centre; the check's far corner about 163 including stroke width. -->
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#17AC57"/>
-      <stop offset="1" stop-color="#0C7D3C"/>
+      <stop offset="0" stop-color="#18251E"/>
+      <stop offset="1" stop-color="#0A100D"/>
     </linearGradient>
   </defs>
   <rect width="512" height="512" fill="url(#bg)"/>
-  <!-- leaf body -->
-  <path d="M256 92 C150 150 126 300 256 420 C386 300 362 150 256 92 Z" fill="#FFFFFF"/>
-  <!-- midrib + veins, cut back to the green so the leaf reads -->
-  <path d="M256 132 L256 400" stroke="#12A150" stroke-width="14" stroke-linecap="round"/>
-  <path d="M256 220 L196 182 M256 220 L316 182 M256 288 L188 250 M256 288 L324 250"
-        stroke="#12A150" stroke-width="11" stroke-linecap="round" fill="none"/>
+  <path d="M170 200 L232 262 L348 146" fill="none" stroke="#3CC974"
+        stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M106 290 H406 A150 150 0 0 1 106 290 Z" fill="#3CC974"/>
 </svg>
