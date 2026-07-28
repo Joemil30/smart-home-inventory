@@ -1,4 +1,4 @@
-# ShelfLife — App Store Launch Strategy
+# Stocked — App Store Launch Strategy
 
 ## Competitive Position
 
@@ -69,7 +69,7 @@ Use **Capacitor** to wrap the PWA as a native app and submit to Google Play and 
 
 **Steps:**
 1. Install Capacitor CLI: `npm install -g @capacitor/cli`
-2. Initialize: `npx cap init "ShelfLife" com.shelflife.app`
+2. Initialize: `npx cap init "Stocked" com.stocked.app`
 3. Add iOS and Android: `npx cap add ios && npx cap add android`
 4. Build web: `npm run build` (or copy index.html, etc. to `www/`)
 5. Sync: `npx cap sync`
@@ -126,7 +126,7 @@ Rewrite in Swift (iOS) + Kotlin (Android). Not necessary for your use case—Cap
 
 ## Marketing Copy (for App Store)
 
-**Title:** ShelfLife — Family Food Inventory
+**Title:** Stocked — Family Food Inventory
 
 **Short description:** Family inventory that works offline. No subscription, no ads, no waste.
 

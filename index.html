@@ -7,8 +7,8 @@
 <meta name="theme-color" content="#0E1512" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="ShelfLife">
-<title>ShelfLife</title>
+<meta name="apple-mobile-web-app-title" content="Stocked">
+<title>Stocked</title>
 <link rel="manifest" href="manifest.webmanifest">
 <!-- iOS uses this PNG for the Add-to-Home-Screen icon; it ignores the SVG in the manifest. -->
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -563,7 +563,7 @@ dialog::backdrop{background:var(--shelf)}
 <body>
 
 <header>
-  <h1 id="title">ShelfLife</h1>
+  <h1 id="title">Stocked</h1>
   <button id="searchBtn" class="hide" aria-label="Search your pantry">🔎</button>
 </header>
 
@@ -1431,7 +1431,7 @@ const G = {
       if (G.provider() === 'openai') {
         r = await fetch(`${G.base()}/chat/completions`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${G.key()}`, 'HTTP-Referer': location.origin, 'X-Title': 'ShelfLife' },
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${G.key()}`, 'HTTP-Referer': location.origin, 'X-Title': 'Stocked' },
           body: JSON.stringify({ model: id, messages: [{ role: 'user', content: 'hi' }], max_tokens: 1 }),
         });
       } else {
@@ -1520,7 +1520,7 @@ const G = {
     const body = { model: G.model(), messages: [{ role: 'user', content }] };
     if (jsonSchema) body.response_format = { type: 'json_object' };
     const j = await G._fetchRetry(() => fetch(`${G.base()}/chat/completions`,
-      { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${G.key()}`, 'HTTP-Referer': location.origin, 'X-Title': 'ShelfLife' }, body: JSON.stringify(body) }));
+      { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${G.key()}`, 'HTTP-Referer': location.origin, 'X-Title': 'Stocked' }, body: JSON.stringify(body) }));
     const t = j.choices?.[0]?.message?.content;
     if (!t) throw new Error('Empty response');
     return jsonSchema ? JSON.parse(onlyJson(t)) : t;
@@ -1648,7 +1648,7 @@ if (typeof window !== 'undefined') window.addEventListener('online', () => SYNC.
 
 /* ---------------- push notifications (free, via the family's Edge Function) ----
    Any open app can trigger a family-wide ping (no server cron needed):
-   whoever opens ShelfLife and sees something dying notifies the other
+   whoever opens Stocked and sees something dying notifies the other
    phones. Advanced/optional — needs the notify function deployed once. */
 function urlB64ToU8(b64) {
   const pad = '='.repeat((4 - b64.length % 4) % 4);
@@ -4589,8 +4589,8 @@ function viewSet(app) {
       }
     } catch (e) {}
     s.innerHTML = persisted
-      ? `<b style="color:var(--chill)">✓ Protected.</b> This device is set to keep ShelfLife's data through routine cleanup${usage}. Still worth saving a copy now and then, in case the phone is reset or lost.`
-      : `<b style="color:var(--thaw)">⚠ At risk.</b> Your phone can wipe ShelfLife's on-device data when it's unused or low on space${usage}. Two fixes: <b>Family sync</b> (above — backs up every change as you make it, the reliable one), or save a copy below and keep it somewhere safe.`;
+      ? `<b style="color:var(--chill)">✓ Protected.</b> This device is set to keep Stocked's data through routine cleanup${usage}. Still worth saving a copy now and then, in case the phone is reset or lost.`
+      : `<b style="color:var(--thaw)">⚠ At risk.</b> Your phone can wipe Stocked's on-device data when it's unused or low on space${usage}. Two fixes: <b>Family sync</b> (above — backs up every change as you make it, the reliable one), or save a copy below and keep it somewhere safe.`;
   })();
 
   app.appendChild(el(`<div class="note" style="margin:10px 0 8px">
@@ -4601,7 +4601,7 @@ function viewSet(app) {
   snap.onclick = async () => {
     try {
       const html = await snapshotHTML();
-      dl(new Blob([html], { type: 'text/html' }), `shelflife-${stamp()}.html`);
+      dl(new Blob([html], { type: 'text/html' }), `stocked-${stamp()}.html`);
       toast('Saved — open that file anywhere and the app is there');
     } catch (e) { toast("Couldn't build the file — try again online"); }
   };
@@ -4615,7 +4615,7 @@ function viewSet(app) {
   const exp = el(`<button class="btn ghost">Export my data only (JSON)</button>`);
   exp.onclick = async () => {
     dl(new Blob([JSON.stringify(await backupData(), null, 2)], { type: 'application/json' }),
-       `shelflife-${stamp()}.json`);
+       `stocked-${stamp()}.json`);
   };
   app.appendChild(exp);
 
@@ -4629,7 +4629,7 @@ function viewSet(app) {
       const n = await applyBackup(await readBackup(file));
       toast(`Restored — ${n} item${n === 1 ? '' : 's'} back`);
       render();
-    } catch (e) { toast("That file isn't a ShelfLife backup"); }
+    } catch (e) { toast("That file isn't a Stocked backup"); }
     picker.value = '';
   };
   app.appendChild(imp);
@@ -4745,7 +4745,7 @@ async function loadSnapshotSeed() {
    Persistent, editable, and the answers actually get used. */
 function viewSetup(app) {
   app.appendChild(el(`<div class="eyebrow">First run</div>
-    <h1 style="margin:8px 0 6px;font-size:24px">Set up ShelfLife</h1>
+    <h1 style="margin:8px 0 6px;font-size:24px">Set up Stocked</h1>
     <p class="note" style="margin:0 0 22px">Two minutes. All of it editable later.</p>`));
   const f = el(`<div>
     <label><span class="lbl">Who lives here — first names</span><input id="mem" placeholder="Alex, Sam, Mia, Theo"></label>
@@ -5045,10 +5045,10 @@ function viewProfile(app) {
 
   app.appendChild(el(`<div class="pgroup-label">Help</div>`));
   const g3 = el(`<div class="plist">
-    <button class="prow" data-a="how"><span class="pic">${icon('help',20)}</span><span class="pt"><div class="ptt">How to use ShelfLife</div><div class="pss">A 60-second tour</div></span><span class="parr">›</span></button>
+    <button class="prow" data-a="how"><span class="pic">${icon('help',20)}</span><span class="pt"><div class="ptt">How to use Stocked</div><div class="pss">A 60-second tour</div></span><span class="parr">›</span></button>
   </div>`);
   app.appendChild(g3);
-  app.appendChild(el(`<div class="note" style="text-align:center;color:var(--vapor-dim);margin:2px 0 8px">ShelfLife · local-first, works offline</div>`));
+  app.appendChild(el(`<div class="note" style="text-align:center;color:var(--vapor-dim);margin:2px 0 8px">Stocked · local-first, works offline</div>`));
 
   const rcpt = el(`<input type="file" accept="image/*" class="hide">`);
   rcpt.onchange = e => { const f = e.target.files[0]; if (f) receiptFlow(f); };
@@ -5062,9 +5062,9 @@ function viewProfile(app) {
 
 /* ---------------- first-run welcome tour (so a brand-new user gets it) ---------------- */
 const WELCOME = [
-  { art: '🥗', title: 'Welcome to ShelfLife', sub: 'Your kitchen, organized. Know what you have, what’s expiring, and what to cook — so food stops getting wasted.' },
+  { art: '🥗', title: 'Welcome to Stocked', sub: 'Your kitchen, organized. Know what you have, what’s expiring, and what to cook — so food stops getting wasted.' },
   { art: '📷', title: 'Add food in seconds', sub: 'Scan a barcode or a whole receipt, snap a photo of a shelf, or type it in. No long forms.' },
-  { art: '⏰', title: 'Never waste food again', sub: 'ShelfLife estimates the expiry date for you and shows what to eat first — right on the Pantry screen.' },
+  { art: '⏰', title: 'Never waste food again', sub: 'Stocked estimates the expiry date for you and shows what to eat first — right on the Pantry screen.' },
   { art: '🍴', title: 'Cook & plan, effortlessly', sub: 'Get recipes from what you already have, then plan the week and send missing items to your shopping list in a tap.' },
 ];
 function welcomeCarousel(onDone) {
@@ -5109,7 +5109,7 @@ const ICONS = {
    the planner gives up its tab and lives on Home + Profile instead — which is
    also where every app in this category puts it. */
 const TABS = [['home','Home'],['shop','Shop'],['pantry','Pantry'],['cook','Cook'],['profile','Profile']];
-const TITLES = { home: 'ShelfLife', plan: 'Meal plan', shop: 'Shopping list', pantry: 'Pantry', cook: 'Cook',
+const TITLES = { home: 'Stocked', plan: 'Meal plan', shop: 'Shopping list', pantry: 'Pantry', cook: 'Cook',
   profile: 'Profile', inv: 'Pantry', soon: 'Use soon', scan: 'Add food', cat: 'Catalog', set: 'Settings' };
 const VIEWS = { home: viewHome, plan: viewPlan, shop: viewShopping, pantry: viewPantry, cook: viewCook,
   profile: viewProfile, inv: viewInv, soon: viewSoon, scan: viewScan, cat: viewCatalog, set: viewSet };
@@ -5141,7 +5141,7 @@ function render() {
   // so it's obvious which list you're adding to.
   document.getElementById('title').textContent = S.view === 'shop'
     ? (S.store ? `${storeName(S.store) || 'Store'} list` : 'General shopping list')
-    : (TITLES[S.view] || 'ShelfLife');
+    : (TITLES[S.view] || 'Stocked');
 
   (VIEWS[S.view] || viewPantry)(app);
 

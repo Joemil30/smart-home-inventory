@@ -1,4 +1,4 @@
-/* ShelfLife — offline shell.
+/* Stocked — offline shell.
    The whole reason this exists: your downstairs freezer has bad wifi,
    and an inventory app that won't load in the basement is a dead app.
    App shell is cache-first. Live data is IndexedDB, so it never needs
@@ -8,16 +8,19 @@
    phone that already installed the app keeps serving the shell it cached
    until this string changes — if sw.js is byte-identical the browser never
    even re-registers, and shipped fixes silently never arrive. */
-const CACHE = 'shelflife-v36';      // app shell — wiped on each version bump
+const CACHE = 'stocked-v37';      // app shell — wiped on each version bump
+// Deliberately still 'shelflife-' after the rename: this cache holds every
+// product thumbnail already downloaded. Renaming it would orphan the lot and
+// blank out photos for anyone offline.
 const IMG = 'shelflife-img';        // product thumbnails — kept across app updates
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg', './apple-touch-icon.png', './zxing.min.js'];
 
 /* Push notifications: show the payload, and focus the app on tap. */
 self.addEventListener('push', e => {
   let d = {}; try { d = e.data ? e.data.json() : {}; } catch (x) { d = { body: e.data && e.data.text() }; }
-  e.waitUntil(self.registration.showNotification(d.title || 'ShelfLife', {
+  e.waitUntil(self.registration.showNotification(d.title || 'Stocked', {
     body: d.body || '', icon: './apple-touch-icon.png', badge: './apple-touch-icon.png',
-    tag: d.tag || 'shelflife', data: { url: d.url || './' },
+    tag: d.tag || 'stocked', data: { url: d.url || './' },
   }));
 });
 self.addEventListener('notificationclick', e => {

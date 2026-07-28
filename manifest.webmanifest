@@ -1,6 +1,6 @@
 {
-  "name": "ShelfLife",
-  "short_name": "ShelfLife",
+  "name": "Stocked",
+  "short_name": "Stocked",
   "description": "What's in the house, what's dying, what you can cook right now.",
   "start_url": "./",
   "scope": "./",

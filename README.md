@@ -1,4 +1,4 @@
-# ShelfLife
+# Stocked
 
 Household food inventory. Six shelves, barcode in, wrapper out, cook from what's dying.
 
