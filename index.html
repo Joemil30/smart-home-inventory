@@ -231,6 +231,18 @@ label .lbl{font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:up
 .tile.done .tn{text-decoration:line-through;color:var(--vapor)}
 .tile.done .tc .box{background:var(--fresh);border-color:var(--fresh)}
 .tile.sel{border-color:var(--cold);box-shadow:0 0 0 3px var(--cold-soft)}
+/* "got" = just added, still wanted. Distinct from "done" (crossed off): a
+   thing you just put ON your list shouldn't render as struck through. */
+.tile.got{border-color:var(--fresh)}
+.tile.got .tc{color:var(--fresh)}
+.tile.got .tc .box{background:var(--fresh);border-color:var(--fresh)}
+
+/* A tap that quietly succeeds reads as a tap that did nothing. */
+@keyframes tpop{0%{transform:scale(.55);opacity:.3}55%{transform:scale(1.2)}100%{transform:scale(1);opacity:1}}
+.tile .tc .box.pop{animation:tpop .34s cubic-bezier(.2,.9,.3,1.35)}
+@keyframes tflash{from{background:var(--cold-soft)}to{background:var(--shelf)}}
+.tile.added{animation:tflash .9s ease-out}
+@media (prefers-reduced-motion:reduce){.tile .tc .box.pop,.tile.added{animation:none}}
 .tile .tx{position:absolute;top:8px;right:8px;width:29px;height:29px;border-radius:999px;
   background:rgba(255,255,255,.95);box-shadow:var(--shadow-sm);display:grid;place-items:center;
   font-size:16px;color:var(--vapor);line-height:1}
@@ -1550,7 +1562,7 @@ function pickPhoto(rec, after) {
    is always escaped. Every part is optional, so one component covers the
    shopping checklist, the meal picker and the pantry grid without forking. */
 function tileEl({ name, meta = '', image = null, emoji = '🍽️', badge = '', checked = false,
-                  checkLabel = '', onCheck = null, onTap = null,
+                  checkLabel = '', onCheck = null, onTap = null, stick = false, stickLabel = 'Added ✓',
                   onCorner = null, cornerIcon = '×', cornerLabel = 'Remove', sel = false }) {
   const t = el(`<div class="tile${checked ? ' done' : ''}${sel ? ' sel' : ''}">
     <div class="tt"><div class="tn">${esc(name)}</div>${meta ? `<div class="tm">${meta}</div>` : ''}</div>
@@ -1559,7 +1571,7 @@ function tileEl({ name, meta = '', image = null, emoji = '🍽️', badge = '', 
       : `<span class="emoji">${emoji}</span>`}
       ${badge ? `<span class="tb">${badge}</span>` : ''}
       ${onCorner ? `<button class="tx" data-a="rm" aria-label="${esc(cornerLabel)} ${esc(name)}">${cornerIcon}</button>` : ''}</div>
-    ${onCheck ? `<button class="tc" data-a="chk"><span class="box">${checked ? '✓' : ''}</span>${esc(checkLabel || (checked ? 'Got it' : 'Check off'))}</button>` : ''}
+    ${onCheck ? `<button class="tc" data-a="chk"><span class="box">${checked ? '✓' : ''}</span><span class="lb">${esc(checkLabel || (checked ? 'Got it' : 'Check off'))}</span></button>` : ''}
   </div>`);
   if (onTap) {
     t.querySelector('.tt').onclick = onTap;
@@ -1569,7 +1581,23 @@ function tileEl({ name, meta = '', image = null, emoji = '🍽️', badge = '', 
   const rm = t.querySelector('[data-a=rm]');
   if (rm) rm.onclick = e => { e.stopPropagation(); onCorner(); };
   const ck = t.querySelector('[data-a=chk]');
-  if (ck) ck.onclick = e => { e.stopPropagation(); onCheck(); };
+  if (ck) ck.onclick = async e => {
+    e.stopPropagation();
+    if (t.dataset.busy) return;                     // double-tap guard
+    t.dataset.busy = '1';
+    try {
+      await onCheck();
+      // Confirm it optimistically and STAY confirmed. Repainting the list out
+      // from under the finger is why adding felt like nothing happened.
+      if (stick) {
+        t.classList.add('got');
+        const box = ck.querySelector('.box');
+        box.textContent = '✓';
+        box.classList.remove('pop'); void box.offsetWidth; box.classList.add('pop');
+        ck.querySelector('.lb').textContent = stickLabel;
+      }
+    } finally { delete t.dataset.busy; }
+  };
   return t;
 }
 
@@ -1782,8 +1810,8 @@ function searchHistory(box, q, shown = []) {
     seen.forEach(c => g.appendChild(tileEl({
       name: c.name, meta: `${c.count || 0}× · ${esc(storeLabel(c))}`,
       image: c.image, emoji: foodEmoji(c.name, c.cat) || '🛒',
-      checkLabel: 'Add to list',
-      onCheck: async () => { await addToList(c.name, '', S.store || ''); toast(`${c.name} on the list`); render(); },
+      checkLabel: 'Add to list', stick: true,
+      onCheck: async () => { await addToList(c.name, '', S.store || ''); toast(`${c.name} on the list`); },
       onTap: () => restockSheet(c),
     })));
     box.appendChild(g);
@@ -2554,8 +2582,9 @@ function addMealDialog(dateKey) {
       onCorner: () => pickPhoto(c, () => addMealDialog(dateKey)), cornerIcon: '📷', cornerLabel: 'Set a photo for',
     })));
     mh.appendChild(g);
+    // One day gets one meal, so this picker closes on the pick.
     dlg.querySelector('[data-a=all]').onclick = () =>
-      catalogPicker({ kind: CAT_MEAL, onPick: c => plan(c.name, { image: c.image }) });
+      catalogPicker({ kind: CAT_MEAL, multi: false, onPick: c => plan(c.name, { image: c.image }) });
   }
   dlg.querySelectorAll('[data-p]').forEach(b => b.onclick = () => {
     const r = picks[+b.dataset.p];
@@ -3446,15 +3475,21 @@ function storeSheet() {
 /* Searchable history picker, shared by Shop and Plan. Typo-tolerant, because
    the point of a history is that you don't have to remember what you called
    it last time. */
-function catalogPicker({ kind = CAT_PRODUCT, store = '', onPick }) {
+/* `multi` keeps the sheet open so you can add a run of things and see each
+   one tick — closing after a single tap is what made this feel like a
+   dead button. Picking a meal for one day is genuinely one-and-done. */
+function catalogPicker({ kind = CAT_PRODUCT, store = '', onPick, multi = true }) {
   const dlg = document.getElementById('dlg');
   const meal = kind === CAT_MEAL;
+  const added = new Set();
   dlg.innerHTML = `<div class="eyebrow">From your history</div>
     <h1 style="margin:6px 0 12px">${meal ? "Meals you've made" : "Things you've bought"}</h1>
     <input id="cpq" placeholder="Search — spelling doesn't have to be perfect" autocomplete="off" style="margin-bottom:12px">
     <div id="cpl"></div>
-    <button class="btn ghost" data-a="c" style="margin-top:10px;border:none;color:var(--vapor)">Close</button>`;
+    <button class="btn ${multi ? 'cold' : 'ghost'}" data-a="c" style="margin-top:12px">Done</button>`;
   const listBox = dlg.querySelector('#cpl');
+  const doneBtn = dlg.querySelector('[data-a=c]');
+  const count = () => { doneBtn.textContent = added.size ? `Done — ${added.size} added` : 'Done'; };
   const paint = () => {
     const q = dlg.querySelector('#cpq').value.trim();
     const rows = catalogList(kind, { store, q }).slice(0, 24);
@@ -3473,14 +3508,22 @@ function catalogPicker({ kind = CAT_PRODUCT, store = '', onPick }) {
       image: c.image,
       emoji: foodEmoji(c.name, c.cat || '') || (meal ? '🍽️' : '🛒'),
       badge: meal ? '' : stockTag(c.name),
-      checkLabel: 'Add', onCheck: async () => { await onPick(c); dlg.close(); },
+      checked: added.has(c.id),
+      checkLabel: added.has(c.id) ? 'Added ✓' : 'Add',
+      stick: true,
+      onCheck: async () => {
+        if (added.has(c.id)) return;
+        await onPick(c);
+        added.add(c.id); count();
+        if (!multi) dlg.close();
+      },
       onCorner: () => pickPhoto(c, () => paint()), cornerIcon: '📷', cornerLabel: 'Set a photo for',
     })));
     listBox.appendChild(g);
   };
   dlg.querySelector('#cpq').oninput = paint;
-  dlg.querySelector('[data-a=c]').onclick = () => dlg.close();
-  paint();
+  doneBtn.onclick = () => { dlg.close(); render(); };
+  count(); paint();
   dlg.showModal();
 }
 
@@ -3514,7 +3557,7 @@ function viewShopping(app) {
     if (!v || adding) return;
     adding = true;
     inp.value = '';                       // clear immediately — feels instant
-    try { await addToList(v, '', store); paintShopping(listBox); }
+    try { const it = await addToList(v, '', store); paintShopping(listBox, it && it.id); }
     finally { adding = false; inp.focus(); }
   };
   add.querySelector('[data-a=add]').onclick = doAdd;
@@ -3536,13 +3579,13 @@ function viewShopping(app) {
 /* One line of the list. Checked items keep their photo and move to Completed
    instead of vanishing, so at the till you can still see what you picked up —
    and mark anything the store simply didn't have. */
-function shopTile(s, box) {
+function shopTile(s, box, flash = false) {
   const store = S.store || '';
   const known = catalogFind(s.name);
   const meta = s.done
     ? (s.missing ? `<span class="tag out">Store didn't have it</span>` : `<span class="tag have">✓ In the cart</span>`)
     : (stockTag(s.name) || `<span class="tag miss">Not in the house</span>`);
-  return tileEl({
+  const t = tileEl({
     name: s.name + (s.qty ? ` ×${s.qty}` : ''),
     meta,
     image: s.image || known?.image || null,
@@ -3556,9 +3599,11 @@ function shopTile(s, box) {
     },
     onCorner: async () => { s.deleted = true; await saveShopping(s); paintShopping(box); },
   });
+  if (flash) t.classList.add('added');   // so you can see where a new line landed
+  return t;
 }
 
-function paintShopping(box) {
+function paintShopping(box, flashId = '') {
   box.innerHTML = '';
   const store = S.store || '';
   const mine = S.shopping.filter(s => !s.deleted && (!store || (s.store || '') === store));
@@ -3568,7 +3613,7 @@ function paintShopping(box) {
   if (todo.length) {
     box.appendChild(el(`<div class="sect"><h3>Need to get</h3><span class="n">${todo.length}</span></div>`));
     const g = el(`<div class="tiles"></div>`);
-    todo.forEach(s => g.appendChild(shopTile(s, box)));
+    todo.forEach(s => g.appendChild(shopTile(s, box, s.id === flashId)));
     box.appendChild(g);
   } else {
     box.appendChild(el(`<div class="empty"><div class="big">${done.length ? 'All done' : 'Nothing on the list'}</div>
@@ -3587,8 +3632,10 @@ function paintShopping(box) {
       meta: `${c.count}× · ${esc(storeLabel(c, store))}`,
       image: c.image, emoji: foodEmoji(c.name, c.cat) || '🛒',
       badge: `<span class="tag out">You're out</span>`,
-      checkLabel: 'Add to list',
-      onCheck: async () => { await addToList(c.name, '', store); paintShopping(box); },
+      checkLabel: 'Add to list', stick: true,
+      // Tick first, move it a beat later — repainting immediately yanks the
+      // tile away before you've seen that anything happened.
+      onCheck: async () => { await addToList(c.name, '', store); setTimeout(() => paintShopping(box), 750); },
       onCorner: () => pickPhoto(c, () => paintShopping(box)), cornerIcon: '📷', cornerLabel: 'Set a photo for',
     })));
     box.appendChild(g);
@@ -3715,49 +3762,142 @@ function viewSet(app) {
       }
     } catch (e) {}
     s.innerHTML = persisted
-      ? `<b style="color:var(--chill)">✓ Protected.</b> This device is set to keep ShelfLife's data through routine cleanup${usage}. Still, export a backup now and then — or turn on Family sync — in case the device is reset or lost.`
-      : `<b style="color:var(--thaw)">⚠ At risk.</b> Your phone can wipe ShelfLife's on-device data when it's unused or low on space${usage}. Two fixes: <b>Family sync</b> (below — auto-backs-up every change, the reliable one), or export a JSON backup here and re-import it if needed.`;
+      ? `<b style="color:var(--chill)">✓ Protected.</b> This device is set to keep ShelfLife's data through routine cleanup${usage}. Still worth saving a copy now and then, in case the phone is reset or lost.`
+      : `<b style="color:var(--thaw)">⚠ At risk.</b> Your phone can wipe ShelfLife's on-device data when it's unused or low on space${usage}. Two fixes: <b>Family sync</b> (above — backs up every change as you make it, the reliable one), or save a copy below and keep it somewhere safe.`;
   })();
 
-  const exp = el(`<button class="btn ghost" style="margin-top:6px">Export everything (JSON)</button>`);
+  app.appendChild(el(`<div class="note" style="margin:10px 0 8px">
+    The app itself lives at its web address — reinstalling is just opening that link and
+    tapping <b>Add to Home Screen</b> again. These files are your <b>data</b>.</div>`));
+
+  const snap = el(`<button class="btn cold" style="margin-top:4px">💾&nbsp;&nbsp;Save the whole app + my data (1 file)</button>`);
+  snap.onclick = async () => {
+    try {
+      const html = await snapshotHTML();
+      dl(new Blob([html], { type: 'text/html' }), `shelflife-${stamp()}.html`);
+      toast('Saved — open that file anywhere and the app is there');
+    } catch (e) { toast("Couldn't build the file — try again online"); }
+  };
+  app.appendChild(snap);
+  app.appendChild(el(`<div class="note" style="margin:8px 0 14px">
+    One self-contained <b class="code">.html</b> file: open it on any computer and it opens as
+    the working app with everything in it — no install, no internet. Use it to get your data
+    back, or just to check the freezer from a laptop. (Barcode scanning and new product photos
+    need the real app; everything else works.)</div>`));
+
+  const exp = el(`<button class="btn ghost">Export my data only (JSON)</button>`);
   exp.onclick = async () => {
-    const blob = new Blob([JSON.stringify({ v: 1, items: S.items, catalog: S.catalog,
-      shopping: S.shopping, household: S.household, log: await DB.all('log') }, null, 2)],
-      { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `shelflife-${new Date().toISOString().slice(0,10)}.json`;
-    a.click();
+    dl(new Blob([JSON.stringify(await backupData(), null, 2)], { type: 'application/json' }),
+       `shelflife-${stamp()}.json`);
   };
   app.appendChild(exp);
 
   const imp = el(`<button class="btn ghost" style="margin-top:8px">Restore from a backup file</button>`);
-  const picker = el(`<input type="file" accept="application/json,.json" class="hide">`);
+  const picker = el(`<input type="file" accept=".html,.json,text/html,application/json" class="hide">`);
   imp.onclick = () => picker.click();
   picker.onchange = async () => {
     const file = picker.files && picker.files[0];
     if (!file) return;
     try {
-      const data = JSON.parse(await file.text());
-      // Merge by id — restores anything missing without clobbering newer edits.
-      const restore = async (store, rows) => { for (const r of (rows || [])) if (r && r.id) await DB.put(store, r); };
-      await Promise.all([
-        restore('items', data.items), restore('catalog', data.catalog),
-        restore('shopping', data.shopping), restore('log', data.log),
-      ]);
-      if (data.household) await DB.put('meta', { id: 'household', ...data.household });
-      const [items, catalog, shopping, household] = await Promise.all([
-        DB.all('items'), DB.all('catalog'), DB.all('shopping'), DB.get('meta', 'household')]);
-      S.items = items; S.catalog = catalog; S.shopping = shopping;
-      if (household) S.household = household;
-      if (S.household && !S.who) S.who = S.household.members[0];
-      toast(`Restored ${items.length} item${items.length === 1 ? '' : 's'}`);
+      const n = await applyBackup(await readBackup(file));
+      toast(`Restored — ${n} item${n === 1 ? '' : 's'} back`);
       render();
-    } catch (e) { toast('Could not read that file'); }
+    } catch (e) { toast("That file isn't a ShelfLife backup"); }
     picker.value = '';
   };
   app.appendChild(imp);
   app.appendChild(picker);
+  app.appendChild(el(`<div class="note" style="margin:8px 0 0">Takes either file above. Merges by
+    item, so restoring never wipes something newer you've added since.</div>`));
+}
+
+/* ---------------- backup ----------------
+   Two different things people mean by "back up my app":
+     1. My DATA — a JSON file to re-import. Small and mergeable.
+     2. THE APP — something you can open and use. Tapping a .json gets you a
+        screen of raw text, which is nobody's idea of a restored app.
+   So we ship both, and the .html one is a real, working, offline copy. */
+const stamp = () => new Date().toISOString().slice(0, 10);
+function dl(blob, name) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+
+const BACKUP_STORES = ['items', 'catalog', 'shopping', 'plan', 'saved', 'log'];
+/* Keys stay OUT of the file, so it's safe to email to yourself or leave in a
+   shared drive. Re-pasting a key is a minor annoyance; leaking one isn't. */
+const CFG_SECRETS = ['geminiKey', 'openaiKey', 'supaKey', 'supaUrl', 'vapidPublic', '_syncq'];
+
+async function backupData() {
+  const rows = await Promise.all(BACKUP_STORES.map(s => DB.all(s)));
+  const cfg = { ...S.cfg };
+  CFG_SECRETS.forEach(k => delete cfg[k]);
+  const out = { v: 2, at: Date.now(), household: S.household || null, cfg };
+  BACKUP_STORES.forEach((s, i) => (out[s] = rows[i]));
+  return out;
+}
+
+/* Accepts either export. The .html one carries its data in a script tag.
+   Careful: a snapshot contains this app's whole source, and that source
+   contains this very pattern — so the FIRST match is the code that looks for
+   the payload, not the payload. The real one is appended last, so walk the
+   matches backwards and take the first that's genuinely JSON. */
+async function readBackup(file) {
+  const text = await file.text();
+  if (/^\s*[{[]/.test(text)) return JSON.parse(text);
+  const all = [...text.matchAll(/<script id="shelflife-restore"[^>]*>([\s\S]*?)<\/script>/gi)];
+  for (let i = all.length - 1; i >= 0; i--) {
+    try { return JSON.parse(all[i][1]); } catch (e) { /* that one was source, keep looking */ }
+  }
+  throw new Error('not a backup');
+}
+
+/* Merge by id, so a restore never clobbers something newer on this device.
+   Keys already on THIS phone win over the (blank) ones in the file. */
+async function applyBackup(data) {
+  if (!data || typeof data !== 'object') throw new Error('not a backup');
+  if (!BACKUP_STORES.some(s => Array.isArray(data[s])) && !data.household) throw new Error('not a backup');
+  for (const s of BACKUP_STORES)
+    for (const r of (data[s] || [])) if (r && r.id) await DB.put(s, r);
+  if (data.household) await DB.put('meta', { id: 'household', ...data.household });
+  if (data.cfg) { S.cfg = { ...data.cfg, ...S.cfg }; await saveCfg(); }
+  const [items, catalog, shopping, plan, saved, household] = await Promise.all([
+    DB.all('items'), DB.all('catalog'), DB.all('shopping'), DB.all('plan'), DB.all('saved'),
+    DB.get('meta', 'household')]);
+  S.items = items; S.catalog = catalog; S.shopping = shopping; S.plan = plan; S.saved = saved;
+  if (household) S.household = household;
+  if (S.household && !S.who) S.who = S.household.members?.[0] || null;
+  return items.length;
+}
+
+/* The whole app, with the data baked in, as one file. The app is a single
+   HTML document already, so this is genuinely the entire thing — not a
+   pointer to it. */
+async function snapshotHTML() {
+  const src = await (await fetch('index.html', { cache: 'no-store' })).text();
+  const json = JSON.stringify(await backupData()).replace(/</g, '\\u003c');
+  const tag = `<script id="shelflife-restore" type="application/json">${json}<\/script>`;
+  // Anchor on the LAST close-body tag, and never write that tag literally
+  // here: this function's own source ends up inside `src`, so splicing at the
+  // first hit buries the payload in the middle of the code instead of at the
+  // end of the document. Slice rather than replace() — the JSON can contain
+  // "$&" and friends, which replace() would treat as substitutions.
+  const close = '<' + '/body>';
+  const at = src.lastIndexOf(close);
+  return at < 0 ? src + tag : src.slice(0, at) + tag + '\n' + src.slice(at);
+}
+
+/* Opening a snapshot: if this copy is empty it just becomes your app. If it
+   already has data, never clobber silently — offer it. */
+async function loadSnapshotSeed() {
+  const node = document.getElementById('shelflife-restore');
+  if (!node) return;
+  let data; try { data = JSON.parse(node.textContent); } catch (e) { return; }
+  const n = (data.items || []).length;
+  if (!S.household) { await applyBackup(data); render(); toast(`Backup opened — ${n} items`); return; }
+  toast(`This file holds a backup of ${n} items — tap to load it`,
+    async () => { await applyBackup(data); render(); });
 }
 
 /* ---------------- setup wizard ----------------
@@ -3883,8 +4023,8 @@ function pantryHistory(app) {
     name: c.name,
     meta: `${c.count || 0}× · ${esc(storeLabel(c))}`,
     image: c.image, emoji: foodEmoji(c.name, c.cat) || '🛒',
-    checkLabel: 'Add to list',
-    onCheck: async () => { await addToList(c.name, '', S.store || ''); toast(`${c.name} on the list`); render(); },
+    checkLabel: 'Add to list', stick: true,
+    onCheck: async () => { await addToList(c.name, '', S.store || ''); toast(`${c.name} on the list`); },
     onTap: () => restockSheet(c),
     onCorner: () => pickPhoto(c, () => render()), cornerIcon: '📷', cornerLabel: 'Set a photo for',
   })));
@@ -4068,6 +4208,7 @@ function render() {
   document.getElementById('searchBtn').onclick = () => { S.view = 'pantry'; S.loc = 'all'; S.focusSearch = true; render(); };
   render();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+  loadSnapshotSeed();   // opened one of the .html backups? bring its data in
   G.ensureModel();   // silently repair a discontinued Gemini model (e.g. the dead 2.0-flash)
   SYNC.start().then(() => PUSH.dailyCheck());   // pull + subscribe, then maybe ping the family about dying food
 })();
