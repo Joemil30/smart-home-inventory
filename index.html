@@ -169,9 +169,16 @@ nav button.fab[aria-current="page"] svg{filter:brightness(1.05)}
   border:1px solid var(--rime);border-radius:var(--r);padding:11px 12px 11px 18px;margin-bottom:9px;
   overflow:hidden}
 .item::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--rail,var(--vapor-dim))}
-.item .thumb{width:48px;height:48px;flex:0 0 auto;border-radius:12px;overflow:hidden;background:var(--fog);
-  border:1px solid var(--rime);display:grid;place-items:center}
-.item .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.item .thumb{position:relative;width:48px;height:48px;flex:0 0 auto;border-radius:12px;overflow:hidden;
+  background:var(--fog);border:1px solid var(--rime);display:grid;place-items:center}
+/* contain + a little padding, to match the big tiles exactly. With cover the
+   same photo was centre-cropped here and whole there, so flipping between
+   photo and compact view reframed everything.
+   Pinned with position:absolute because the parent is a place-items:center
+   grid — a centred grid item is sized by its CONTENT, so height:100% never
+   resolved, the image laid out at its natural aspect and simply overflowed
+   the box to be clipped. object-fit had nothing to act on. */
+.item .thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;padding:3px}
 .item .thumb .ph{font-size:18px;font-weight:700;color:var(--vapor-dim);text-transform:uppercase}
 .item .thumb .emoji{font-size:26px;line-height:1}
 .item .body{flex:1;min-width:0}
@@ -267,8 +274,8 @@ label .lbl{font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:up
 .hscroll{display:flex;gap:11px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin:0 calc(var(--pad)*-1);padding:2px var(--pad) 6px}
 .hscroll::-webkit-scrollbar{display:none}
 .foodcard{flex:0 0 118px;background:var(--shelf);border:1px solid var(--rime);border-radius:var(--r);overflow:hidden}
-.foodcard .top{height:80px;display:grid;place-items:center;background:var(--fog);font-size:38px}
-.foodcard .top img{width:100%;height:100%;object-fit:cover}
+.foodcard .top{position:relative;height:80px;display:grid;place-items:center;background:var(--fog);font-size:38px}
+.foodcard .top img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:5px}
 .foodcard .lo{padding:9px 10px 11px}
 .foodcard .fn{font-size:13px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.01em}
 .foodcard .fd{font-size:11px;font-weight:650;margin-top:3px;letter-spacing:0}
@@ -325,19 +332,25 @@ label .lbl{font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:up
 /* 4:3, not square: a square photo in a two-up grid makes each tile ~430px
    tall, so a real shopping list turns into a mile of scrolling. This keeps
    the photo big enough to recognise while fitting ~3 rows on a phone. */
-.tile .tp{position:relative;aspect-ratio:4/3;background:var(--fog);display:grid;place-items:center;overflow:hidden}
+/* flex:0 0 auto or the grid's equal-height stretch overrides aspect-ratio and
+   one tile's photo box silently grows taller than its neighbour's — which is
+   what made the same photo look framed differently in two tiles side by side. */
+.tile .tp{position:relative;aspect-ratio:4/3;flex:0 0 auto;background:var(--fog);display:grid;place-items:center;overflow:hidden}
 .tiles.one .tp{aspect-ratio:16/9}
 /* contain, not cover: a real product/shelf photo is rarely 4:3, and cropping
    it to fit was cutting off the very thing the tile exists to show. The fog
-   background letterboxes whatever's left over instead of guessing what to lose. */
-.tile .tp img{width:100%;height:100%;object-fit:contain;display:block}
+   background letterboxes whatever's left over instead of guessing what to lose.
+   Padded slightly so a photo never touches the tile edge. */
+.tile .tp img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;padding:6px}
 .tile .tp .emoji{font-size:46px;line-height:1}
 .tiles.one .tp .emoji{font-size:64px}
 .tile .tb{position:absolute;top:8px;left:8px;font-size:11px;font-weight:700;padding:5px 9px;
   border-radius:999px;background:var(--scrim);color:var(--frost);letter-spacing:0;
   box-shadow:0 1px 3px rgba(18,50,30,.16)}
+/* margin-top:auto pins the check row to the bottom, so when a row's tiles end
+   up different heights the slack lands in one place instead of stretching the photo. */
 .tile .tc{display:flex;align-items:center;gap:9px;padding:11px 12px;border-top:1px solid var(--rime);
-  font-size:13.5px;font-weight:700;color:var(--vapor);background:var(--shelf);width:100%}
+  font-size:13.5px;font-weight:700;color:var(--vapor);background:var(--shelf);width:100%;margin-top:auto}
 .tile .tc .box{width:24px;height:24px;border-radius:8px;border:2px solid var(--rime-hi);
   display:grid;place-items:center;color:#fff;font-size:14px;flex:0 0 auto;background:var(--shelf)}
 .tile .tc:active{background:var(--fog)}
@@ -632,6 +645,10 @@ const SHELF = {
   'juice-drink':         [  10,    180,    270 ],
   'nuts-seeds':          [ 180,    365,     90 ],
   'spice':               [   0,      0,   1000 ],
+  // Paper goods, wrap, cleaning supplies. Tracked because they belong on the
+  // shopping list, but they don't spoil — a long horizon keeps them out of
+  // "use soon" instead of nagging you about the toilet paper.
+  'household':           [3650,   3650,   3650 ],
   'other':               [  14,    180,    180 ],
 };
 const KIND_IDX = { fridge: 0, freezer: 1, pantry: 2 };
@@ -737,7 +754,7 @@ const CAT_AISLE = {
   'oil-vinegar':'pantry','spice':'pantry','coffee-tea':'pantry','nuts-seeds':'pantry',
   'canned':'cans','jarred-sauce':'cans','condiment':'cans',
   'snack':'snacks','ice-cream':'frozen','frozen-meal':'frozen','frozen-veg':'frozen',
-  'juice-drink':'drinks','leftovers':'other','other':'other',
+  'juice-drink':'drinks','household':'household','leftovers':'other','other':'other',
 };
 const aisleOf = cat => CAT_AISLE[cat] || 'other';
 
@@ -1113,19 +1130,84 @@ async function addToList(name, qty, store = '') {
 
 /* Rough category from a plain product name — good enough to seed the expiry
    estimate when converting a shopping item into the pantry. */
+/* First match wins, so ORDER IS THE LOGIC. Two rules govern this table:
+
+   1. Anchor on word boundaries. Bare substrings quietly collide with real
+      products — "cola" sits inside choCOLAte, "egg" inside EGGplant, "nut"
+      inside cocoNUT, "pepper" inside PEPPERoni, "bleach" inside unBLEACHed.
+      Every one of those sent a real item to the wrong aisle.
+   2. The more specific phrase goes first. "Avocado oil" is oil, not an
+      avocado; "cranberry juice" is a drink, not fruit; "chicken salad" is
+      deli, not leaves. So compounds are matched before their parts. */
 function guessCat(name) {
   const n = String(name || '').toLowerCase();
   const map = [
-    [/\bmilk\b/, 'dairy-milk'], [/cheese/, 'dairy-cheese-hard'], [/yog[hu]rt/, 'dairy-yogurt'], [/butter/, 'dairy-butter'],
-    [/\begg/, 'eggs'], [/chicken|turkey/, 'poultry-raw'], [/beef|pork|steak|lamb|\bmeat\b|sausage|bacon/, 'meat-raw'],
-    [/fish|salmon|tuna|shrimp|cod|tilapia/, 'fish-raw'], [/lettuce|spinach|kale|arugula|greens|salad/, 'produce-leafy'],
-    [/berr|strawber|blueber|raspber/, 'produce-berry'], [/apple|orange|lemon|lime|citrus|grapefruit/, 'produce-citrus'],
-    [/banana/, 'produce-banana'], [/avocado/, 'produce-avocado'], [/carrot|potato|onion|garlic|ginger|beet/, 'produce-root'],
-    [/broccoli|pepper|cucumber|tomato|zucchini|celery|cabbage/, 'produce-hardy'], [/bread|bagel|\bbun|roll|baguette/, 'bread'],
-    [/tortilla|wrap/, 'tortilla'], [/rice|pasta|noodle|spaghetti|macaroni/, 'dry-pasta-rice'], [/flour|sugar|\boat|grain|quinoa/, 'dry-grain-flour'],
-    [/cereal/, 'cereal'], [/chip|cracker|snack|pretzel|popcorn/, 'snack'], [/frozen/, 'frozen-meal'],
-    [/\bcan\b|soup|beans?\b|lentil/, 'canned'], [/sauce|salsa|ketchup|jam|jelly/, 'jarred-sauce'], [/oil|vinegar/, 'oil-vinegar'],
-    [/coffee|\btea\b/, 'coffee-tea'], [/juice|soda|drink|cola/, 'juice-drink'], [/nut|almond|peanut|cashew|walnut/, 'nuts-seeds'],
+    // -- not food at all. First, because several own words a food rule wants.
+    [/toilet paper|paper towel|napkin|tissue|paper plate|paper cup/, 'household'],
+    [/detergent|laundry|dish soap|dishwasher|\bbleach\b|sponge|trash bag|garbage bag|disinfect|cleaner\b/, 'household'],
+    [/saran|cling wrap|plastic wrap|alumini?um foil|tin foil|zip ?lock|freezer bag|parchment/, 'household'],
+
+    // -- how it's stored beats what it is: frozen peas belong in Frozen.
+    [/ice cream|gelato|sorbet/, 'ice-cream'],
+    [/\bfrozen\b/, 'frozen-meal'],
+
+    // -- compounds that would otherwise be claimed by one of their words
+    [/\b(chicken|tuna|egg|potato|pasta) salad\b/, 'deli-meat'],
+    // A prepared sandwich is deli, whatever it's filled with — this has to
+    // outrank the cheese and meat rules naming its own fillings.
+    [/sandwich|hoagie|panini|\bsub\b/, 'deli-meat'],
+    // Before produce: "orange tea" is tea, "ginger tea" is tea.
+    [/coffee|\btea\b|espresso|matcha/, 'coffee-tea'],
+    [/bouillon|stock cube|broth/, 'spice'],
+    [/(avocado|olive|vegetable|canola|coconut|sesame|truffle) oil/, 'oil-vinegar'],
+    [/juice|cider|lemonade|coconut water/, 'juice-drink'],
+    [/chocolate chip|cocoa|baking (powder|soda)|shortening|crisco|vanilla extract|pancake mix|\byeast\b/, 'baking'],
+    [/hummus|guacamole|\bdip\b/, 'condiment'],
+    [/chickpea|garbanzo/, 'canned'],
+    [/green beans?/, 'produce-hardy'],
+
+    // -- seasoning. Specific names only: bare "powder" would eat cocoa powder.
+    [/\bsalt\b|black pepper|cayenne|paprika|cumin|turmeric|cinnamon|nutmeg|oregano|bay leaf|(garlic|onion|chili|curry) powder|seasoning|\bspice\b/, 'spice'],
+    [/\bbasil\b|cilantro|parsley|\bmint\b|thyme|rosemary|\bdill\b|\bsage\b|chives|scallion/, 'herbs-fresh'],
+
+    // -- dairy, by name as well as by the word "cheese"
+    [/mozzarella|provolone|parmigiano|parmesan|pecorino|cheddar|gouda|gruy|asiago|romano|swiss cheese|manchego/, 'dairy-cheese-hard'],
+    [/ricotta|feta|\bbrie\b|camembert|mascarpone|burrata|goat cheese|cream cheese/, 'dairy-cheese-soft'],
+    [/cheese/, 'dairy-cheese-hard'],
+    [/yog[hu]rt/, 'dairy-yogurt'],
+    [/\bbutter\b/, 'dairy-butter'],
+    [/heavy cream|sour cream|half and half|half n half|\bcream\b(?! cheese)|\bmilk\b|creamer/, 'dairy-milk'],
+    [/\begg\b|\beggs\b/, 'eggs'],
+
+    // -- protein. Cured/sliced first, so pepperoni isn't read as a pepper.
+    [/pepperoni|salami|prosciutto|\bdeli\b|\bham\b|sliced (turkey|chicken|beef)/, 'deli-meat'],
+    [/\bfish\b|salmon|tuna|shrimp|\bcod\b|tilapia|clam|crab|lobster|scallop|mussel|anchov/, 'fish-raw'],
+    [/chicken|turkey|\bduck\b/, 'poultry-raw'],
+    [/beef|pork|steak|lamb|\bmeat\b|sausage|bacon|bison|veal|chops\b/, 'meat-raw'],
+
+    // -- produce
+    [/lettuce|spinach|kale|arugula|romaine|\bgreens\b|\bsalad\b|micro ?green/, 'produce-leafy'],
+    [/berr|strawber|blueber|raspber|blackber|cranber/, 'produce-berry'],
+    [/orange|lemon|lime\b|citrus|grapefruit|clementine|mandarin|tangerine/, 'produce-citrus'],
+    [/banana|plantain/, 'produce-banana'],
+    [/avocado/, 'produce-avocado'],
+    [/carrot|potato|\bonion|garlic|ginger|\bbeet|turnip|radish|parsnip|shallot|\byam\b/, 'produce-root'],
+    [/broccoli|\bpepper|cucumber|tomato|zucchini|celery|cabbage|mushroom|brussels|artichoke|asparagus|cauliflower|squash|eggplant|\bpeas\b|\bcorn\b|\bapple|\bpear\b|peach|mango|melon|grape|\bplum\b|kiwi|cherr|apricot|pineapple/, 'produce-hardy'],
+
+    // -- bakery & grains
+    [/bread|bagel|\bbun\b|\broll\b|baguette|croissant|muffin|sourdough/, 'bread'],
+    [/tortilla|\bwraps?\b|pita|naan/, 'tortilla'],
+    [/rice|pasta|noodle|spaghetti|macaroni|couscous|orzo|gnocchi/, 'dry-pasta-rice'],
+    [/cereal|granola(?! bar)|oatmeal/, 'cereal'],
+    [/flour|\bsugar\b|quinoa|\boats?\b|corn ?starch|breadcrumb/, 'baking'],
+
+    // -- packaged
+    [/chips?\b|cracker|snack|pretzel|popcorn|\bbars?\b|candy|chocolate|raisin|dried fruit|crisps?\b|jerky/, 'snack'],
+    [/\bcans?\b|canned|soup|\bbeans?\b|lentil/, 'canned'],
+    [/sauce|salsa|ketchup|mustard|relish|mayo|jam\b|jelly|pickle|olives?\b|vinegar|honey|syrup/, 'condiment'],
+    [/\boil\b/, 'oil-vinegar'],
+    [/soda|\bcola\b|seltzer|sparkling|pellegrino|perrier|\bwater\b|wine|beer|spumante|prosecco|champagne|kombucha/, 'juice-drink'],
+    [/\bnuts?\b|almond|peanut|cashew|walnut|pecan|pistachio|\bseeds?\b/, 'nuts-seeds'],
   ];
   for (const [re, c] of map) if (re.test(n)) return c;
   return 'other';
@@ -4580,7 +4662,20 @@ async function applyBackup(data) {
   if (!BACKUP_STORES.some(s => Array.isArray(data[s])) && !data.household) throw new Error('not a backup');
   for (const s of BACKUP_STORES)
     for (const r of (data[s] || [])) if (r && r.id) await DB.put(s, r);
-  if (data.household) await DB.put('meta', { id: 'household', ...data.household });
+  if (data.household) {
+    const local = await DB.get('meta', 'household');
+    // A `seed` file is a bundle of data to fold in (an old list, a starter
+    // catalog), not a snapshot of a whole household. It may only contribute
+    // the shops its lines point at — overwriting the real household's shelves,
+    // allergies and members with a seed's placeholders would be destructive.
+    if (data.seed && local) {
+      const have = new Set((local.stores || []).map(s => norm(s.name)));
+      const add = (data.household.stores || []).filter(s => !have.has(norm(s.name)));
+      await DB.put('meta', { ...local, id: 'household', stores: [...(local.stores || []), ...add] });
+    } else {
+      await DB.put('meta', { id: 'household', ...data.household });
+    }
+  }
   if (data.cfg) { S.cfg = { ...data.cfg, ...S.cfg }; await saveCfg(); }
   const [items, catalog, shopping, plan, saved, household] = await Promise.all([
     DB.all('items'), DB.all('catalog'), DB.all('shopping'), DB.all('plan'), DB.all('saved'),
@@ -4809,6 +4904,11 @@ function viewPantry(app) {
     const b = el(`<button class="btn cold" style="max-width:320px;margin:16px auto 0">${icon('plus',17)}Add your first item</button>`);
     b.onclick = () => addFoodChooser();
     app.appendChild(b);
+    // An empty pantry is exactly when "had before, not here now" earns its
+    // keep — everything you've ever bought is one tap from being back. Bailing
+    // out here is what made the whole catalog look like it had been deleted.
+    pantryHistory(app);
+    setTimeout(enrichCatalogPhotos, 900);
     return;
   }
   const soon = live.filter(i => freshness(i).left <= 3).sort((a, b) => a.expires - b.expires);
