@@ -211,6 +211,16 @@ nav button.fab[aria-current="page"] svg{filter:brightness(1.05)}
    acting as the bullet — the pattern every iOS/Android action sheet uses. */
 .btn.left{justify-content:flex-start;gap:12px;padding-left:15px}
 .btn.ghost.on{border-color:var(--cold);color:var(--cold);background:var(--cold-soft)}
+/* Appearance options: a real labelled choice rather than three bare chips, so
+   "Match my phone" doesn't need guessing at. */
+/* text-align:left is not redundant: .btn centres its text, and .left only
+   changes the flex justification, so without this the labels sat centred
+   next to a left-hand tick. */
+.topt{height:auto;padding:12px 14px;margin-bottom:8px;align-items:flex-start;gap:11px;font-weight:600;text-align:left}
+.topt .tk{width:20px;flex:0 0 auto;display:grid;place-items:center;color:var(--cold);margin-top:1px}
+.topt b{display:block;font-size:14.5px;font-weight:750}
+.topt .td{display:block;font-size:12.5px;font-weight:500;color:var(--vapor);line-height:1.45;margin-top:2px;white-space:normal}
+.topt.on .td{color:var(--cold)}
 .btn.ghost.on .ico{fill:currentColor}
 .ico{flex:0 0 auto;display:block}
 .chip .ico,.sect .ico{margin-right:-1px}
@@ -2000,11 +2010,40 @@ const tap = (ms = 8) => { try { navigator.vibrate?.(ms); } catch (e) {} };
 
 /* System by default; the override is for people who keep their phone light
    and want the kitchen app dark, which is a real preference. */
+const GROUND = { light: '#F7F9F7', dark: '#0E1512' };
+const prefersDark = () => matchMedia('(prefers-color-scheme: dark)').matches;
+/* What the app is ACTUALLY showing right now — 'system' resolves to whatever
+   the phone is set to. */
+const effectiveTheme = (t = S.cfg.theme || 'system') =>
+  t === 'system' ? (prefersDark() ? 'dark' : 'light') : t;
+
+/* The status bar / PWA chrome colour. The two <meta media="..."> tags in the
+   head follow the PHONE, which is exactly wrong once you override the theme
+   in-app: forcing Light on a dark phone left a black bar above a white app.
+   Drop those and drive one tag ourselves off the effective theme. */
+function syncThemeColor() {
+  document.querySelectorAll('meta[name="theme-color"][media]').forEach(m => m.remove());
+  let m = document.querySelector('meta[name="theme-color"]:not([media])');
+  if (!m) { m = document.createElement('meta'); m.setAttribute('name', 'theme-color'); document.head.appendChild(m); }
+  m.setAttribute('content', GROUND[effectiveTheme()]);
+  // iOS reads its own tag for the notch area in an installed PWA.
+  const ios = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+  if (ios) ios.setAttribute('content', effectiveTheme() === 'dark' ? 'black' : 'default');
+}
+
 function applyTheme() {
   const t = S.cfg.theme || 'system';
   if (t === 'system') document.documentElement.removeAttribute('data-theme');
   else document.documentElement.setAttribute('data-theme', t);
+  syncThemeColor();
 }
+
+/* On "Match my phone", the CSS flips itself via the media query — but the
+   chrome colour is ours to keep in step. */
+try {
+  matchMedia('(prefers-color-scheme: dark)')
+    .addEventListener('change', () => { if ((S.cfg.theme || 'system') === 'system') syncThemeColor(); });
+} catch (e) {}
 
 const el = (h) => { const d = document.createElement('div'); d.innerHTML = h.trim(); return d.firstElementChild; };
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -4538,12 +4577,24 @@ function viewSet(app) {
 
   app.appendChild(el(`<h2 style="margin:22px 0 10px">Appearance</h2>`));
   const th = S.cfg.theme || 'system';
-  const tc = el(`<div class="card"><div class="chips" style="padding-bottom:0">
-    ${[['system', 'Match my phone'], ['light', 'Light'], ['dark', 'Dark']]
-      .map(([v, l]) => `<button class="chip" data-t="${v}" aria-pressed="${th === v}">${l}</button>`).join('')}
-  </div></div>`);
+  const THEMES = [
+    ['system', 'Match my phone', "Follows your phone's Light/Dark setting, and changes with it."],
+    ['light',  'Light',          'Always light — even when your phone is in dark mode.'],
+    ['dark',   'Dark',           'Always dark — even when your phone is in light mode.'],
+  ];
+  const tc = el(`<div class="card">
+    ${THEMES.map(([v, l, d]) => `<button class="btn ghost left topt${th === v ? ' on' : ''}" data-t="${v}"
+        role="radio" aria-checked="${th === v}">
+        <span class="tk">${th === v ? icon('check', 18) : ''}</span>
+        <span><b>${l}</b><span class="td">${d}</span></span>
+      </button>`).join('')}
+    <div class="note" style="margin-top:4px">Showing <b>${effectiveTheme(th)}</b> right now${
+      th === 'system' ? ` — your phone is set to ${prefersDark() ? 'dark' : 'light'}.` : '.'}</div>
+  </div>`);
+  tc.setAttribute('role', 'radiogroup');
+  tc.setAttribute('aria-label', 'Appearance');
   tc.querySelectorAll('[data-t]').forEach(b => b.onclick = async () => {
-    S.cfg.theme = b.dataset.t; await saveCfg(); applyTheme(); render();
+    S.cfg.theme = b.dataset.t; await saveCfg(); applyTheme(); tap(); render();
   });
   app.appendChild(tc);
 
