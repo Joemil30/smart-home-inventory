@@ -595,9 +595,10 @@ dialog::backdrop{background:var(--shelf)}
 
 /* ---------------- storage: tiny IndexedDB wrapper ---------------- */
 const DB = (() => {
-  let db;
+  let db, mem = null;   // mem: in-memory fallback for contexts with no IndexedDB
   const STORES = ['items','catalog','recipes','meta','log','shopping','plan','saved'];
   const open = () => new Promise((res, rej) => {
+    if (!('indexedDB' in window)) return rej(new Error('no indexedDB'));
     const r = indexedDB.open('coldroom', 1);
     r.onupgradeneeded = e => {
       const d = e.target.result;
@@ -609,11 +610,16 @@ const DB = (() => {
   const tx = (store, mode = 'readonly') => db.transaction(store, mode).objectStore(store);
   const p = req => new Promise((res, rej) => { req.onsuccess = () => res(req.result); req.onerror = () => rej(req.error); });
   return {
-    async init() { await open(); },
-    get: (s, id) => p(tx(s).get(id)),
-    all: (s) => p(tx(s).getAll()),
-    put: (s, v) => p(tx(s, 'readwrite').put(v)),
-    del: (s, id) => p(tx(s, 'readwrite').delete(id)),
+    // A double-tapped .html snapshot opens over file://, where WebKit refuses
+    // IndexedDB outright — that used to throw here and leave boot() half-run:
+    // the CSS painted but render() never got called, i.e. a blank coloured
+    // screen. Falling back to memory means the snapshot still opens; it just
+    // won't remember edits after the tab closes, same as any other view copy.
+    async init() { try { await open(); } catch (e) { mem = {}; STORES.forEach(s => mem[s] = new Map()); } },
+    get: (s, id) => mem ? Promise.resolve(mem[s].get(id)) : p(tx(s).get(id)),
+    all: (s) => mem ? Promise.resolve([...mem[s].values()]) : p(tx(s).getAll()),
+    put: (s, v) => mem ? (mem[s].set(v.id, v), Promise.resolve(v.id)) : p(tx(s, 'readwrite').put(v)),
+    del: (s, id) => mem ? (mem[s].delete(id), Promise.resolve()) : p(tx(s, 'readwrite').delete(id)),
   };
 })();
 
