@@ -4,7 +4,11 @@
    App shell is cache-first. Live data is IndexedDB, so it never needs
    the network at all. Only barcode lookups and Gemini do. */
 
-const CACHE = 'shelflife-v35';      // app shell — wiped on each version bump
+/* BUMP THIS ON EVERY RELEASE. The fetch handler below is cache-first, so a
+   phone that already installed the app keeps serving the shell it cached
+   until this string changes — if sw.js is byte-identical the browser never
+   even re-registers, and shipped fixes silently never arrive. */
+const CACHE = 'shelflife-v36';      // app shell — wiped on each version bump
 const IMG = 'shelflife-img';        // product thumbnails — kept across app updates
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg', './apple-touch-icon.png', './zxing.min.js'];
 
@@ -25,7 +29,14 @@ self.addEventListener('notificationclick', e => {
 });
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  // {cache:'reload'} forces each shell file past the HTTP cache. Without it a
+  // fresh install can re-cache the very same stale index.html it was meant to
+  // replace, and the new version never actually lands.
+  e.waitUntil(
+    caches.open(CACHE)
+      .then(c => c.addAll(SHELL.map(u => new Request(u, { cache: 'reload' }))))
+      .then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener('activate', e => {

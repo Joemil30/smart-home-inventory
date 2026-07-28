@@ -342,6 +342,15 @@ label .lbl{font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:up
    background letterboxes whatever's left over instead of guessing what to lose.
    Padded slightly so a photo never touches the tile edge. */
 .tile .tp img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;padding:6px}
+/* A contained photo always leaves bars somewhere — grocery pack shots are
+   never 4:3. Filling those bars with a blurred, scaled copy of the photo
+   itself means every shape looks deliberate instead of broken, and it works
+   in both themes: a white pack shot no longer slams a white slab into a dark
+   screen, and a full-bleed snapshot gets a halo of its own colour. */
+.tile .tp img.bg,.item .thumb img.bg,.foodcard .top img.bg{
+  object-fit:cover;padding:0;filter:blur(16px) saturate(1.35);transform:scale(1.25);opacity:.6}
+.item .thumb img.bg{filter:blur(7px) saturate(1.35)}
+@media (prefers-reduced-motion:reduce){.tile .tp img.bg{filter:blur(16px)}}
 .tile .tp .emoji{font-size:46px;line-height:1}
 .tiles.one .tp .emoji{font-size:64px}
 .tile .tb{position:absolute;top:8px;left:8px;font-size:11px;font-weight:700;padding:5px 9px;
@@ -990,7 +999,10 @@ const LEVELS = ['out','low','half','most','full'];
    Nothing destructive is ever one tap. A kid will nuke the freezer
    by accident on day three; this is the seatbelt. */
 let toastT;
-function toast(msg, undo) {
+/* `label` names the action button, and `hold` keeps the toast up until it's
+   dealt with — an offer to install a new version shouldn't time out after
+   eight seconds the way an undo should. */
+function toast(msg, undo, label = 'UNDO', hold = false) {
   document.querySelector('.toast')?.remove();
   const el = document.createElement('div');
   el.className = 'toast';
@@ -998,13 +1010,13 @@ function toast(msg, undo) {
   el.firstChild.textContent = msg;
   if (undo) {
     const b = document.createElement('button');
-    b.textContent = 'UNDO';
+    b.textContent = label;
     b.onclick = async () => { await undo(); el.remove(); render(); };
     el.appendChild(b);
   }
   document.body.appendChild(el);
   clearTimeout(toastT);
-  toastT = setTimeout(() => el.remove(), undo ? 8000 : 2800);   // longer window to catch an accidental tap
+  if (!hold) toastT = setTimeout(() => el.remove(), undo ? 8000 : 2800);   // longer window to catch an accidental tap
 }
 
 async function logAction(action, detail) {
@@ -1892,16 +1904,24 @@ function tileEl({ name, meta = '', image = null, emoji = '🍽️', badge = '', 
   const t = el(`<div class="tile${checked ? ' ' + checkClass : ''}${sel ? ' sel' : ''}">
     <div class="tt"><div class="tn">${esc(name)}</div>${meta ? `<div class="tm">${meta}</div>` : ''}</div>
     <div class="tp">${image
-      ? `<img loading="lazy" alt="" src="${esc(image)}" onerror="this.remove()">`
+      ? photoLayers(image)
       : `<span class="emoji">${emoji}</span>`}
       ${badge ? `<span class="tb">${badge}</span>` : ''}
       ${onCorner ? `<button class="tx" data-a="rm" aria-label="${esc(cornerLabel)} ${esc(name)}">${cornerIcon}</button>` : ''}</div>
     ${onCheck ? `<button class="tc" data-a="chk"><span class="box">${checked ? icon('check', 15) : ''}</span><span class="lb">${esc(checkLabel || (checked ? 'Got it' : 'Check off'))}</span></button>` : ''}
   </div>`);
+  // A dead photo URL (a stale Open Food Facts link, a sync from a phone whose
+  // image never arrived) falls back to the category emoji rather than leaving
+  // an empty grey box. Both layers share one src, so one failure kills both.
+  const tp = t.querySelector('.tp');
+  tp.querySelectorAll('img').forEach(im => im.onerror = () => {
+    tp.querySelectorAll('img').forEach(x => x.remove());
+    if (!tp.querySelector('.emoji')) tp.insertAdjacentHTML('afterbegin', `<span class="emoji">${emoji}</span>`);
+  });
   if (onTap) {
     t.querySelector('.tt').onclick = onTap;
-    t.querySelector('.tp').onclick = onTap;
-    t.querySelector('.tt').style.cursor = t.querySelector('.tp').style.cursor = 'pointer';
+    tp.onclick = onTap;
+    t.querySelector('.tt').style.cursor = tp.style.cursor = 'pointer';
   }
   const rm = t.querySelector('[data-a=rm]');
   if (rm) rm.onclick = e => { e.stopPropagation(); onCorner(); };
@@ -2074,8 +2094,13 @@ function foodEmoji(name, cat) {
 
 /* One thumbnail everywhere: uploaded/product photo first, then a food
    emoji, then a first-letter tile as the last resort. */
+/* The `bg` copy is the blurred fill behind a contained photo — see the .bg
+   rules in the stylesheet. It's decorative, so it's hidden from screen readers. */
+const photoLayers = src =>
+  `<img class="bg" src="${esc(src)}" alt="" aria-hidden="true"><img src="${esc(src)}" loading="lazy" alt="">`;
+
 function thumbHtml(o) {
-  if (o.image) return `<div class="thumb"><img src="${esc(o.image)}" loading="lazy" alt=""></div>`;
+  if (o.image) return `<div class="thumb">${photoLayers(o.image)}</div>`;
   const e = foodEmoji(o.name, o.cat);
   if (e) return `<div class="thumb"><span class="emoji">${e}</span></div>`;
   return `<div class="thumb"><span class="ph">${firstLetter(o.name)}</span></div>`;
@@ -2247,7 +2272,7 @@ function searchHistory(box, q, shown = []) {
 /* Honour the pantry's photos/compact preference in one place. */
 function paintRows(box, rows) {
   if (S.cfg.pantryView === 'list') { rows.forEach(i => box.appendChild(itemRow(i))); return; }
-  const g = el(`<div class="tiles"></div>`);
+  const g = el(`<div class="tiles${rows.length === 1 ? ' one' : ''}"></div>`);
   rows.forEach(i => g.appendChild(itemTile(i)));
   box.appendChild(g);
 }
@@ -2258,7 +2283,7 @@ function paintRows(box, rows) {
    flip, same switch, no separate toggle to hunt for. */
 function paintTileList(box, cfgs) {
   if (S.cfg.pantryView === 'list') { cfgs.forEach(cfg => box.appendChild(catRow(cfg))); return; }
-  const g = el(`<div class="tiles"></div>`);
+  const g = el(`<div class="tiles${cfgs.length === 1 ? ' one' : ''}"></div>`);
   cfgs.forEach(cfg => g.appendChild(tileEl(cfg)));
   box.appendChild(g);
 }
@@ -2271,7 +2296,7 @@ function catRow({ name, meta = '', image = null, emoji = '🍽️', checked = fa
   // No photo for a badge to sit on in row view, so it folds into the meta line instead.
   const metaLine = badge ? (meta ? `${meta} · ${badge}` : badge) : meta;
   const row = el(`<div class="item">
-    <div class="thumb">${image ? `<img src="${esc(image)}" loading="lazy" alt="">` : `<span class="emoji">${emoji}</span>`}</div>
+    <div class="thumb">${image ? photoLayers(image) : `<span class="emoji">${emoji}</span>`}</div>
     <div class="body"${onTap ? ' style="cursor:pointer"' : ''}>
       <div class="nm">${esc(name)}</div>
       ${metaLine ? `<div class="meta">${metaLine}</div>` : ''}
@@ -2933,7 +2958,7 @@ function viewHome(app) {
     soon.slice(0, 10).forEach(it => {
       const d = freshness(it).left;
       const col = d <= 0 ? 'var(--spoil)' : d <= 2 ? 'var(--thaw)' : 'var(--fresh)';
-      const c = el(`<div class="foodcard"><div class="top">${it.image ? `<img src="${esc(it.image)}" alt="">` : (foodEmoji(it.name, it.cat) || '🍽️')}</div>
+      const c = el(`<div class="foodcard"><div class="top">${it.image ? photoLayers(it.image) : (foodEmoji(it.name, it.cat) || '🍽️')}</div>
         <div class="lo"><div class="fn">${esc(it.name)}</div><div class="fd" style="color:${col}">${daysLabel(d)}</div></div></div>`);
       c.onclick = () => itemSheet(it);
       sc.appendChild(c);
@@ -4409,7 +4434,7 @@ function paintShopping(box, flashId = '') {
         if (order.length > 1)
           box.appendChild(el(`<div class="aisle"><span>${esc(AISLE_NAME(a))}</span><i>${rows.length}</i></div>`));
         if (S.cfg.shopView === 'photos') {
-          const g = el(`<div class="tiles"></div>`);
+          const g = el(`<div class="tiles${rows.length === 1 ? ' one' : ''}"></div>`);
           rows.forEach(s => g.appendChild(shopTile(s, box, s.id === flashId)));
           box.appendChild(g);
         } else rows.forEach(s => box.appendChild(shopRow(s, box, s.id === flashId)));
@@ -4420,7 +4445,7 @@ function paintShopping(box, flashId = '') {
         box.appendChild(ro);
       }
     } else if (S.cfg.shopView === 'photos') {
-      const g = el(`<div class="tiles"></div>`);
+      const g = el(`<div class="tiles${todo.length === 1 ? ' one' : ''}"></div>`);
       todo.forEach(s => g.appendChild(shopTile(s, box, s.id === flashId)));
       box.appendChild(g);
     } else todo.forEach(s => box.appendChild(shopRow(s, box, s.id === flashId)));
@@ -4433,7 +4458,7 @@ function paintShopping(box, flashId = '') {
   if (done.length) {
     box.appendChild(el(`<div class="sect"><h3>Bought</h3><span class="n">${done.length}</span></div>`));
     if (S.cfg.shopView === 'photos') {
-      const g = el(`<div class="tiles"></div>`);
+      const g = el(`<div class="tiles${done.length === 1 ? ' one' : ''}"></div>`);
       done.forEach(s => g.appendChild(shopTile(s, box)));
       box.appendChild(g);
     } else done.forEach(s => box.appendChild(shopRow(s, box)));
@@ -4858,7 +4883,7 @@ function viewHome(app) {
     soon.slice(0, 10).forEach(it => {
       const d = freshness(it).left;
       const col = d < 0 ? 'var(--spoil)' : d <= 2 ? 'var(--thaw)' : 'var(--fresh)';
-      const c = el(`<div class="foodcard"><div class="top">${it.image ? `<img src="${esc(it.image)}" alt="">` : (foodEmoji(it.name, it.cat) || '🍽️')}</div>
+      const c = el(`<div class="foodcard"><div class="top">${it.image ? photoLayers(it.image) : (foodEmoji(it.name, it.cat) || '🍽️')}</div>
         <div class="lo"><div class="fn">${esc(it.name)}</div><div class="fd" style="color:${col}">${daysLabel(d)}</div></div></div>`);
       c.onclick = () => itemSheet(it);
       sc.appendChild(c);
@@ -4877,7 +4902,7 @@ function viewHome(app) {
     const sc = el(`<div class="hscroll"></div>`);
     planned.sort((a, b) => a.date.localeCompare(b.date)).forEach(p => {
       const d = new Date(p.date + 'T00:00');
-      const c = el(`<div class="foodcard"><div class="top">${p.image ? `<img src="${esc(p.image)}" alt="">` : (p.emoji || '🍽️')}</div>
+      const c = el(`<div class="foodcard"><div class="top">${p.image ? photoLayers(p.image) : (p.emoji || '🍽️')}</div>
         <div class="lo"><div class="fn">${esc(p.name)}</div>
         <div class="fd" style="color:var(--vapor-dim)">${d.toLocaleDateString(undefined, { weekday: 'short' })}</div></div></div>`);
       c.onclick = () => plannedMealSheet(p);
@@ -4918,7 +4943,7 @@ function viewPantry(app) {
     soon.slice(0, 10).forEach(it => {
       const d = freshness(it).left;
       const col = d <= 0 ? 'var(--spoil)' : d <= 2 ? 'var(--thaw)' : 'var(--fresh)';
-      const c = el(`<div class="foodcard"><div class="top">${it.image ? `<img src="${esc(it.image)}" alt="">` : (foodEmoji(it.name, it.cat) || '🍽️')}</div>
+      const c = el(`<div class="foodcard"><div class="top">${it.image ? photoLayers(it.image) : (foodEmoji(it.name, it.cat) || '🍽️')}</div>
         <div class="lo"><div class="fn">${esc(it.name)}</div><div class="fd" style="color:${col}">${daysLabel(d)}</div></div></div>`);
       c.onclick = () => itemSheet(it);
       sc.appendChild(c);
@@ -5143,6 +5168,30 @@ function render() {
    own dlg.innerHTML swap. No call site needs to know it exists: the observer
    re-inserts it the instant a sheet replaces the dialog's content, and it
    paints on top because it's the one positioned child in there. */
+/* The app shell is served cache-first so it opens instantly in a basement
+   with no signal. The cost is that a phone which already installed it will
+   happily run last month's build forever unless something tells it to look
+   again. So: check on every launch, and when a genuinely newer worker takes
+   over, say so and offer the reload rather than yanking the page out from
+   under a half-typed item. */
+function registerSW() {
+  if (!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.register('sw.js').then(reg => {
+    reg.update().catch(() => {});
+    setInterval(() => reg.update().catch(() => {}), 60 * 60 * 1000);
+  }).catch(() => {});
+
+  let reloading = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    // No previous controller means this is the first install, not an update —
+    // there's nothing newer to offer, the page already IS the new version.
+    if (!swHadController || reloading) return;
+    toast('A new version is ready', () => { reloading = true; location.reload(); }, 'REFRESH', true);
+  });
+}
+// Captured before any of the above can change it.
+const swHadController = 'serviceWorker' in navigator && !!navigator.serviceWorker.controller;
+
 (function wireDialogBack() {
   const dlgEl = document.getElementById('dlg');
   const back = el(`<button id="dlgBack" aria-label="Back">${icon('back', 20)}</button>`);
@@ -5166,7 +5215,7 @@ function render() {
   if (S.household) S.who = S.household.members.find(m => m.name === S.cfg.who) || S.household.members[0];
   document.getElementById('searchBtn').onclick = () => { S.view = 'pantry'; S.loc = 'all'; S.focusSearch = true; render(); };
   render();
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+  registerSW();
   applyTheme();
   loadSnapshotSeed();   // opened one of the .html backups? bring its data in
   G.ensureModel();   // silently repair a discontinued Gemini model (e.g. the dead 2.0-flash)
