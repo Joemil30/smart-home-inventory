@@ -195,6 +195,59 @@ label .lbl{font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:up
 .recipe-card .rc-meta{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--vapor-dim);letter-spacing:.03em;margin-bottom:10px}
 .recipe-card .rc-act{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
 
+/* ---- tiles: the app's main visual unit ----
+   Name on TOP, big photo underneath. A 48px thumbnail beside a line of text
+   makes you read the app; a large photo lets you recognise it. Two up on a
+   phone is the sweet spot — big enough to identify at a glance, dense enough
+   that a real shopping list doesn't turn into a mile of scrolling. */
+.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:14px}
+.tiles.one{grid-template-columns:1fr}
+.tile{position:relative;background:var(--shelf);border:1px solid var(--rime);border-radius:var(--r);
+  overflow:hidden;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;text-align:left;width:100%}
+.tile .tt{padding:11px 12px 9px}
+.tile .tn{font-size:15px;font-weight:750;letter-spacing:-.015em;line-height:1.25;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+/* Reserve two lines in the grid so a wrapping name doesn't shove its photo
+   out of line with the tile beside it. */
+.tiles:not(.one) .tile .tn{min-height:2.5em}
+.tile .tm{font-size:10.5px;letter-spacing:.04em;color:var(--vapor);margin-top:5px;font-weight:600;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 4:3, not square: a square photo in a two-up grid makes each tile ~430px
+   tall, so a real shopping list turns into a mile of scrolling. This keeps
+   the photo big enough to recognise while fitting ~3 rows on a phone. */
+.tile .tp{position:relative;aspect-ratio:4/3;background:var(--fog);display:grid;place-items:center;overflow:hidden}
+.tiles.one .tp{aspect-ratio:16/9}
+.tile .tp img{width:100%;height:100%;object-fit:cover;display:block}
+.tile .tp .emoji{font-size:46px;line-height:1}
+.tiles.one .tp .emoji{font-size:64px}
+.tile .tb{position:absolute;top:8px;left:8px;font-size:10.5px;font-weight:750;padding:5px 9px;
+  border-radius:999px;background:rgba(255,255,255,.95);box-shadow:var(--shadow-sm);letter-spacing:.02em}
+.tile .tc{display:flex;align-items:center;gap:9px;padding:11px 12px;border-top:1px solid var(--rime);
+  font-size:13.5px;font-weight:700;color:var(--vapor);background:var(--shelf);width:100%}
+.tile .tc .box{width:24px;height:24px;border-radius:8px;border:2px solid var(--rime-hi);
+  display:grid;place-items:center;color:#fff;font-size:14px;flex:0 0 auto;background:var(--shelf)}
+.tile .tc:active{background:var(--fog)}
+.tile.done{opacity:.6}
+.tile.done .tn{text-decoration:line-through;color:var(--vapor)}
+.tile.done .tc .box{background:var(--fresh);border-color:var(--fresh)}
+.tile.sel{border-color:var(--cold);box-shadow:0 0 0 3px var(--cold-soft)}
+.tile .tx{position:absolute;top:8px;right:8px;width:29px;height:29px;border-radius:999px;
+  background:rgba(255,255,255,.95);box-shadow:var(--shadow-sm);display:grid;place-items:center;
+  font-size:16px;color:var(--vapor);line-height:1}
+
+/* status tags — the "you're out of this" signal, read at a glance */
+.tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:750;
+  padding:4px 9px;border-radius:999px;letter-spacing:.01em;white-space:nowrap}
+.tag.have{background:#E8F3EC;color:#1B6E42}
+.tag.low{background:#FDF0DC;color:#8A5A12}
+.tag.out{background:#FBE9E9;color:#9B2C2C}
+.tag.miss{background:#EDEFED;color:#5C6A5C}
+
+/* section headings, so Completed reads as a place rather than a leftover */
+.sect{display:flex;align-items:baseline;justify-content:space-between;margin:22px 0 10px}
+.sect h3{font-size:15px;font-weight:800;letter-spacing:-.015em}
+.sect .n{font-family:var(--mono);font-size:11px;color:var(--vapor);font-weight:600}
+
 /* ---- meal planner ---- */
 .day{background:var(--shelf);border:1px solid var(--rime);border-radius:var(--r);padding:14px;margin-bottom:10px;box-shadow:var(--shadow-sm)}
 .day.today{border-color:var(--cold);box-shadow:0 0 0 3px var(--cold-soft)}
@@ -744,11 +797,17 @@ async function removePlan(id) {
   S.plan = S.plan.filter(x => x.id !== id);
   SYNC.push('plan', id, m);
 }
-async function planMeal(date, { name, emoji = '', uses = [], missing = [] }) {
-  const m = { id: uid(), date, name: String(name).trim(), emoji, uses, missing, deleted: false };
+async function planMeal(date, { name, emoji = '', uses = [], missing = [], image = null }) {
+  const known = catalogMeal(name);
+  const m = { id: uid(), date, name: String(name).trim(), emoji, uses, missing,
+    image: image || known?.image || null, deleted: false };
   await savePlan(m);
+  // Planning something counts as knowing it, but not as having made it —
+  // so the record appears in history without inflating the "made N times".
+  await recordCatalog({ name: m.name, kind: CAT_MEAL, emoji, image: m.image }, { bump: false });
   return m;
 }
+const catalogMeal = name => catalogFind(name, CAT_MEAL);
 
 /* Saved recipe library (Module 4) — bookmark a suggestion and keep its full
    data (title, image, steps, ingredients) locally + synced. */
@@ -792,10 +851,16 @@ function itemInStock(name) {
   // false "you already have it" positives.
   return S.items.filter(i => !i.deleted && fuzzyHit(name, i.name, 0.55)).length;
 }
-async function addToList(name, qty) {
-  const ex = S.shopping.find(s => !s.deleted && !s.done && norm(s.name) === norm(name));
+/* `store` scopes the line to one shop's list ('' = any store). Dedupe is
+   per-store: milk on the Costco list and milk on the corner-shop list are
+   two real errands, not a double entry. */
+async function addToList(name, qty, store = '') {
+  const ex = S.shopping.find(s => !s.deleted && !s.done && (s.store || '') === store && norm(s.name) === norm(name));
   if (ex) { toast(`${name} is already on the list`); return ex; }
-  const it = { id: uid(), name: String(name).trim(), qty: qty || '', by: S.who?.name || '', done: false, deleted: false };
+  const known = catalogFind(name);
+  const it = { id: uid(), name: String(name).trim(), qty: qty || '', store,
+    image: known?.image || null, cat: known?.cat || '',
+    by: S.who?.name || '', done: false, missing: false, deleted: false };
   await saveShopping(it);
   return it;
 }
@@ -822,28 +887,47 @@ function guessCat(name) {
 
 /* Purchase conversion: a checked-off shopping item can flow straight into the
    pantry (Module 1). Prompt for shelf + count, add it, and clear the line. */
-function shoppingToPantry(s) {
+/* Checking something off has three honest outcomes, and the difference
+   matters: bought it and shelved it, bought it and didn't bother tracking
+   it, or the store was out. Only the first two are purchases — recording a
+   miss as a buy would poison the history that Shop reads back to you. */
+function shoppingToPantry(s, after) {
   const dlg = document.getElementById('dlg');
+  const finish = async () => { dlg.close(); if (after) after(); else render(); };
   const q = (s.qty && /^\d+$/.test(String(s.qty))) ? String(s.qty) : '1';
   dlg.innerHTML = `<div class="eyebrow">Bought it?</div><h1 style="margin:6px 0 10px">${esc(s.name)}</h1>
     <p class="note" style="margin:0 0 14px">Add it to your pantry so it's tracked — expiry is estimated for you.</p>
     <label><span class="lbl">Shelf</span><select id="cloc">${S.household.locations.map(l => `<option value="${l.id}">${esc(l.name)}</option>`).join('')}</select></label>
     <label><span class="lbl">How many</span><input type="number" id="cqty" value="${q}" min="1"></label>
-    <button class="btn cold" data-a="pantry">✓ Add to pantry &amp; clear from list</button>
+    <button class="btn cold" data-a="pantry">✓ Add to pantry</button>
     <button class="btn ghost" data-a="just" style="margin-top:8px">Just check it off</button>
+    <button class="btn ghost" data-a="miss" style="margin-top:8px">🚫&nbsp;&nbsp;They didn't have it</button>
     <button class="btn ghost" data-a="c" style="margin-top:8px;border:none;color:var(--vapor)">Cancel</button>`;
-  dlg.querySelector('#cloc').value = defaultLoc(guessCat(s.name));
+  dlg.querySelector('#cloc').value = s.lastLoc || catalogFind(s.name)?.lastLoc || defaultLoc(guessCat(s.name));
   dlg.querySelector('[data-a=pantry]').onclick = async () => {
-    await addItem({ name: s.name, cat: guessCat(s.name), loc: dlg.querySelector('#cloc').value, qty: parseInt(dlg.querySelector('#cqty').value) || 1 });
-    s.deleted = true; await saveShopping(s);
-    dlg.close(); render(); toast(`${s.name} added to your pantry`);
+    await addItem({ name: s.name, cat: s.cat || guessCat(s.name), loc: dlg.querySelector('#cloc').value,
+      qty: parseInt(dlg.querySelector('#cqty').value) || 1, image: s.image || null, store: s.store || '' });
+    s.done = true; s.missing = false; s.doneAt = Date.now(); await saveShopping(s);
+    finish(); toast(`${s.name} added to your pantry`);
   };
-  dlg.querySelector('[data-a=just]').onclick = async () => { s.done = true; await saveShopping(s); dlg.close(); render(); };
+  dlg.querySelector('[data-a=just]').onclick = async () => {
+    // Bought but not shelved — still a purchase, still worth remembering,
+    // still tagged with the store it came from.
+    await recordCatalog({ name: s.name, cat: s.cat || guessCat(s.name), image: s.image || null }, { store: s.store || '' });
+    s.done = true; s.missing = false; s.doneAt = Date.now(); await saveShopping(s);
+    finish();
+  };
+  dlg.querySelector('[data-a=miss]').onclick = async () => {
+    // Out of stock at the shop. Off the active list so you stop looking for
+    // it, but flagged in Completed — and deliberately NOT recorded as a buy.
+    s.done = true; s.missing = true; s.doneAt = Date.now(); await saveShopping(s);
+    finish(); toast(`Marked — ${storeName(s.store) || 'the store'} didn't have it`);
+  };
   dlg.querySelector('[data-a=c]').onclick = () => dlg.close();
   dlg.showModal();
 }
 
-async function addItem({ name, cat, loc, qty = 1, barcode = null, packSize = null, brand = '', image = null, expires = null, dateConfirmed = false }) {
+async function addItem({ name, cat, loc, qty = 1, barcode = null, packSize = null, brand = '', image = null, expires = null, dateConfirmed = false, store = '' }) {
   const mode = packSize ? 'pack' : unitModeFor(cat);
   const it = {
     id: uid(), name, brand, cat, loc, barcode, image,
@@ -858,6 +942,9 @@ async function addItem({ name, cat, loc, qty = 1, barcode = null, packSize = nul
   };
   await saveItem(it);
   await logAction('add', name);
+  // Everything that enters the house enters the household's memory, so the
+  // next restock can start from "what we actually buy" instead of a blank box.
+  await recordCatalog({ name, brand, cat, image, packSize, barcode }, { store, loc });
   if (it.dateConfirmed) learnFromDate(it);   // a real printed date was read at add time
   return it;
 }
@@ -919,12 +1006,10 @@ async function lookupBarcode(code) {
   return null;
 }
 
+/* Barcode path into the same catalog every other path writes to. Keyed by
+   the barcode itself, which is the one truly authoritative id we ever get. */
 async function learnProduct(p) {
-  const rec = { id: p.id, name: p.name, brand: p.brand || '', cat: p.cat, packSize: p.packSize || null, image: p.image || null, lastLoc: p.lastLoc || null, learned: Date.now(), updatedAt: Date.now() };
-  await DB.put('catalog', rec);
-  const i = S.catalog.findIndex(c => c.id === rec.id);
-  if (i > -1) S.catalog[i] = rec; else S.catalog.push(rec);
-  SYNC.push('catalog', rec.id, rec);
+  return recordCatalog({ ...p, id: p.id, kind: CAT_PRODUCT }, { loc: p.lastLoc || '', bump: false });
 }
 
 /* ---------------- AI ----------------
@@ -1399,6 +1484,104 @@ async function enrichItemPhotos() {
   if (changed && (S.view === 'pantry' || S.view === 'inv')) render();
 }
 
+/* Fill in catalog photos the same quiet way pantry items get them. A history
+   you can't recognise at a glance is just a list of words. */
+let _catEnriching = false;
+async function enrichCatalogPhotos() {
+  if (_catEnriching || S.cfg.autoPhotos === false || !navigator.onLine) return;
+  const todo = S.catalog.filter(c => !c.deleted && c.name && !c.image && !c.photoTried).slice(0, 6);
+  if (!todo.length) return;
+  _catEnriching = true;
+  let changed = false;
+  for (const c of todo) {
+    const url = catKind(c) === CAT_MEAL
+      ? await PHOTO.dish(c.name)
+      : await PHOTO.food(c.brand ? `${c.brand} ${c.name}` : c.name);
+    const cur = S.catalog.find(x => x.id === c.id);
+    if (!cur) continue;
+    cur.photoTried = true;
+    if (url) { cur.image = url; changed = true; }
+    await DB.put('catalog', cur);
+  }
+  _catEnriching = false;
+  if (changed && ['shop', 'plan', 'pantry', 'cat'].includes(S.view)) render();
+}
+
+/* A camera shot is ~4MB; it lands in IndexedDB and syncs to every phone in
+   the house. Scale it down hard — nobody needs 12 megapixels to recognise a
+   jar of sauce, and the storage is shared. */
+function photoURL(file, max = 480) {
+  return new Promise(res => {
+    const img = new Image();
+    const done = v => { try { URL.revokeObjectURL(img.src); } catch (e) {} res(v); };
+    img.onload = () => {
+      const s = Math.min(1, max / Math.max(img.width, img.height));
+      const cv = document.createElement('canvas');
+      cv.width = Math.max(1, Math.round(img.width * s));
+      cv.height = Math.max(1, Math.round(img.height * s));
+      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+      done(cv.toDataURL('image/jpeg', 0.78));
+    };
+    img.onerror = () => done(null);
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+/* Attach your own photo to a catalog record. Because every surface reads the
+   same record, a photo set once shows up in Plan, Shop and Pantry at once. */
+function pickPhoto(rec, after) {
+  const inp = el(`<input type="file" accept="image/*" class="hide">`);
+  document.body.appendChild(inp);
+  inp.onchange = async () => {
+    const f = inp.files && inp.files[0];
+    inp.remove();
+    if (!f) return;
+    const url = await photoURL(f);
+    if (!url) return toast('Could not read that image');
+    await recordCatalog({ id: rec.id, name: rec.name, kind: catKind(rec), image: url }, { bump: false });
+    toast('Photo saved');
+    if (after) after(url); else render();
+  };
+  inp.click();
+}
+
+/* ---- the tile component ----
+   `meta` and `badge` are raw HTML so callers can drop a .tag pill in; `name`
+   is always escaped. Every part is optional, so one component covers the
+   shopping checklist, the meal picker and the pantry grid without forking. */
+function tileEl({ name, meta = '', image = null, emoji = '🍽️', badge = '', checked = false,
+                  checkLabel = '', onCheck = null, onTap = null,
+                  onCorner = null, cornerIcon = '×', cornerLabel = 'Remove', sel = false }) {
+  const t = el(`<div class="tile${checked ? ' done' : ''}${sel ? ' sel' : ''}">
+    <div class="tt"><div class="tn">${esc(name)}</div>${meta ? `<div class="tm">${meta}</div>` : ''}</div>
+    <div class="tp">${image
+      ? `<img loading="lazy" alt="" src="${esc(image)}" onerror="this.remove()">`
+      : `<span class="emoji">${emoji}</span>`}
+      ${badge ? `<span class="tb">${badge}</span>` : ''}
+      ${onCorner ? `<button class="tx" data-a="rm" aria-label="${esc(cornerLabel)} ${esc(name)}">${cornerIcon}</button>` : ''}</div>
+    ${onCheck ? `<button class="tc" data-a="chk"><span class="box">${checked ? '✓' : ''}</span>${esc(checkLabel || (checked ? 'Got it' : 'Check off'))}</button>` : ''}
+  </div>`);
+  if (onTap) {
+    t.querySelector('.tt').onclick = onTap;
+    t.querySelector('.tp').onclick = onTap;
+    t.querySelector('.tt').style.cursor = t.querySelector('.tp').style.cursor = 'pointer';
+  }
+  const rm = t.querySelector('[data-a=rm]');
+  if (rm) rm.onclick = e => { e.stopPropagation(); onCorner(); };
+  const ck = t.querySelector('[data-a=chk]');
+  if (ck) ck.onclick = e => { e.stopPropagation(); onCheck(); };
+  return t;
+}
+
+/* The inline "what does the pantry say about this" pill. */
+const STOCK_TAG = {
+  have: n => `<span class="tag have">✓ Have ${n}</span>`,
+  low:  n => `<span class="tag low">Running low</span>`,
+  out:  () => `<span class="tag out">You're out</span>`,
+  new:  () => '',
+};
+const stockTag = name => { const s = stockState(name); return STOCK_TAG[s.state](s.n); };
+
 const locName = id => S.household?.locations.find(l => l.id === id)?.name || '?';
 
 /* ================================================================
@@ -1562,6 +1745,67 @@ function itemRow(it) {
   row.querySelector('[data-a=plus]').onclick = async () => { await addOne(it); render(); };
   row.querySelector('[data-a=more]').onclick = () => itemSheet(it);
   return row;
+}
+
+/* The same item as a big tile: name and freshness above, photo below. The
+   compact row above still exists behind a toggle — at 500 items a dense list
+   genuinely beats a photo grid, so this is a preference, not a replacement. */
+function itemTile(it) {
+  const f = freshness(it);
+  const cls = f.left < 0 ? 'out' : f.left <= 3 ? 'low' : 'have';
+  const q = it.mode === 'level' ? LEVELS[it.level]
+    : it.mode === 'pack' ? `${it.unitsLeft}/${it.packSize} left`
+    : `×${it.qty}`;
+  return tileEl({
+    name: it.name,
+    meta: `<span class="tag ${cls}">${esc(f.label)}</span>`,
+    image: it.image, emoji: foodEmoji(it.name, it.cat) || '🍽️',
+    badge: esc(q) + (it.opened ? ' · opened' : ''),
+    onTap: () => itemSheet(it),
+    checkLabel: 'Used one', onCheck: async () => { await deplete(it); render(); },
+    onCorner: () => itemSheet(it), cornerIcon: '⋯', cornerLabel: 'Options for',
+  });
+}
+
+/* Searching for something you don't currently have shouldn't dead-end. If
+   you've bought it before, or cooked it before, say so and offer the one
+   useful next step — the same typo-tolerant matcher, applied to history. */
+function searchHistory(box, q, shown = []) {
+  const already = new Set(shown.map(i => canon(i.name)));
+  const seen = catalogList(CAT_PRODUCT, { q }).filter(c => !already.has(canon(c.name))).slice(0, 6);
+  const meals = catalogList(CAT_MEAL, { q }).slice(0, 4);
+  if (!seen.length && !meals.length) return;
+
+  if (seen.length) {
+    box.appendChild(el(`<div class="sect"><h3>You've bought this before</h3><span class="n">not in the house</span></div>`));
+    const g = el(`<div class="tiles"></div>`);
+    seen.forEach(c => g.appendChild(tileEl({
+      name: c.name, meta: `${c.count || 0}× · ${esc(storeLabel(c))}`,
+      image: c.image, emoji: foodEmoji(c.name, c.cat) || '🛒',
+      checkLabel: 'Add to list',
+      onCheck: async () => { await addToList(c.name, '', S.store || ''); toast(`${c.name} on the list`); render(); },
+      onTap: () => restockSheet(c),
+    })));
+    box.appendChild(g);
+  }
+  if (meals.length) {
+    box.appendChild(el(`<div class="sect"><h3>Meals you've made with this</h3></div>`));
+    const g = el(`<div class="tiles"></div>`);
+    meals.forEach(c => g.appendChild(tileEl({
+      name: c.name, meta: `${c.count || 0}× made`,
+      image: c.image, emoji: foodEmoji(c.name, '') || '🍽️',
+      checkLabel: 'Plan it', onCheck: () => pickDayForRecipe({ name: c.name, image: c.image, missing: [], uses: [] }),
+    })));
+    box.appendChild(g);
+  }
+}
+
+/* Honour the pantry's photos/compact preference in one place. */
+function paintRows(box, rows) {
+  if (S.cfg.pantryView === 'list') { rows.forEach(i => box.appendChild(itemRow(i))); return; }
+  const g = el(`<div class="tiles"></div>`);
+  rows.forEach(i => g.appendChild(itemTile(i)));
+  box.appendChild(g);
 }
 
 /* The inverse of deplete — "I didn't mean to" and "we got more". Mirrors
@@ -1776,6 +2020,122 @@ function fuzzyScore(query, text) {
 }
 const fuzzyHit = (query, text, min = 0.45) => fuzzyScore(query, text) >= min;
 
+/* ================================================================
+   THE CATALOG — one memory for the whole house
+   ================================================================
+   Plan, Shop and Pantry are three views onto the same question: what
+   have we had before, and where did it come from? Groceries and meals
+   both land here. Barcoded things key by barcode; everything else keys
+   by CANONICAL name, so a typed "chicken thighs", a scanned pack and a
+   receipt line collapse into one memory instead of three near-copies.
+   That's what makes "add from what you've bought before" possible at
+   all — without it the history is just noise. */
+const CAT_PRODUCT = 'product', CAT_MEAL = 'meal';
+const catKind = c => c.kind || CAT_PRODUCT;          // records predate `kind`
+const catId = (name, barcode, kind = CAT_PRODUCT) =>
+  barcode ? String(barcode) : (kind === CAT_MEAL ? 'm:' : 'n:') + canon(name);
+
+/* Upsert and bump. `store` is where it came from, `loc` which shelf it
+   went to — both remembered so the next buy can pre-fill them. Pass
+   bump:false to enrich a record (a photo, a category) without claiming
+   it was bought again. */
+async function recordCatalog(p, opt = {}) {
+  const { store = '', loc = '', at = Date.now(), bump = true } = opt;
+  if (!p || !p.name) return null;
+  const kind = p.kind || CAT_PRODUCT;
+  const id = p.id || catId(p.name, p.barcode, kind);
+  const prev = S.catalog.find(c => c.id === id) || {};
+  const rec = {
+    ...prev, id, kind,
+    name: p.name || prev.name || '',
+    brand: p.brand ?? prev.brand ?? '',
+    cat: p.cat || prev.cat || '',
+    emoji: p.emoji || prev.emoji || '',
+    image: p.image || prev.image || null,
+    packSize: p.packSize ?? prev.packSize ?? null,
+    lastLoc: loc || p.lastLoc || prev.lastLoc || null,
+    count: (prev.count || 0) + (bump ? 1 : 0),
+    first: prev.first || at,
+    last: bump ? at : (prev.last || at),
+    learned: prev.learned || at,
+    deleted: false,
+    updatedAt: Date.now(),
+  };
+  if (store) {
+    const s = { ...(prev.stores || {}) };
+    s[store] = { n: ((s[store] && s[store].n) || 0) + (bump ? 1 : 0), last: at };
+    rec.stores = s;
+  }
+  await DB.put('catalog', rec);
+  const i = S.catalog.findIndex(c => c.id === id);
+  if (i > -1) S.catalog[i] = rec; else S.catalog.push(rec);
+  SYNC.push('catalog', id, rec);
+  return rec;
+}
+
+/* History for a surface, most useful first: recent floats above frequent,
+   and a search query outranks both. */
+function catalogList(kind, { store = '', q = '' } = {}) {
+  let list = S.catalog.filter(c => !c.deleted && catKind(c) === kind && c.name);
+  if (store) list = list.filter(c => c.stores && c.stores[store]);
+  if (q) list = list.filter(c => fuzzyHit(q, `${c.name} ${c.brand || ''}`, 0.45));
+  return list.sort((a, b) =>
+    (q ? fuzzyScore(q, b.name) - fuzzyScore(q, a.name) : 0) ||
+    (b.last || 0) - (a.last || 0) ||
+    (b.count || 0) - (a.count || 0));
+}
+
+/* Fuzzy, so "chedar" still finds the Cheddar you've bought twenty times. */
+const catalogFind = (name, kind = CAT_PRODUCT) =>
+  S.catalog.find(c => !c.deleted && catKind(c) === kind && c.id === catId(name, null, kind)) ||
+  S.catalog.find(c => !c.deleted && catKind(c) === kind && fuzzyHit(name, c.name, 0.6));
+
+/* What the pantry says about something, for the badge that sits right on
+   the shopping line. Four states worth telling apart:
+     have — it's in the house, don't rebuy
+     low  — in the house but nearly gone
+     out  — you've bought this before and there is none left
+     new  — never seen it; say nothing rather than guess */
+function stockState(name) {
+  const hits = S.items.filter(i => !i.deleted && fuzzyHit(name, i.name, 0.55));
+  if (!hits.length) return { state: catalogFind(name) ? 'out' : 'new', n: 0 };
+  const low = hits.every(i => i.mode === 'level' ? (i.level || 0) <= 1 : (i.qty || 0) <= 1);
+  return { state: low ? 'low' : 'have', n: hits.length };
+}
+
+/* Bought before, none in the house now, not already on the list. The
+   "you're out of this" shortlist — earned from your own history, so it
+   stays quiet until it actually knows something. */
+function restockList(store = '', max = 12) {
+  return catalogList(CAT_PRODUCT, { store })
+    .filter(c => (c.count || 0) >= 2 && stockState(c.name).state === 'out')
+    .filter(c => !S.shopping.some(s => !s.deleted && !s.done && fuzzyHit(s.name, c.name, 0.6)))
+    .slice(0, max);
+}
+
+/* Stores belong to the household, not to a global list — "Greens Natural
+   Foods" means nothing to anyone else's copy of this app. */
+const storeList = () => (S.household?.stores || []);
+const storeOf = id => storeList().find(s => s.id === id) || null;
+const storeName = id => storeOf(id)?.name || '';
+async function addStore(name, emoji = '🏬') {
+  const n = String(name || '').trim();
+  if (!n || !S.household) return null;
+  const ex = storeList().find(s => norm(s.name) === norm(n));
+  if (ex) return ex;
+  const s = { id: uid(), name: n, emoji };
+  S.household.stores = [...storeList(), s];
+  await saveHousehold();
+  return s;
+}
+async function removeStore(id) {
+  if (!S.household) return;
+  S.household.stores = storeList().filter(s => s.id !== id);
+  // Orphaned list lines fall back to "any store" rather than vanishing.
+  for (const s of S.shopping.filter(x => x.store === id)) { s.store = ''; await saveShopping(s); }
+  await saveHousehold();
+}
+
 /* Restock hints, learned rather than assumed.
    The pantries hold DIFFERENT food — downstairs is not overflow of
    upstairs. So "you have it there, go get it" is only true for things
@@ -1828,15 +2188,25 @@ function viewInv(app) {
   statusChips.appendChild(stat('fresh', `🟢 Fresh (${cnt(i => freshness(i).left > 3)})`));
   app.appendChild(statusChips);
 
-  /* At 500 items search isn't a nicety, it's the primary way in. */
-  const sb = el(`<input id="q" placeholder="Search ${live.length} items…" value="${esc(S.q || '')}"
-    style="margin-bottom:12px" autocomplete="off" enterkeyhint="search">`);
+  /* At 500 items search isn't a nicety, it's the primary way in. The
+     photos/compact switch rides alongside it rather than taking a third row
+     of chips — you have to get past this chrome before you can see any food. */
+  const grid = S.cfg.pantryView !== 'list';
+  const swap = grid ? 'Switch to a compact list' : 'Switch to photos';
+  const srow = el(`<div class="row" style="margin-bottom:12px">
+    <input id="q" placeholder="Search ${live.length} items…" value="${esc(S.q || '')}" style="flex:1" autocomplete="off" enterkeyhint="search">
+    <button class="btn ghost" data-a="vt" title="${swap}" aria-label="${swap}"
+      style="width:auto;padding:0 15px;font-size:18px">${grid ? '☰' : '▦'}</button></div>`);
+  const sb = srow.querySelector('#q');
   sb.oninput = e => {
     S.q = e.target.value;
     const box = document.getElementById('results');
     if (box) paintList(box);
   };
-  app.appendChild(sb);
+  srow.querySelector('[data-a=vt]').onclick = async () => {
+    S.cfg.pantryView = grid ? 'list' : 'grid'; await saveCfg(); render();
+  };
+  app.appendChild(srow);
 
   const box = el(`<div id="results"></div>`);
   app.appendChild(box);
@@ -1859,12 +2229,16 @@ function paintList(box) {
       .filter(x => x.s >= 0.4)
       .sort((a, b) => b.s - a.s || a.i.expires - b.i.expires)
       .map(x => x.i);
-    if (!hits.length) return box.appendChild(el(`<div class="empty">
-      <div class="big">No match for "${esc(S.q)}"</div>
-      <div class="sub">If it's really in the house and not in here, the inventory has drifted. Scan it in.</div></div>`));
-    hits.slice(0, 60).forEach(i => box.appendChild(itemRow(i)));
+    if (!hits.length) {
+      box.appendChild(el(`<div class="empty">
+        <div class="big">No match for "${esc(S.q)}"</div>
+        <div class="sub">Nothing in the house by that name. If it really is here, the inventory has drifted — scan it in.</div></div>`));
+      return searchHistory(box, S.q);
+    }
+    paintRows(box, hits.slice(0, 60));
     if (hits.length > 60) box.appendChild(el(`<div class="note" style="text-align:center;padding:10px">
       +${hits.length - 60} more — keep typing</div>`));
+    searchHistory(box, S.q, hits);
     return;
   }
 
@@ -1907,7 +2281,7 @@ function paintList(box) {
         </summary>
         <div class="grp" style="padding-top:6px"></div></details>`);
       const body = d.querySelector('.grp');
-      const build = () => { if (d.dataset.built) return; list.forEach(i => body.appendChild(itemRow(i))); d.dataset.built = '1'; };
+      const build = () => { if (d.dataset.built) return; paintRows(body, list); d.dataset.built = '1'; };
       d.addEventListener('toggle', () => {
         d.open ? S.open.add(gkey(k)) : S.open.delete(gkey(k));
         if (d.open) build();
@@ -1942,7 +2316,11 @@ async function handleVoice(text) {
   if (!p) return toast(`Didn't catch that — try "finished the milk" or "add eggs to the list"`);
   if (p.action === 'list') { await addToList(p.name.replace(/\b\w/, c => c.toUpperCase())); render(); return; }
   const q = p.name;
-  const hits = S.items.filter(i => !i.deleted && (norm(i.name).includes(q) || q.includes(norm(i.name))));
+  // Speech-to-text mangles product names constantly ("yoghurt", "yogurt",
+  // "yo-gurt"), so fall back to the same typo-tolerant matching the rest of
+  // the app uses rather than giving up on an exact substring.
+  let hits = S.items.filter(i => !i.deleted && (norm(i.name).includes(q) || q.includes(norm(i.name))));
+  if (!hits.length) hits = S.items.filter(i => !i.deleted && fuzzyHit(q, i.name, 0.55));
   if (!hits.length) return toast(`No "${p.name}" in the house`);
   const it = hits.sort((a, b) => a.expires - b.expires)[0];
   if (p.action === 'toss') await tossItem(it); else await deplete(it, 'voice');
@@ -2113,36 +2491,80 @@ function viewPlan(app) {
       <div class="meals"></div>
       <button class="addmeal">＋ Add a meal</button></div>`);
     const mbox = card.querySelector('.meals');
-    if (meals.length) meals.forEach(m => {
-      const row = el(`<div class="meal"><span class="mi">${m.emoji || '🍽️'}</span><span class="mn">${esc(m.name)}</span><button class="mx" aria-label="Remove">×</button></div>`);
-      row.querySelector('.mx').onclick = async () => { await removePlan(m.id); render(); };
-      mbox.appendChild(row);
-    });
+    if (meals.length) {
+      const g = el(`<div class="tiles one" style="margin-bottom:4px"></div>`);
+      meals.forEach(m => {
+        const known = catalogMeal(m.name);
+        const img = m.image || known?.image || null;
+        g.appendChild(tileEl({
+          name: m.name,
+          meta: (known?.count ? `Made ${known.count}×` : 'First time') +
+                ((m.missing || []).length ? ` · ${m.missing.length} to shop` : ''),
+          image: img, emoji: m.emoji || foodEmoji(m.name, '') || '🍽️',
+          checked: !!m.made,
+          checkLabel: m.made ? 'Made it' : 'I made this',
+          onCheck: async () => {
+            m.made = !m.made; await savePlan(m);
+            // Untoggling clears the flag but leaves the history alone — you
+            // did cook it, and un-cooking it isn't a thing.
+            if (m.made) await recordCatalog({ name: m.name, kind: CAT_MEAL, image: img, emoji: m.emoji }, {});
+            render();
+          },
+          onTap: () => pickPhoto(known || { id: catId(m.name, null, CAT_MEAL), name: m.name, kind: CAT_MEAL },
+            async url => { m.image = url; await savePlan(m); render(); }),
+          onCorner: async () => { await removePlan(m.id); render(); },
+        }));
+      });
+      mbox.appendChild(g);
+    }
     else mbox.appendChild(el(`<div class="note" style="padding:2px 0 4px;color:var(--vapor-dim)">Nothing planned</div>`));
     card.querySelector('.addmeal').onclick = () => addMealDialog(key);
     app.appendChild(card);
   }
 }
 
+/* Planning a week is mostly re-cooking things you already cook. Leading with
+   your own history — as photos, not a blank text box — is the difference
+   between "what should we eat" and "oh right, that one". */
 function addMealDialog(dateKey) {
   const dlg = document.getElementById('dlg');
+  const hist = catalogList(CAT_MEAL).slice(0, 6);
   const picks = (recipeCache || []).slice(0, 6);
   dlg.innerHTML = `<div class="eyebrow">Add a meal</div><h1 style="margin:6px 0 14px">${new Date(dateKey + 'T00:00').toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</h1>
     <label><span class="lbl">Meal</span><input id="mealnm" placeholder="Taco night, Leftovers, Salmon…" autocomplete="off"></label>
-    ${picks.length ? `<div class="note" style="margin:-4px 0 8px">Or pick a suggested recipe:</div><div style="margin-bottom:6px">${picks.map((r, i) => `<button class="chip" data-p="${i}" aria-pressed="false" style="margin:0 6px 8px 0">${esc(r.name)}</button>`).join('')}</div>` : ''}
-    <button class="btn cold" data-a="save" style="margin-top:8px">Add to plan</button>
+    <button class="btn cold" data-a="save">Add to plan</button>
+    ${hist.length ? `<div class="sect"><h3>You've made these</h3><span class="n">tap to plan</span></div><div id="mh"></div>
+      <button class="btn ghost" data-a="all" style="margin-top:2px">Search all your meals</button>` : ''}
+    ${picks.length ? `<div class="sect"><h3>Suggested for what you have</h3></div><div style="margin-bottom:6px">${picks.map((r, i) => `<button class="chip" data-p="${i}" aria-pressed="false" style="margin:0 6px 8px 0">${esc(r.name)}</button>`).join('')}</div>` : ''}
     <button class="btn ghost" data-a="c" style="margin-top:8px;border:none;color:var(--vapor)">Cancel</button>`;
   const input = dlg.querySelector('#mealnm');
-  dlg.querySelectorAll('[data-p]').forEach(b => b.onclick = async () => {
+  const plan = async (name, extra = {}) => {
+    await planMeal(dateKey, { name, emoji: extra.emoji || foodEmoji(name, '') || '🍽️', ...extra });
+    dlg.close(); render();
+    toast(`${name} planned${(extra.missing || []).length ? ` · ${extra.missing.length} to shop` : ''}`);
+  };
+
+  const mh = dlg.querySelector('#mh');
+  if (mh) {
+    const g = el(`<div class="tiles"></div>`);
+    hist.forEach(c => g.appendChild(tileEl({
+      name: c.name, meta: `${c.count || 0}× made`,
+      image: c.image, emoji: foodEmoji(c.name, '') || '🍽️',
+      checkLabel: 'Plan it', onCheck: () => plan(c.name, { image: c.image }),
+      onCorner: () => pickPhoto(c, () => addMealDialog(dateKey)), cornerIcon: '📷', cornerLabel: 'Set a photo for',
+    })));
+    mh.appendChild(g);
+    dlg.querySelector('[data-a=all]').onclick = () =>
+      catalogPicker({ kind: CAT_MEAL, onPick: c => plan(c.name, { image: c.image }) });
+  }
+  dlg.querySelectorAll('[data-p]').forEach(b => b.onclick = () => {
     const r = picks[+b.dataset.p];
-    await planMeal(dateKey, { name: r.name, emoji: foodEmoji(r.name, '') || '🍽️', uses: r.uses || [], missing: r.missing || [] });
-    dlg.close(); render(); toast(`${r.name} added${(r.missing || []).length ? ` · ${r.missing.length} to shop` : ''}`);
+    plan(r.name, { uses: r.uses || [], missing: r.missing || [], image: r.image || null });
   });
-  dlg.querySelector('[data-a=save]').onclick = async () => {
+  dlg.querySelector('[data-a=save]').onclick = () => {
     const name = input.value.trim();
     if (!name) { input.focus(); return; }
-    await planMeal(dateKey, { name, emoji: foodEmoji(name, '') || '🍽️' });
-    dlg.close(); render();
+    plan(name);
   };
   dlg.querySelector('[data-a=c]').onclick = () => dlg.close();
   dlg.showModal();
@@ -2269,6 +2691,10 @@ function cookDeduct(r) {
     const ids = [...dlg.querySelectorAll('input:checked')].map(c => c.dataset.id);
     const undos = [];
     for (const id of ids) undos.push(await deplete(S.items.find(i => i.id === id), 'cooked'));
+    // "I made this" is the only honest signal that a meal is really part of
+    // the rotation — it's what makes Plan's history worth offering back.
+    await recordCatalog({ name: r.name, kind: CAT_MEAL, image: r.image || null,
+      emoji: foodEmoji(r.name, '') || '🍽️', uses: undefined }, {});
     dlg.close(); render();
     toast(`${r.name} — ${ids.length} deducted`, async () => { for (const u of undos) await u(); });
   };
@@ -2973,12 +3399,111 @@ function renderSyncCard(sc) {
 }
 
 /* ---------------- view: shopping list ---------------- */
+/* "Costco · Greens" — where a thing actually comes from, learned from your
+   own trips rather than assumed. */
+function storeLabel(c, current = '') {
+  const ss = c.stores || {};
+  if (current && ss[current]) return storeName(current);
+  const ids = Object.keys(ss).sort((a, b) => (ss[b].n || 0) - (ss[a].n || 0));
+  return ids.map(storeName).filter(Boolean).slice(0, 2).join(' · ') || 'any store';
+}
+
+/* Manage the household's stores. Deliberately plain: a name and an emoji is
+   all a store needs to be recognisable at the top of a list. */
+function storeSheet() {
+  const dlg = document.getElementById('dlg');
+  const draw = () => {
+    dlg.innerHTML = `<div class="eyebrow">Stores</div><h1 style="margin:6px 0 6px">Where do you shop?</h1>
+      <p class="note" style="margin:0 0 14px">Each store gets its own list, and the app remembers which store you buy each thing at.</p>
+      ${storeList().map(s => `<div class="row" style="margin-bottom:8px;align-items:center">
+        <span style="font-size:22px">${s.emoji || '🏬'}</span>
+        <span style="flex:1;font-weight:650">${esc(s.name)}</span>
+        <button class="btn ghost" data-rm="${esc(s.id)}" style="width:auto;padding:0 14px">Remove</button></div>`).join('')
+        || `<div class="note" style="margin-bottom:14px">No stores yet.</div>`}
+      <label style="margin-top:10px"><span class="lbl">Add a store</span>
+        <input id="snm" placeholder="Costco, Greens Natural Foods…" autocomplete="off"></label>
+      <button class="btn cold" data-a="add">Add store</button>
+      <button class="btn ghost" data-a="c" style="margin-top:8px;border:none;color:var(--vapor)">Done</button>`;
+    const go = async () => {
+      const v = dlg.querySelector('#snm').value.trim();
+      if (!v) return;
+      await addStore(v);
+      draw();
+    };
+    dlg.querySelector('[data-a=add]').onclick = go;
+    dlg.querySelector('#snm').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); go(); } };
+    dlg.querySelectorAll('[data-rm]').forEach(b => b.onclick = async () => {
+      await removeStore(b.dataset.rm);
+      if (S.store === b.dataset.rm) S.store = '';
+      draw();
+    });
+    dlg.querySelector('[data-a=c]').onclick = () => { dlg.close(); render(); };
+  };
+  draw();
+  dlg.showModal();
+}
+
+/* Searchable history picker, shared by Shop and Plan. Typo-tolerant, because
+   the point of a history is that you don't have to remember what you called
+   it last time. */
+function catalogPicker({ kind = CAT_PRODUCT, store = '', onPick }) {
+  const dlg = document.getElementById('dlg');
+  const meal = kind === CAT_MEAL;
+  dlg.innerHTML = `<div class="eyebrow">From your history</div>
+    <h1 style="margin:6px 0 12px">${meal ? "Meals you've made" : "Things you've bought"}</h1>
+    <input id="cpq" placeholder="Search — spelling doesn't have to be perfect" autocomplete="off" style="margin-bottom:12px">
+    <div id="cpl"></div>
+    <button class="btn ghost" data-a="c" style="margin-top:10px;border:none;color:var(--vapor)">Close</button>`;
+  const listBox = dlg.querySelector('#cpl');
+  const paint = () => {
+    const q = dlg.querySelector('#cpq').value.trim();
+    const rows = catalogList(kind, { store, q }).slice(0, 24);
+    listBox.innerHTML = '';
+    if (!rows.length) {
+      listBox.appendChild(el(`<div class="empty" style="padding:34px 10px"><div class="big">${q ? 'No match' : 'Nothing yet'}</div>
+        <div class="sub">${q ? 'Nothing in your history looks like that.'
+          : meal ? 'Meals land here once you plan or cook them.'
+                 : 'Things land here once you buy or stock them.'}</div></div>`));
+      return;
+    }
+    const g = el(`<div class="tiles"></div>`);
+    rows.forEach(c => g.appendChild(tileEl({
+      name: c.name,
+      meta: meal ? `${c.count || 0}× made` : `${c.count || 0}× · ${esc(storeLabel(c, store))}`,
+      image: c.image,
+      emoji: foodEmoji(c.name, c.cat || '') || (meal ? '🍽️' : '🛒'),
+      badge: meal ? '' : stockTag(c.name),
+      checkLabel: 'Add', onCheck: async () => { await onPick(c); dlg.close(); },
+      onCorner: () => pickPhoto(c, () => paint()), cornerIcon: '📷', cornerLabel: 'Set a photo for',
+    })));
+    listBox.appendChild(g);
+  };
+  dlg.querySelector('#cpq').oninput = paint;
+  dlg.querySelector('[data-a=c]').onclick = () => dlg.close();
+  paint();
+  dlg.showModal();
+}
+
+/* ---------------- view: shop ----------------
+   A real checklist. What you still need, what your own history says you're
+   out of, and what's already in the cart — split per store, because a Costco
+   run and a corner-shop run are different errands with different lists. */
 function viewShopping(app) {
+  const store = S.store || '';
+  const stores = storeList();
+
+  const tabs = el(`<div class="chips">
+    <button class="chip" data-s="" aria-pressed="${!store}">All stores</button>
+    ${stores.map(s => `<button class="chip" data-s="${esc(s.id)}" aria-pressed="${store === s.id}">${s.emoji || '🏬'} ${esc(s.name)}</button>`).join('')}
+    <button class="chip" data-a="stores" aria-pressed="false">＋ Store</button></div>`);
+  tabs.querySelectorAll('[data-s]').forEach(b => b.onclick = () => { S.store = b.dataset.s; render(); });
+  tabs.querySelector('[data-a=stores]').onclick = () => storeSheet();
+  app.appendChild(tabs);
+
   // The input row is built ONCE and stays mounted; only the list below
-  // repaints on changes. That keeps the Add button instant and never steals
-  // focus or drops a keystroke mid-type.
-  const add = el(`<div class="row" style="margin-bottom:12px">
-    <input id="sadd" placeholder="Add an item…" autocomplete="off" enterkeyhint="done" style="flex:1">
+  // repaints. That keeps Add instant and never drops a keystroke mid-type.
+  const add = el(`<div class="row" style="margin-bottom:10px">
+    <input id="sadd" placeholder="${store ? `Add to ${esc(storeName(store))}…` : 'Add an item…'}" autocomplete="off" enterkeyhint="done" style="flex:1">
     <button class="btn cold" data-a="add" style="width:auto;padding:0 18px">Add</button></div>`);
   const inp = add.querySelector('#sadd');
   const listBox = el(`<div id="shoplist"></div>`);
@@ -2989,53 +3514,93 @@ function viewShopping(app) {
     if (!v || adding) return;
     adding = true;
     inp.value = '';                       // clear immediately — feels instant
-    try {
-      const existed = S.shopping.some(s => !s.deleted && !s.done && norm(s.name) === norm(v));
-      await addToList(v);                 // dedup handled inside; never blocks on the network
-      paintShopping(listBox);             // repaint just the list, not the whole app
-      if (!existed) { const have = itemInStock(v); if (have) toast(`Added — heads up, you have ${have} in the pantry`); }
-    } finally { adding = false; inp.focus(); }
+    try { await addToList(v, '', store); paintShopping(listBox); }
+    finally { adding = false; inp.focus(); }
   };
   add.querySelector('[data-a=add]').onclick = doAdd;
   inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); doAdd(); } };
   app.appendChild(add);
 
+  const hist = el(`<button class="btn ghost" style="margin-bottom:14px">🕘 Add from what you've bought before</button>`);
+  hist.onclick = () => catalogPicker({ kind: CAT_PRODUCT, store,
+    onPick: async c => { await addToList(c.name, '', store); paintShopping(listBox); } });
+  app.appendChild(hist);
+
   if (!SYNC.configured())
-    app.appendChild(el(`<div class="note" style="margin:0 0 12px">This list is on this phone only. Turn on <b>Setup → Family sync</b> and the whole family shares one list.</div>`));
+    app.appendChild(el(`<div class="note" style="margin:0 0 12px">This list is on this phone only. Turn on <b>Profile → Family sync</b> and the whole family shares one list.</div>`));
 
   app.appendChild(listBox);
   paintShopping(listBox);
 }
 
+/* One line of the list. Checked items keep their photo and move to Completed
+   instead of vanishing, so at the till you can still see what you picked up —
+   and mark anything the store simply didn't have. */
+function shopTile(s, box) {
+  const store = S.store || '';
+  const known = catalogFind(s.name);
+  const meta = s.done
+    ? (s.missing ? `<span class="tag out">Store didn't have it</span>` : `<span class="tag have">✓ In the cart</span>`)
+    : (stockTag(s.name) || `<span class="tag miss">Not in the house</span>`);
+  return tileEl({
+    name: s.name + (s.qty ? ` ×${s.qty}` : ''),
+    meta,
+    image: s.image || known?.image || null,
+    emoji: foodEmoji(s.name, s.cat || known?.cat || '') || '🛒',
+    badge: !store && s.store ? esc(storeName(s.store)) : '',
+    checked: !!s.done,
+    checkLabel: s.done ? 'Undo' : 'Got it',
+    onCheck: async () => {
+      if (s.done) { s.done = false; s.missing = false; await saveShopping(s); paintShopping(box); }
+      else shoppingToPantry(s, () => paintShopping(box));
+    },
+    onCorner: async () => { s.deleted = true; await saveShopping(s); paintShopping(box); },
+  });
+}
+
 function paintShopping(box) {
   box.innerHTML = '';
-  const list = S.shopping.filter(s => !s.deleted)
-    .sort((a, b) => (a.done ? 1 : 0) - (b.done ? 1 : 0) || (b.updatedAt || 0) - (a.updatedAt || 0));
-  if (!list.length) {
-    box.appendChild(el(`<div class="empty"><div class="big">List is empty</div>
-      <div class="sub">Add what you need. Each line shows if you <b>already have it</b> in the house, so nobody double-buys.</div></div>`));
-    return;
+  const store = S.store || '';
+  const mine = S.shopping.filter(s => !s.deleted && (!store || (s.store || '') === store));
+  const todo = mine.filter(s => !s.done).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  const done = mine.filter(s => s.done).sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0));
+
+  if (todo.length) {
+    box.appendChild(el(`<div class="sect"><h3>Need to get</h3><span class="n">${todo.length}</span></div>`));
+    const g = el(`<div class="tiles"></div>`);
+    todo.forEach(s => g.appendChild(shopTile(s, box)));
+    box.appendChild(g);
+  } else {
+    box.appendChild(el(`<div class="empty"><div class="big">${done.length ? 'All done' : 'Nothing on the list'}</div>
+      <div class="sub">${done.length ? "Everything here is in the cart."
+        : "Add what you need — or pull from what you've bought before."}</div></div>`));
   }
-  list.forEach(s => {
-    const have = itemInStock(s.name);
-    const row = el(`<div class="item">
-      <button class="thumb" data-a="chk" aria-label="Check off" style="cursor:pointer;font-size:20px;color:#fff;background:${s.done ? 'var(--fresh)' : 'var(--void)'}">${s.done ? '✓' : ''}</button>
-      <div class="body">
-        <div class="nm" style="${s.done ? 'text-decoration:line-through;color:var(--vapor-dim)' : ''}">${esc(s.name)}${s.qty ? ` <span class="qty">×${esc(s.qty)}</span>` : ''}</div>
-        <div class="meta">${have ? `<span class="stamp" style="--rail:var(--chill)">✓ In pantry: ${have}</span>` : `<span class="qty" style="color:var(--vapor-dim)">not in the house</span>`}${s.by ? ` <span class="qty">· ${esc(s.by)}</span>` : ''}</div>
-      </div>
-      <div class="act"><button data-a="del" aria-label="Remove ${esc(s.name)}">×</button></div>
-    </div>`);
-    row.querySelector('[data-a=chk]').onclick = async () => {
-      if (s.done) { s.done = false; await saveShopping(s); paintShopping(box); }   // untick
-      else shoppingToPantry(s);                                                    // tick -> offer to add to pantry
-    };
-    row.querySelector('[data-a=del]').onclick = async () => { s.deleted = true; await saveShopping(s); paintShopping(box); };
-    box.appendChild(row);
-  });
-  if (list.some(s => s.done)) {
-    const clr = el(`<button class="btn ghost" style="margin-top:8px">Clear checked-off</button>`);
-    clr.onclick = async () => { for (const s of list.filter(x => x.done)) { s.deleted = true; await saveShopping(s); } paintShopping(box); };
+
+  // Earned from your own buying history: things you get regularly and have
+  // none of right now. Stays silent until it genuinely knows something.
+  const restock = restockList(store, 6);
+  if (restock.length) {
+    box.appendChild(el(`<div class="sect"><h3>You're out of these</h3><span class="n">bought before</span></div>`));
+    const g = el(`<div class="tiles"></div>`);
+    restock.forEach(c => g.appendChild(tileEl({
+      name: c.name,
+      meta: `${c.count}× · ${esc(storeLabel(c, store))}`,
+      image: c.image, emoji: foodEmoji(c.name, c.cat) || '🛒',
+      badge: `<span class="tag out">You're out</span>`,
+      checkLabel: 'Add to list',
+      onCheck: async () => { await addToList(c.name, '', store); paintShopping(box); },
+      onCorner: () => pickPhoto(c, () => paintShopping(box)), cornerIcon: '📷', cornerLabel: 'Set a photo for',
+    })));
+    box.appendChild(g);
+  }
+
+  if (done.length) {
+    box.appendChild(el(`<div class="sect"><h3>Completed</h3><span class="n">${done.length}</span></div>`));
+    const g = el(`<div class="tiles"></div>`);
+    done.forEach(s => g.appendChild(shopTile(s, box)));
+    box.appendChild(g);
+    const clr = el(`<button class="btn ghost">Clear completed</button>`);
+    clr.onclick = async () => { for (const s of done) { s.deleted = true; await saveShopping(s); } paintShopping(box); };
     box.appendChild(clr);
   }
 }
@@ -3296,7 +3861,61 @@ function viewPantry(app) {
     sec.querySelector('[data-a=allsoon]').onclick = () => { S.view = 'soon'; render(); };
   }
   viewInv(app);
+  pantryHistory(app);
   setTimeout(enrichItemPhotos, 400);   // fill in real product photos in the background
+  setTimeout(enrichCatalogPhotos, 900);
+}
+
+/* Everything that's ever lived on these shelves and isn't here now. This is
+   the same catalog Shop and Plan read — restocking a staple is one tap from
+   what you've actually had, instead of retyping it from memory. */
+function pantryHistory(app) {
+  if (S.q?.trim()) return;                       // searching? show matches, not history
+  const gone = catalogList(CAT_PRODUCT)
+    .filter(c => stockState(c.name).state === 'out')
+    .slice(0, 8);
+  if (!gone.length) return;
+
+  const head = el(`<div class="sect"><h3>Had before, not here now</h3><span class="n">${gone.length}</span></div>`);
+  app.appendChild(head);
+  const g = el(`<div class="tiles"></div>`);
+  gone.forEach(c => g.appendChild(tileEl({
+    name: c.name,
+    meta: `${c.count || 0}× · ${esc(storeLabel(c))}`,
+    image: c.image, emoji: foodEmoji(c.name, c.cat) || '🛒',
+    checkLabel: 'Add to list',
+    onCheck: async () => { await addToList(c.name, '', S.store || ''); toast(`${c.name} on the list`); render(); },
+    onTap: () => restockSheet(c),
+    onCorner: () => pickPhoto(c, () => render()), cornerIcon: '📷', cornerLabel: 'Set a photo for',
+  })));
+  app.appendChild(g);
+}
+
+/* Tapping something in the history: put it straight back on a shelf, or just
+   note that you need it. Both paths are one tap from here. */
+function restockSheet(c) {
+  const dlg = document.getElementById('dlg');
+  dlg.innerHTML = `<div class="eyebrow">${esc(storeLabel(c))} · bought ${c.count || 0}×</div>
+    <h1 style="margin:6px 0 12px">${esc(c.name)}</h1>
+    <label><span class="lbl">Shelf</span><select id="rloc2">${S.household.locations.map(l =>
+      `<option value="${l.id}">${esc(l.name)}</option>`).join('')}</select></label>
+    <label><span class="lbl">How many</span><input type="number" id="rq" value="1" min="1"></label>
+    <button class="btn cold" data-a="stock">✓ Put it back in the pantry</button>
+    <button class="btn ghost" data-a="list" style="margin-top:8px">🛒&nbsp;&nbsp;Just add it to the shopping list</button>
+    <button class="btn ghost" data-a="photo" style="margin-top:8px">📷&nbsp;&nbsp;Set a photo</button>
+    <button class="btn ghost" data-a="c" style="margin-top:8px;border:none;color:var(--vapor)">Cancel</button>`;
+  if (c.lastLoc) dlg.querySelector('#rloc2').value = c.lastLoc;
+  dlg.querySelector('[data-a=stock]').onclick = async () => {
+    await addItem({ name: c.name, cat: c.cat || guessCat(c.name), loc: dlg.querySelector('#rloc2').value,
+      qty: parseInt(dlg.querySelector('#rq').value) || 1, image: c.image || null, packSize: c.packSize || null });
+    dlg.close(); render(); toast(`${c.name} back in the pantry`);
+  };
+  dlg.querySelector('[data-a=list]').onclick = async () => {
+    await addToList(c.name, '', S.store || ''); dlg.close(); render(); toast(`${c.name} on the list`);
+  };
+  dlg.querySelector('[data-a=photo]').onclick = () => { dlg.close(); pickPhoto(c, () => render()); };
+  dlg.querySelector('[data-a=c]').onclick = () => dlg.close();
+  dlg.showModal();
 }
 
 /* ---------------- view: PROFILE (the hub — everything findable in one place) ---------------- */
