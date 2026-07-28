@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#F7F9F7">
+<meta name="theme-color" content="#F7F9F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E1512" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="ShelfLife">
@@ -55,6 +56,63 @@
   --shadow-lg:0 10px 34px rgba(18,50,30,.12);
   /* Neutral, not a green halo. Coloured glow shadows read as a template. */
   --shadow-fab:0 6px 16px rgba(18,50,30,.22);
+
+  --glass:rgba(247,249,247,.85);    /* sticky header */
+  --glass-nav:rgba(255,255,255,.92);
+  --scrim:rgba(255,255,255,.94);    /* pills floating on a photo */
+  --t-have-bg:#E8F3EC; --t-have:#1B6E42;
+  --t-low-bg:#FDF0DC;  --t-low:#8A5A12;
+  --t-out-bg:#FBE9E9;  --t-out:#9B2C2C;
+  --t-miss-bg:#EDEFED; --t-miss:#5C6A5C;
+}
+
+/* ---- dark ----
+   A kitchen at 11pm is the actual use case. Not an inversion: the greens are
+   lifted so they still read as "fresh" on a dark ground, the card surface sits
+   just above the page rather than below it, and the status colours keep their
+   meaning instead of turning into neon. */
+@media (prefers-color-scheme:dark){
+  :root{
+    --void:#0E1512; --fog:#1A241E; --shelf:#151E19; --rime:#243029; --rime-hi:#34423B;
+    --frost:#E7EFE9; --vapor:#9AA89F; --vapor-dim:#74837A;
+    --cold:#3CC974; --cold-2:#2FA95F; --cold-soft:#15291D; --ink:#07120B;
+    --chill:#3CC974; --thaw:#E8A33F; --thaw-soft:#2A2114;
+    --spoil:#EE6A60; --spoil-soft:#2C1A18; --fresh:#4FB47A;
+    --shadow-sm:0 1px 2px rgba(0,0,0,.4); --shadow:0 2px 10px rgba(0,0,0,.45);
+    --shadow-lg:0 12px 36px rgba(0,0,0,.55); --shadow-fab:0 6px 16px rgba(0,0,0,.5);
+    --glass:rgba(14,21,18,.86); --glass-nav:rgba(17,25,21,.94); --scrim:rgba(12,20,16,.9);
+    --t-have-bg:#14271B; --t-have:#63C98D;
+    --t-low-bg:#2A2114;  --t-low:#D9A24B;
+    --t-out-bg:#2B1816;  --t-out:#EE8478;
+    --t-miss-bg:#212B25; --t-miss:#93A199;
+  }
+}
+:root[data-theme="dark"]{
+  --void:#0E1512; --fog:#1A241E; --shelf:#151E19; --rime:#243029; --rime-hi:#34423B;
+  --frost:#E7EFE9; --vapor:#9AA89F; --vapor-dim:#74837A;
+  --cold:#3CC974; --cold-2:#2FA95F; --cold-soft:#15291D; --ink:#07120B;
+  --chill:#3CC974; --thaw:#E8A33F; --thaw-soft:#2A2114;
+  --spoil:#EE6A60; --spoil-soft:#2C1A18; --fresh:#4FB47A;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.4); --shadow:0 2px 10px rgba(0,0,0,.45);
+  --shadow-lg:0 12px 36px rgba(0,0,0,.55); --shadow-fab:0 6px 16px rgba(0,0,0,.5);
+  --glass:rgba(14,21,18,.86); --glass-nav:rgba(17,25,21,.94); --scrim:rgba(12,20,16,.9);
+  --t-have-bg:#14271B; --t-have:#63C98D;
+  --t-low-bg:#2A2114;  --t-low:#D9A24B;
+  --t-out-bg:#2B1816;  --t-out:#EE8478;
+  --t-miss-bg:#212B25; --t-miss:#93A199;
+}
+:root[data-theme="light"]{
+  --void:#F7F9F7; --fog:#EEF2EE; --shelf:#FFFFFF; --rime:#E5ECE5; --rime-hi:#D2DBD2;
+  --frost:#14211A; --vapor:#55655B; --vapor-dim:#88968C;
+  --cold:#12A150; --cold-2:#0C7D3C; --cold-soft:#E1F4E8; --ink:#FFFFFF;
+  --chill:#12A150; --thaw:#E2851F; --thaw-soft:#FBEEDA;
+  --spoil:#DE453D; --spoil-soft:#FBE5E4; --fresh:#2E8B57;
+  --shadow-sm:0 1px 2px rgba(18,50,30,.06); --shadow-fab:0 6px 16px rgba(18,50,30,.22);
+  --glass:rgba(247,249,247,.85); --glass-nav:rgba(255,255,255,.92); --scrim:rgba(255,255,255,.94);
+  --t-have-bg:#E8F3EC; --t-have:#1B6E42;
+  --t-low-bg:#FDF0DC;  --t-low:#8A5A12;
+  --t-out-bg:#FBE9E9;  --t-out:#9B2C2C;
+  --t-miss-bg:#EDEFED; --t-miss:#5C6A5C;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0;background:var(--void);color:var(--frost);font-family:var(--sans);
@@ -80,7 +138,7 @@ h3{font-size:15px;font-weight:700;margin:0;letter-spacing:-.01em}
 a{color:var(--cold);text-decoration:none}
 
 /* ---- header ---- */
-header{position:sticky;top:0;z-index:20;background:rgba(247,249,247,.85);backdrop-filter:saturate(1.4) blur(16px);
+header{position:sticky;top:0;z-index:20;background:var(--glass);backdrop-filter:saturate(1.4) blur(16px);
   border-bottom:1px solid var(--rime);padding:calc(env(safe-area-inset-top) + 11px) var(--pad) 11px;
   display:flex;align-items:center;gap:9px}
 header #title{font-size:20px;font-weight:800;letter-spacing:-.03em}
@@ -94,7 +152,7 @@ main{padding:var(--pad);max-width:660px;margin:0 auto}
 
 /* ---- bottom nav, with a raised centre Scan button ---- */
 nav{position:fixed;bottom:0;left:0;right:0;z-index:20;height:calc(var(--nav-h) + env(safe-area-inset-bottom));
-  padding-bottom:env(safe-area-inset-bottom);background:rgba(255,255,255,.92);backdrop-filter:saturate(1.4) blur(16px);
+  padding-bottom:env(safe-area-inset-bottom);background:var(--glass-nav);backdrop-filter:saturate(1.4) blur(16px);
   border-top:1px solid var(--rime);display:flex}
 nav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
   color:var(--vapor-dim);font-size:10px;font-weight:650;letter-spacing:.01em}
@@ -141,7 +199,7 @@ nav button.fab[aria-current="page"] svg{filter:brightness(1.05)}
   text-align:center;transition:transform .08s,filter .12s;box-shadow:none}
 .btn.ghost{background:var(--shelf);color:var(--frost);border:1.5px solid var(--rime-hi);box-shadow:none}
 .btn.cold{background:var(--cold);color:var(--ink);box-shadow:none}
-.btn.danger{color:var(--spoil);border-color:#F0C9C6;background:var(--shelf)}
+.btn.danger{color:var(--spoil);border-color:var(--t-out-bg);background:var(--shelf)}
 /* Sheet menus read as a list of choices, so they left-align with the icon
    acting as the bullet — the pattern every iOS/Android action sheet uses. */
 .btn.left{justify-content:flex-start;gap:12px;padding-left:15px}
@@ -181,24 +239,15 @@ label .lbl{font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:up
 .stat{background:var(--shelf);border:1px solid var(--rime);border-radius:var(--r);padding:14px 12px;text-align:center}
 .stat .num{font-size:24px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1}
 .stat .lbl{font-size:10.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--vapor-dim);margin-top:6px}
-/* ---- dashboard: at-a-glance + money ----
-   Four hard numbers above the fold, then the money row. Waste is abstract;
-   a figure in dollars is the one thing that makes someone open this app on a
-   Tuesday when nothing is expiring. */
+/* ---- dashboard: at a glance ----
+   Four hard numbers above the fold. "Rescued" is the one that means the app
+   did something — food you finished before it turned, counted for the month. */
 .glance{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--rime);
-  border:1px solid var(--rime);border-radius:var(--r);overflow:hidden;margin-bottom:11px}
+  border:1px solid var(--rime);border-radius:var(--r);overflow:hidden;margin-bottom:22px}
 .glance .gc{background:var(--shelf);padding:13px 8px;text-align:center}
 .glance .gn{font-size:21px;font-weight:800;letter-spacing:-.035em;font-variant-numeric:tabular-nums;line-height:1}
 .glance .gl{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
   color:var(--vapor-dim);margin-top:6px}
-.mcard{background:var(--shelf);border:1px solid var(--rime);border-radius:var(--r);padding:15px 16px;margin-bottom:22px}
-.mcard .mh{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px}
-.mcard .mt{font-size:13px;font-weight:750;letter-spacing:-.01em}
-.mcard .ms{font-size:11.5px;color:var(--vapor-dim);font-weight:600}
-.mrow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.mrow .mv{font-size:19px;font-weight:800;letter-spacing:-.035em;font-variant-numeric:tabular-nums;line-height:1}
-.mrow .ml{font-size:10.5px;font-weight:650;color:var(--vapor-dim);margin-top:5px;line-height:1.3}
-.mhint{font-size:12.5px;color:var(--vapor);margin-top:13px;padding-top:12px;border-top:1px solid var(--rime)}
 
 /* quick capture — the three ways in, always one tap from the home screen */
 .qa{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:14px}
@@ -237,9 +286,13 @@ label .lbl{font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:up
 .recipe-card .banner{height:120px;display:flex;align-items:center;justify-content:center;font-size:46px;
   background:linear-gradient(150deg,var(--cold-soft),var(--shelf));position:relative}
 .recipe-card .banner.photo{background-size:cover;background-position:center;background-repeat:no-repeat}
-.recipe-card .banner .badge{position:absolute;top:10px;right:10px;font-size:11px;font-weight:700;padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.94);box-shadow:var(--shadow-sm)}
+.recipe-card .banner .badge{position:absolute;top:10px;right:10px;font-size:11px;font-weight:700;padding:5px 10px;border-radius:999px;background:var(--scrim);box-shadow:var(--shadow-sm)}
 .recipe-card .banner .badge.ok{color:var(--cold-2)}
-.recipe-card .banner .badge.miss{color:#9a5a10}
+.recipe-card .banner .badge.miss{color:var(--t-low)}
+/* the have/total ratio, bottom-left of the photo where it can't fight the badge */
+.recipe-card .banner .ratio{position:absolute;bottom:10px;left:10px;font-size:12px;font-weight:800;
+  padding:4px 9px;border-radius:999px;background:rgba(20,33,26,.82);color:#fff;
+  font-variant-numeric:tabular-nums;letter-spacing:.01em}
 .recipe-card .rc-body{padding:14px 15px 15px}
 .recipe-card .rc-body h3{margin-bottom:4px}
 .recipe-card .rc-meta{font-size:11.5px;font-weight:650;color:var(--vapor-dim);letter-spacing:0;margin-bottom:10px}
@@ -274,7 +327,7 @@ label .lbl{font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:up
 .tile .tp .emoji{font-size:46px;line-height:1}
 .tiles.one .tp .emoji{font-size:64px}
 .tile .tb{position:absolute;top:8px;left:8px;font-size:11px;font-weight:700;padding:5px 9px;
-  border-radius:999px;background:rgba(255,255,255,.94);letter-spacing:0;
+  border-radius:999px;background:var(--scrim);color:var(--frost);letter-spacing:0;
   box-shadow:0 1px 3px rgba(18,50,30,.16)}
 .tile .tc{display:flex;align-items:center;gap:9px;padding:11px 12px;border-top:1px solid var(--rime);
   font-size:13.5px;font-weight:700;color:var(--vapor);background:var(--shelf);width:100%}
@@ -308,17 +361,57 @@ label .lbl{font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:up
 /* 36px, not 29 — this sits on a photo that is itself tappable, so a near
    miss used to open a file picker instead of doing what you asked. */
 .tile .tx{position:absolute;top:7px;right:7px;width:36px;height:36px;border-radius:999px;
-  background:rgba(255,255,255,.94);box-shadow:0 1px 3px rgba(18,50,30,.16);
+  background:var(--scrim);box-shadow:0 1px 3px rgba(18,50,30,.16);
   display:grid;place-items:center;color:var(--vapor);line-height:1}
 
 /* status tags — the "you're out of this" signal, read at a glance */
 .tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:750;
   padding:4px 9px;border-radius:999px;letter-spacing:.01em;white-space:nowrap}
-.tag.have{background:#E8F3EC;color:#1B6E42}
-.tag.low{background:#FDF0DC;color:#8A5A12}
-.tag.out{background:#FBE9E9;color:#9B2C2C}
-.tag.miss{background:#EDEFED;color:#5C6A5C}
+.tag.have{background:var(--t-have-bg);color:var(--t-have)}
+.tag.low{background:var(--t-low-bg);color:var(--t-low)}
+.tag.out{background:var(--t-out-bg);color:var(--t-out)}
+.tag.miss{background:var(--t-miss-bg);color:var(--t-miss)}
 .tag.list{background:var(--cold-soft);color:var(--cold-2)}
+
+/* ---- speed dial ----
+   One + that fans out into the three ways to add food, instead of sending
+   you to a chooser screen and back. The scrim is part of it: while it's open
+   the rest of the app is out of play, so a stray tap closes rather than fires. */
+.dial{position:fixed;inset:0;z-index:29;background:rgba(10,18,14,.34);
+  -webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}
+.dial .opts{position:absolute;right:calc(var(--pad) + 2px);
+  bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 84px);
+  display:flex;flex-direction:column;align-items:flex-end;gap:11px}
+.dial button{display:flex;align-items:center;gap:11px;background:var(--shelf);color:var(--frost);
+  border:1px solid var(--rime);border-radius:999px;padding:11px 17px 11px 15px;
+  font-size:14px;font-weight:700;box-shadow:var(--shadow-lg);white-space:nowrap;
+  animation:dialin .16s cubic-bezier(.2,.9,.3,1.2) backwards}
+.dial button .ico{color:var(--cold)}
+.dial button:nth-child(2){animation-delay:.03s}
+.dial button:nth-child(3){animation-delay:.06s}
+@keyframes dialin{from{opacity:0;transform:translateY(12px) scale(.92)}}
+#fab[aria-expanded="true"]{transform:rotate(45deg)}
+#fab{transition:transform .18s cubic-bezier(.2,.9,.3,1.2)}
+@media (prefers-reduced-motion:reduce){.dial button{animation:none}#fab{transition:none}}
+
+/* compact shopping row: checkbox left, the way every list app does it */
+.item.srow{padding:10px 12px;gap:11px;margin-bottom:7px}
+.item.srow::before{display:none}
+.item.srow .cbx{width:26px;height:26px;flex:0 0 auto;border-radius:8px;border:2px solid var(--rime-hi);
+  display:grid;place-items:center;color:#fff;background:var(--shelf)}
+.item.srow .meta{margin-top:4px}
+.item.srow.done{opacity:.55}
+.item.srow.done .nm{text-decoration:line-through;color:var(--vapor)}
+.item.srow.done .cbx{background:var(--fresh);border-color:var(--fresh)}
+.item.srow.added{animation:tflash .9s ease-out}
+.item.srow.leaving{animation:tleave .22s ease-in forwards;pointer-events:none}
+
+/* aisle headers — quieter than a section heading, because they're waypoints
+   on a walk rather than divisions of the screen */
+.aisle{display:flex;align-items:baseline;justify-content:space-between;margin:17px 0 9px}
+.aisle:first-child{margin-top:2px}
+.aisle span{font-size:11.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--vapor)}
+.aisle i{font-style:normal;font-size:11.5px;color:var(--vapor-dim);font-weight:650;font-variant-numeric:tabular-nums}
 
 /* section headings, so Completed reads as a place rather than a leftover */
 .sect{display:flex;align-items:baseline;justify-content:space-between;margin:22px 0 10px}
@@ -437,7 +530,8 @@ dialog::backdrop{background:rgba(10,25,16,.44);backdrop-filter:blur(3px)}
 
 <main id="app"></main>
 
-<button id="fab" class="fab-add hide" aria-label="Add food"><svg viewBox="0 0 24 24" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+<div id="dial" class="dial hide" aria-hidden="true"></div>
+<button id="fab" class="fab-add hide" aria-label="Add food" aria-expanded="false"><svg viewBox="0 0 24 24" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
 
 <nav id="nav"></nav>
 
@@ -594,6 +688,56 @@ const mapCat = tags => {
 };
 
 const CATS = Object.keys(SHELF);
+
+/* ---------------- aisles ----------------
+   A shopping list sorted by when you typed things is a list that makes you
+   walk the shop twice. Sorted by aisle, you walk it once — which is the
+   single most-praised feature in every list app there is. The order below is
+   the usual supermarket loop: produce at the door, freezers at the end. Each
+   store can reorder it, because Costco's layout isn't the corner shop's. */
+const AISLES = [
+  ['produce',   'Produce'],
+  ['bakery',    'Bakery'],
+  ['meat',      'Meat & fish'],
+  ['dairy',     'Dairy & eggs'],
+  ['pantry',    'Pantry & dry goods'],
+  ['cans',      'Tins & jars'],
+  ['snacks',    'Snacks & sweets'],
+  ['drinks',    'Drinks'],
+  ['frozen',    'Frozen'],
+  ['household', 'Household'],
+  ['other',     'Everything else'],
+];
+const AISLE_NAME = id => (AISLES.find(a => a[0] === id) || ['other', 'Everything else'])[1];
+const CAT_AISLE = {
+  'produce-leafy':'produce','produce-berry':'produce','produce-hardy':'produce','produce-root':'produce',
+  'produce-citrus':'produce','produce-banana':'produce','produce-avocado':'produce','herbs-fresh':'produce',
+  'bread':'bakery','tortilla':'bakery',
+  'meat-raw':'meat','poultry-raw':'meat','fish-raw':'meat','deli-meat':'meat',
+  'dairy-milk':'dairy','dairy-cheese-hard':'dairy','dairy-cheese-soft':'dairy','dairy-yogurt':'dairy',
+  'dairy-butter':'dairy','eggs':'dairy',
+  'dry-pasta-rice':'pantry','dry-grain-flour':'pantry','cereal':'pantry','baking':'pantry',
+  'oil-vinegar':'pantry','spice':'pantry','coffee-tea':'pantry','nuts-seeds':'pantry',
+  'canned':'cans','jarred-sauce':'cans','condiment':'cans',
+  'snack':'snacks','ice-cream':'frozen','frozen-meal':'frozen','frozen-veg':'frozen',
+  'juice-drink':'drinks','leftovers':'other','other':'other',
+};
+const aisleOf = cat => CAT_AISLE[cat] || 'other';
+
+/* A store's own walking order, falling back to the default loop. */
+function aisleOrder(store = '') {
+  const saved = (S.household?.aisleOrder || {})[store || '_'];
+  const base = AISLES.map(a => a[0]);
+  if (!saved || !saved.length) return base;
+  // keep any aisle the saved order doesn't know about, so adding one later
+  // doesn't make it silently vanish from the list
+  return [...saved.filter(a => base.includes(a)), ...base.filter(a => !saved.includes(a))];
+}
+async function saveAisleOrder(store, order) {
+  if (!S.household) return;
+  S.household.aisleOrder = { ...(S.household.aisleOrder || {}), [store || '_']: order };
+  await saveHousehold();
+}
 
 /* ---------------- state ---------------- */
 let S = { items: [], catalog: [], recipes: [], shopping: [], plan: [], saved: [], household: null, cfg: {}, view: 'home', loc: 'all', who: null, q: '', cq: '', open: new Set() };
@@ -940,8 +1084,10 @@ async function addToList(name, qty, store = '') {
   // lists is exactly how you come home with two of everything.
   const other = S.shopping.find(s => !s.deleted && !s.done && (s.store || '') !== store && fuzzyHit(name, s.name, 0.6));
   const known = catalogFind(name);
+  // Always land on a category, even for something typed once and never seen
+  // before — that category is what files it into the right aisle.
   const it = { id: uid(), name: String(name).trim(), qty: qty || '', store,
-    image: known?.image || null, cat: known?.cat || '',
+    image: known?.image || null, cat: known?.cat || guessCat(name),
     by: S.who?.name || '', done: false, missing: false, deleted: false };
   await saveShopping(it);
   if (other) toast(`Added — also on your ${storeName(other.store) || 'general'} list`);
@@ -1010,14 +1156,10 @@ function shoppingToPantry(s, after) {
   dlg.showModal();
 }
 
-async function addItem({ name, cat, loc, qty = 1, barcode = null, packSize = null, brand = '', image = null, expires = null, dateConfirmed = false, store = '', price = null }) {
+async function addItem({ name, cat, loc, qty = 1, barcode = null, packSize = null, brand = '', image = null, expires = null, dateConfirmed = false, store = '' }) {
   const mode = packSize ? 'pack' : unitModeFor(cat);
-  // Stamp the price onto the item rather than looking it up later: the money
-  // maths runs over hundreds of records and must not fuzzy-match each one.
-  const known = price == null ? catalogFind(name) : null;
-  const unit = price != null ? price : (known?.lastPrice ?? null);
   const it = {
-    id: uid(), name, brand, cat, loc, barcode, image, price: unit,
+    id: uid(), name, brand, cat, loc, barcode, image,
     mode,
     qty: mode === 'level' ? null : qty,
     level: mode === 'level' ? 4 : null,
@@ -1031,7 +1173,7 @@ async function addItem({ name, cat, loc, qty = 1, barcode = null, packSize = nul
   await logAction('add', name);
   // Everything that enters the house enters the household's memory, so the
   // next restock can start from "what we actually buy" instead of a blank box.
-  await recordCatalog({ name, brand, cat, image, packSize, barcode, lastPrice: unit }, { store, loc });
+  await recordCatalog({ name, brand, cat, image, packSize, barcode }, { store, loc });
   if (it.dateConfirmed) learnFromDate(it);   // a real printed date was read at add time
   return it;
 }
@@ -1477,12 +1619,10 @@ IGNORE everything that is not a purchasable food/household product: store name/a
 For each product pick the best category from this list (use "other" if unsure):
 ${CATS.join(', ')}
 
-Also read the LINE PRICE for each product — the money figure in the right-hand column for that row — and return it in "price" as a plain number (7.99, not "$7.99"). If a line shows a multi-buy like "2 @ 3.99", the price is the per-unit figure (3.99). If you genuinely cannot read the price for a line, omit it rather than guessing.
-
 If a printed expiration or "best by" date appears for an item, return it in "expiry" as YYYY-MM-DD; otherwise omit it (never guess a date).`;
   const schema = { type: 'OBJECT', properties: { found: { type: 'ARRAY', items: { type: 'OBJECT', properties: {
     name: { type: 'STRING' }, cat: { type: 'STRING' }, count: { type: 'INTEGER' },
-    expiry: { type: 'STRING' }, price: { type: 'NUMBER' }
+    expiry: { type: 'STRING' }
   }, required: ['name', 'cat'] } } }, required: ['found'] };
   const out = await G.gen([{ text: prompt }, { inline_data: { mime_type: mime, data: b64 } }], schema);
   return out.found || [];
@@ -1672,6 +1812,7 @@ function tileEl({ name, meta = '', image = null, emoji = '🍽️', badge = '', 
     if (t.dataset.busy) return;                     // double-tap guard
     t.dataset.busy = '1';
     try {
+      tap();
       await onCheck();
       // Confirm it optimistically and STAY confirmed. Repainting the list out
       // from under the finger is why adding felt like nothing happened.
@@ -1714,40 +1855,19 @@ function statusPills(name) {
   return out.join('');
 }
 
-/* ---------------- money ----------------
-   "Reduce food waste" is an abstraction. "$34 in the bin this month" is not,
-   and it's the strongest motivator anything in this category has. Prices are
-   optional everywhere — a household that never enters one sees a dash, not a
-   broken screen, and nothing else in the app depends on them. */
-const CURRENCY = () => S.cfg.currency || '$';
-const money = n => CURRENCY() + (Math.round((n || 0) * 100) / 100).toFixed(2);
+/* ---------------- this month ----------------
+   Counted, not priced. "You rescued 7 things this month" is the same
+   motivation as a dollar figure without asking anyone to type prices in. */
 const monthStart = () => { const d = new Date(); d.setDate(1); d.setHours(0, 0, 0, 0); return d.getTime(); };
-
-/* What's left of a part-used item, so a half-empty bag isn't valued as full. */
-function itemValue(it) {
-  if (it.price == null || it.deleted) return null;
-  const left = it.mode === 'level' ? Math.max(0, (it.level || 0) / 4)
-    : it.mode === 'pack' ? Math.max(0, it.qty || 0)
-    : Math.max(0, it.qty || 0);
-  return it.price * left;
-}
-
-function moneyStats() {
+function monthStats() {
   const since = monthStart();
-  let value = 0, lost = 0, used = 0, saved = 0, priced = 0, unpriced = 0, binned = 0;
+  let rescued = 0, binned = 0, used = 0;
   for (const it of S.items) {
-    if (!it.deleted) {
-      const v = itemValue(it);
-      if (v == null) unpriced++; else { value += v; priced++; }
-      continue;
-    }
-    if (it.wasted && (it.wastedAt || 0) >= since) { binned++; if (it.price != null) lost += it.price; }
-    else if (!it.wasted && (it.goneAt || 0) >= since && it.price != null) {
-      used += it.price;
-      if (it.rescued) saved += it.price;
-    }
+    if (!it.deleted) continue;
+    if (it.wasted && (it.wastedAt || 0) >= since) binned++;
+    else if (!it.wasted && (it.goneAt || 0) >= since) { used++; if (it.rescued) rescued++; }
   }
-  return { value, lost, used, saved, priced, unpriced, binned };
+  return { rescued, binned, used };
 }
 
 const locName = id => S.household?.locations.find(l => l.id === id)?.name || '?';
@@ -1755,6 +1875,18 @@ const locName = id => S.household?.locations.find(l => l.id === id)?.name || '?'
 /* ================================================================
    VIEWS
    ================================================================ */
+/* A tick you can feel. Android honours this; iOS Safari ignores it, so it's
+   a bonus rather than the confirmation — the visible check still does that. */
+const tap = (ms = 8) => { try { navigator.vibrate?.(ms); } catch (e) {} };
+
+/* System by default; the override is for people who keep their phone light
+   and want the kitchen app dark, which is a real preference. */
+function applyTheme() {
+  const t = S.cfg.theme || 'system';
+  if (t === 'system') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme', t);
+}
+
 const el = (h) => { const d = document.createElement('div'); d.innerHTML = h.trim(); return d.firstElementChild; };
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -2269,7 +2401,6 @@ async function recordCatalog(p, opt = {}) {
     emoji: p.emoji || prev.emoji || '',
     image: p.image || prev.image || null,
     packSize: p.packSize ?? prev.packSize ?? null,
-    lastPrice: p.lastPrice ?? prev.lastPrice ?? null,
     lastLoc: loc || p.lastLoc || prev.lastLoc || null,
     count: (prev.count || 0) + (bump ? 1 : 0),
     first: prev.first || at,
@@ -2708,23 +2839,54 @@ function viewHome(app) {
 
 /* ---------------- meal planner ---------------- */
 function viewPlan(app) {
-  app.appendChild(el(`<p class="note" style="margin:0 0 14px">Plan the week, then send everything you're missing to the shopping list in one tap.</p>`));
+  // Weeks, not a rolling seven days: you plan next week while you're still
+  // living this one, and a rolling window can't express that.
+  const off = S.weekOff || 0;
+  const wk = weekRange(off);
+  const todayKey = dayKey(new Date(today()));
 
-  const planned = S.plan.filter(m => !m.deleted);
+  const tabs = el(`<div class="chips">
+    <button class="chip" data-w="-1" aria-pressed="${off === -1}">Last week</button>
+    <button class="chip" data-w="0" aria-pressed="${off === 0}">This week</button>
+    <button class="chip" data-w="1" aria-pressed="${off === 1}">Next week</button>
+  </div>`);
+  tabs.querySelectorAll('[data-w]').forEach(b => b.onclick = () => { S.weekOff = +b.dataset.w; render(); });
+  app.appendChild(tabs);
+  app.appendChild(el(`<div class="eyebrow" style="margin:2px 0 14px">${esc(weekLabel(wk))}</div>`));
+
+  const planned = S.plan.filter(m => !m.deleted && m.date >= wk.from && m.date <= wk.to);
   const weekMissing = [...new Set(planned.flatMap(m => m.missing || []))].filter(x => !itemInStock(x));
-  if (weekMissing.length) {
-    const b = el(`<button class="btn cold" style="margin-bottom:14px">🛒 Add this week's ${weekMissing.length} missing ingredient${weekMissing.length > 1 ? 's' : ''} to the list</button>`);
+
+  // One switch instead of a button you have to remember to press: while it's
+  // on, anything the week is missing is on the list and stays there.
+  const syncOn = S.household?.planSync !== false;
+  const sc = el(`<div class="card" style="padding:13px 15px;margin-bottom:14px">
+    <label style="display:flex;align-items:center;gap:11px;margin:0;cursor:pointer">
+      <input type="checkbox" id="psync" ${syncOn ? 'checked' : ''} style="width:20px;height:20px;flex:0 0 auto">
+      <span style="flex:1"><span style="display:block;font-size:13.5px;font-weight:700">Keep the shopping list in sync</span>
+      <span class="note">${weekMissing.length ? `${weekMissing.length} ingredient${weekMissing.length > 1 ? 's' : ''} this week you don't have` : 'Nothing missing for this week'}</span></span>
+    </label></div>`);
+  sc.querySelector('#psync').onchange = async e => {
+    S.household.planSync = e.target.checked;
+    await saveHousehold();
+    if (e.target.checked) await syncPlanToList(weekMissing);
+    render();
+  };
+  app.appendChild(sc);
+  if (syncOn && weekMissing.length) syncPlanToList(weekMissing);
+
+  if (weekMissing.length && !syncOn) {
+    const b = el(`<button class="btn cold" style="margin-bottom:14px">${icon('cart')}Add ${weekMissing.length} missing ingredient${weekMissing.length > 1 ? 's' : ''} to the list</button>`);
     b.onclick = async () => { for (const m of weekMissing) await addToList(m); toast(`Added ${weekMissing.length} to your list`); render(); };
     app.appendChild(b);
   }
 
-  const start = today();
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(start + i * DAY);
+  wk.days.forEach(d => {
     const key = dayKey(d);
+    const isToday = key === todayKey;
     const meals = planned.filter(m => m.date === key);
-    const card = el(`<div class="day ${i === 0 ? 'today' : ''}">
-      <div class="dh"><div class="dw">${d.toLocaleDateString(undefined, { weekday: 'long' })}<small>${d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</small></div>${i === 0 ? '<span class="badge">Today</span>' : ''}</div>
+    const card = el(`<div class="day ${isToday ? 'today' : ''}">
+      <div class="dh"><div class="dw">${d.toLocaleDateString(undefined, { weekday: 'long' })}<small>${d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</small></div>${isToday ? '<span class="badge">Today</span>' : ''}</div>
       <div class="meals"></div>
       <button class="addmeal">${icon('plus',16)}Add a meal</button></div>`);
     const mbox = card.querySelector('.meals');
@@ -2760,7 +2922,20 @@ function viewPlan(app) {
     else mbox.appendChild(el(`<div class="note" style="padding:2px 0 4px;color:var(--vapor-dim)">Nothing planned</div>`));
     card.querySelector('.addmeal').onclick = () => addMealDialog(key);
     app.appendChild(card);
+  });
+}
+
+/* Push the week's gaps onto the list without duplicating what's already there.
+   Marked so turning sync off can take back exactly what it put on, and not
+   anything you added yourself. */
+async function syncPlanToList(missing) {
+  let added = 0;
+  for (const name of missing) {
+    if (S.shopping.some(s => !s.deleted && !s.done && fuzzyHit(name, s.name, 0.6))) continue;
+    const it = await addToList(name, '', '');
+    if (it) { it.fromPlan = true; await saveShopping(it); added++; }
   }
+  return added;
 }
 
 /* Type it, or search everything you've ever cooked. Two ways in, no wall of
@@ -2839,15 +3014,26 @@ function plannedMealSheet(m) {
 let recipeCache = null;
 
 /* A single rich recipe card, shared by the Cook tab and the Home dashboard. */
+/* have / total, printed on the tile. Cooklist's best idea: it answers "is
+   tonight possible" before you tap anything, and it costs one subtraction. */
+const matchRatio = r => {
+  const missing = (r.missing || []).length;
+  const total = (r.uses || []).length + missing;
+  return { have: total - missing, total, missing };
+};
+
 function recipeCardEl(r) {
   const n = (r.missing || []).length;
+  const mr = matchRatio(r);
   const emoji = foodEmoji(r.name, '') || '🍳';
   const bannerStyle = r.image ? ` class="banner photo" style="background-image:url('${esc(r.image)}')"` : ' class="banner"';
   const card = el(`<div class="recipe-card">
-    <div${bannerStyle}>${r.image ? '' : emoji}<span class="badge ${n === 0 ? 'ok' : 'miss'}">${n === 0 ? 'Ready to cook' : 'Need ' + n}</span></div>
+    <div${bannerStyle}>${r.image ? '' : emoji}
+      ${mr.total ? `<span class="ratio">${mr.have} / ${mr.total}</span>` : ''}
+      <span class="badge ${n === 0 ? 'ok' : 'miss'}">${n === 0 ? 'Ready to cook' : 'Need ' + n}</span></div>
     <div class="rc-body">
       <h3>${esc(r.name)}</h3>
-      <div class="rc-meta">${r.minutes} MIN${r.rescues?.length ? ' · USES UP ' + esc(r.rescues.join(', ')).toUpperCase() : ''}</div>
+      <div class="rc-meta">${r.minutes} min${mr.total ? ` · ${mr.have} of ${mr.total} ingredients` : ''}${r.rescues?.length ? ' · uses up ' + esc(r.rescues.join(', ')) : ''}</div>
       <div>${n ? r.missing.map(m => `<span class="pill miss">${esc(m)}</span>`).join('') : `<span class="pill ok">Nothing missing — you have it all</span>`}</div>
       <div class="rc-act">
         <button class="btn cold sm" data-a="how">View recipe</button>
@@ -2945,6 +3131,15 @@ function viewCook(app) {
     btn.disabled = false; btn.innerHTML = icon('refresh') + 'Suggest again';
   };
   app.appendChild(btn);
+
+  if (recipeCache?.length) {
+    const ready = recipeCache.filter(r => !(r.missing || []).length).length;
+    const cn = el(`<button class="chip" aria-pressed="${!!S.cookNow}" style="margin-bottom:14px">
+      ${icon('check', 15)} Cook now${ready ? ` · ${ready}` : ''}</button>`);
+    cn.onclick = () => { S.cookNow = !S.cookNow; render(); };
+    app.appendChild(cn);
+  }
+
   if (!live.length) app.appendChild(el(`<div class="card"><div class="note">Nothing in the inventory yet — there's nothing to cook with. Scan something in first.</div></div>`));
   else if (!recipeCache) app.appendChild(el(`<div class="note" style="margin:-4px 0 16px">Ranked so the ones you can make right now — using what's about to expire — come first.</div>`));
   app.appendChild(out);
@@ -2954,7 +3149,16 @@ function viewCook(app) {
 function renderRecipes(out) {
   out.innerHTML = '';
   if (!recipeCache?.length) return;
-  [...recipeCache].sort((a, b) => a.missing.length - b.missing.length).forEach(r => out.appendChild(recipeCardEl(r)));
+  let list = [...recipeCache].sort((a, b) => a.missing.length - b.missing.length);
+  // Cook Now: only what you can make right now, nothing missing.
+  if (S.cookNow) list = list.filter(r => !(r.missing || []).length);
+  if (!list.length) {
+    out.appendChild(el(`<div class="empty"><div class="ei">${icon('utensils', 34)}</div>
+      <div class="big">Nothing you can make outright</div>
+      <div class="sub">Every suggestion is missing at least one thing. Turn Cook Now off to see them and what they need.</div></div>`));
+    return;
+  }
+  list.forEach(r => out.appendChild(recipeCardEl(r)));
 }
 
 /* The "Made" tab: your own cooking history, most recent first. */
@@ -3484,7 +3688,7 @@ async function addReceiptItems(items, sel) {
     const cat = CATS.includes(f.cat) ? f.cat : 'other';
     const loc = sel === 'auto' ? defaultLoc(cat) : sel;
     added.push(await addItem({ name: f.name, cat, loc, qty: f.count || 1, expires: parseExpiry(f.expiry),
-      price: Number.isFinite(f.price) && f.price > 0 ? f.price : null, store: S.store || '' }));
+      store: S.store || '' }));
   }
   return added;
 }
@@ -3508,15 +3712,15 @@ async function receiptFlow(file) {
     const catOpts = sel => CATS.map(c => `<option value="${c}"${c === sel ? ' selected' : ''}>${esc(CAT_LABEL(c))}</option>`).join('');
     dlg.innerHTML = `<div class="eyebrow">From your receipt</div>
       <h1 style="margin:6px 0 6px">Found ${found.length}</h1>
-      <p class="note" style="margin:0 0 12px">Check the reads — <b>tap any name to fix a typo</b>, tweak count or price, untick non-food. Expiry is set automatically by type; prices feed the money figures on Home.</p>
+      <p class="note" style="margin:0 0 12px">Check the reads — <b>tap any name to fix a typo</b>, tweak the count, untick non-food. Expiry is set automatically by type.</p>
       <div id="rlist">${found.map((f, i) => `<div class="card" data-row="${i}" style="padding:10px;margin-bottom:8px;display:flex;gap:9px;align-items:center">
         <input type="checkbox" checked data-i="${i}" style="width:20px;height:20px;flex:0 0 auto">
         <div style="flex:1;min-width:0">
           <input class="rnm" data-i="${i}" value="${esc(f.name)}" style="padding:7px 9px;font-size:14px;font-weight:600;margin-bottom:5px">
           <div style="display:flex;gap:6px">
             <select class="rcat" data-i="${i}" style="flex:1;padding:6px 8px;font-size:12px">${catOpts(CATS.includes(f.cat) ? f.cat : 'other')}</select>
-            <input class="rqty" data-i="${i}" type="number" min="1" value="${f.count || 1}" style="width:56px;padding:6px 8px;font-size:12px" aria-label="Quantity">
-            <input class="rprc" data-i="${i}" type="number" step="0.01" min="0" value="${f.price != null ? f.price : ''}" placeholder="${CURRENCY()}" style="width:70px;padding:6px 8px;font-size:12px" aria-label="Price">
+            <input class="rqty" data-i="${i}" type="number" min="1" value="${f.count || 1}" style="width:60px;padding:6px 8px;font-size:12px" aria-label="Quantity">
+
           </div>
         </div></div>`).join('')}</div>
       <label style="margin-top:2px"><span class="lbl">Put them on</span><select id="loc">
@@ -3532,7 +3736,6 @@ async function receiptFlow(file) {
           cat: dlg.querySelector(`.rcat[data-i="${i}"]`).value,
           count: parseInt(dlg.querySelector(`.rqty[data-i="${i}"]`).value) || 1,
           expiry: found[i].expiry,
-          price: parseFloat(dlg.querySelector(`.rprc[data-i="${i}"]`).value),
         };
       }).filter(p => p.name);
       const added = await addReceiptItems(picks, dlg.querySelector('#loc').value);
@@ -3552,25 +3755,16 @@ function manualSheet() {
     <label><span class="lbl">Name</span><input id="nm" placeholder="Roma tomatoes" autofocus></label>
     <label><span class="lbl">What kind of thing</span><select id="cat">${CATS.map(c => `<option value="${c}">${c}</option>`).join('')}</select></label>
     <label><span class="lbl">Shelf</span><select id="loc">${S.household.locations.map(l => `<option value="${l.id}">${esc(l.name)}</option>`).join('')}</select></label>
-    <div class="row"><label style="flex:1"><span class="lbl">How many</span><input type="number" id="qty" value="1" min="1"></label>
-      <label style="flex:1"><span class="lbl">Price each — optional</span><input type="number" id="prc" step="0.01" min="0" placeholder="${CURRENCY()}"></label></div>
+    <label><span class="lbl">How many</span><input type="number" id="qty" value="1" min="1"></label>
     <button class="btn cold" data-a="add">Put it away</button>
     <button class="btn ghost" data-a="c" style="margin-top:8px;border:none;color:var(--vapor)">Cancel</button>`;
   dlg.querySelector('#cat').onchange = e => {
     dlg.querySelector('#loc').value = defaultLoc(e.target.value);
   };
-  // Prefill the price from the last time you bought it.
-  dlg.querySelector('#nm').oninput = e => {
-    const k = catalogFind(e.target.value.trim());
-    const p = dlg.querySelector('#prc');
-    if (k?.lastPrice != null && !p.value) p.value = k.lastPrice;
-  };
   dlg.querySelector('[data-a=add]').onclick = async () => {
     const name = dlg.querySelector('#nm').value.trim(); if (!name) return;
-    const price = parseFloat(dlg.querySelector('#prc').value);
     await addItem({ name, cat: dlg.querySelector('#cat').value, loc: dlg.querySelector('#loc').value,
-      qty: parseInt(dlg.querySelector('#qty').value) || 1,
-      price: Number.isFinite(price) && price > 0 ? price : null });
+      qty: parseInt(dlg.querySelector('#qty').value) || 1 });
     dlg.close(); render(); toast(`${name} put away`);
   };
   dlg.querySelector('[data-a=c]').onclick = () => dlg.close();
@@ -3803,6 +3997,39 @@ function storeSheet() {
   dlg.showModal();
 }
 
+/* Reorder the aisles to match how you actually walk this shop. Up/down rather
+   than drag: it works with a thumb, works with a screen reader, and can't drop
+   a row somewhere you didn't mean. */
+function aisleOrderSheet(store, after) {
+  const dlg = document.getElementById('dlg');
+  let order = aisleOrder(store);
+  const draw = () => {
+    dlg.innerHTML = `<div class="eyebrow">${esc(storeName(store) || 'General list')}</div>
+      <h1 style="margin:6px 0 6px">Aisle order</h1>
+      <p class="note" style="margin:0 0 14px">Put these in the order you walk the shop. Your list follows it.</p>
+      ${order.map((a, i) => `<div class="row" style="margin-bottom:7px;align-items:center">
+        <span style="flex:1;font-weight:650;font-size:14px">${esc(AISLE_NAME(a))}</span>
+        <button class="btn ghost" data-up="${i}" ${i === 0 ? 'disabled' : ''} aria-label="Move ${esc(AISLE_NAME(a))} up" style="width:auto;padding:0 13px">↑</button>
+        <button class="btn ghost" data-dn="${i}" ${i === order.length - 1 ? 'disabled' : ''} aria-label="Move ${esc(AISLE_NAME(a))} down" style="width:auto;padding:0 13px">↓</button>
+      </div>`).join('')}
+      <button class="btn cold" data-a="save" style="margin-top:10px">Save this order</button>
+      <button class="btn ghost" data-a="reset" style="margin-top:8px">Back to the default order</button>
+      <button class="btn ghost" data-a="c" style="margin-top:8px;border:none;color:var(--vapor)">Cancel</button>`;
+    const swap = (i, j) => { [order[i], order[j]] = [order[j], order[i]]; draw(); };
+    dlg.querySelectorAll('[data-up]').forEach(b => b.onclick = () => swap(+b.dataset.up, +b.dataset.up - 1));
+    dlg.querySelectorAll('[data-dn]').forEach(b => b.onclick = () => swap(+b.dataset.dn, +b.dataset.dn + 1));
+    dlg.querySelector('[data-a=save]').onclick = async () => {
+      await saveAisleOrder(store, order); dlg.close(); if (after) after(); toast('Aisle order saved');
+    };
+    dlg.querySelector('[data-a=reset]').onclick = async () => {
+      await saveAisleOrder(store, []); dlg.close(); if (after) after(); toast('Back to the default order');
+    };
+    dlg.querySelector('[data-a=c]').onclick = () => dlg.close();
+  };
+  draw();
+  dlg.showModal();
+}
+
 /* Searchable history picker, shared by Shop and Plan. Typo-tolerant, because
    the point of a history is that you don't have to remember what you called
    it last time. */
@@ -3886,9 +4113,15 @@ function viewShopping(app) {
 
   // The input row is built ONCE and stays mounted; only the list below
   // repaints. That keeps Add instant and never drops a keystroke mid-type.
+  const photos = S.cfg.shopView === 'photos';
   const add = el(`<div class="row" style="margin-bottom:10px">
     <input id="sadd" placeholder="${store ? `Add to ${esc(storeName(store))}…` : 'Add an item…'}" autocomplete="off" enterkeyhint="done" style="flex:1">
+    <button class="btn ghost" data-a="dens" title="${photos ? 'Switch to a compact list' : 'Switch to photos'}"
+      aria-label="${photos ? 'Switch to a compact list' : 'Switch to photos'}" style="width:auto;padding:0 14px">${photos ? icon('rows') : icon('grid')}</button>
     <button class="btn cold" data-a="add" style="width:auto;padding:0 18px">Add</button></div>`);
+  add.querySelector('[data-a=dens]').onclick = async () => {
+    S.cfg.shopView = photos ? 'list' : 'photos'; await saveCfg(); render();
+  };
   const inp = add.querySelector('#sadd');
   const listBox = el(`<div id="shoplist"></div>`);
 
@@ -3922,6 +4155,28 @@ function viewShopping(app) {
 /* One line of the list. Checked items keep their photo and move to Completed
    instead of vanishing, so at the till you can still see what you picked up —
    and mark anything the store simply didn't have. */
+/* The compact row — AnyList's shape. Grouped into eight aisles, a photo grid
+   with one tile per aisle is a mile of scrolling; this is the density a real
+   shop needs. Photos stay a tap away for browsing. */
+function shopRow(s, box, flash = false) {
+  const st = s.done
+    ? (s.missing ? `<span class="tag out">Didn't have it</span>` : `<span class="tag have">In the cart</span>`)
+    : stockTag(s.name);
+  const row = el(`<div class="item srow${s.done ? ' done' : ''}${flash ? ' added' : ''}">
+    <button class="cbx" data-a="chk" aria-label="${s.done ? 'Undo' : 'Got it'}">${s.done ? icon('check', 16) : ''}</button>
+    <div class="body"><div class="nm">${esc(s.name)}${s.qty ? ` <span class="qty">×${esc(s.qty)}</span>` : ''}</div>
+      ${st ? `<div class="meta">${st}</div>` : ''}</div>
+    <div class="act"><button data-a="del" aria-label="Remove ${esc(s.name)}">${icon('x', 16)}</button></div>
+  </div>`);
+  row.querySelector('[data-a=chk]').onclick = async () => {
+    tap();
+    if (s.done) { s.done = false; s.missing = false; await saveShopping(s); paintShopping(box); }
+    else shoppingToPantry(s, () => { row.classList.add('leaving'); setTimeout(() => paintShopping(box), 210); });
+  };
+  row.querySelector('[data-a=del]').onclick = async () => { s.deleted = true; await saveShopping(s); paintShopping(box); };
+  return row;
+}
+
 function shopTile(s, box, flash = false) {
   const store = S.store || '';
   const known = catalogFind(s.name);
@@ -3958,9 +4213,31 @@ function paintShopping(box, flashId = '') {
   // No "Need to get" heading — the list IS the things to get. A header over
   // the only content on the screen just pushes the content down.
   if (todo.length) {
-    const g = el(`<div class="tiles"></div>`);
-    todo.forEach(s => g.appendChild(shopTile(s, box, s.id === flashId)));
-    box.appendChild(g);
+    // Grouped by aisle, in this store's walking order, so you cross the shop
+    // once instead of doubling back for the milk you wrote down first.
+    const groups = new Map();
+    todo.forEach(s => {
+      const a = aisleOf(s.cat || guessCat(s.name));
+      if (!groups.has(a)) groups.set(a, []);
+      groups.get(a).push(s);
+    });
+    const order = aisleOrder(store).filter(a => groups.has(a));
+    order.forEach(a => {
+      const rows = groups.get(a);
+      // One aisle needs no header — a label over the only group is noise.
+      if (order.length > 1)
+        box.appendChild(el(`<div class="aisle"><span>${esc(AISLE_NAME(a))}</span><i>${rows.length}</i></div>`));
+      if (S.cfg.shopView === 'photos') {
+        const g = el(`<div class="tiles"></div>`);
+        rows.forEach(s => g.appendChild(shopTile(s, box, s.id === flashId)));
+        box.appendChild(g);
+      } else rows.forEach(s => box.appendChild(shopRow(s, box, s.id === flashId)));
+    });
+    if (order.length > 1) {
+      const ro = el(`<button class="btn ghost" style="margin-bottom:4px">${icon('rows')}Reorder aisles for ${esc(storeName(store) || 'this list')}</button>`);
+      ro.onclick = () => aisleOrderSheet(store, () => paintShopping(box));
+      box.appendChild(ro);
+    }
   } else {
     box.appendChild(el(`<div class="empty"><div class="ei">${icon('cart', 34)}</div><div class="big">${done.length ? 'All done' : 'Nothing on the list'}</div>
       <div class="sub">${done.length ? "Everything here is in the cart."
@@ -3969,9 +4246,11 @@ function paintShopping(box, flashId = '') {
 
   if (done.length) {
     box.appendChild(el(`<div class="sect"><h3>Bought</h3><span class="n">${done.length}</span></div>`));
-    const g = el(`<div class="tiles"></div>`);
-    done.forEach(s => g.appendChild(shopTile(s, box)));
-    box.appendChild(g);
+    if (S.cfg.shopView === 'photos') {
+      const g = el(`<div class="tiles"></div>`);
+      done.forEach(s => g.appendChild(shopTile(s, box)));
+      box.appendChild(g);
+    } else done.forEach(s => box.appendChild(shopRow(s, box)));
     const clr = el(`<button class="btn ghost">Clear bought</button>`);
     clr.onclick = async () => { for (const s of done) { s.deleted = true; await saveShopping(s); } paintShopping(box); };
     box.appendChild(clr);
@@ -4045,6 +4324,17 @@ function viewSet(app) {
     }
   };
   app.appendChild(card);
+
+  app.appendChild(el(`<h2 style="margin:22px 0 10px">Appearance</h2>`));
+  const th = S.cfg.theme || 'system';
+  const tc = el(`<div class="card"><div class="chips" style="padding-bottom:0">
+    ${[['system', 'Match my phone'], ['light', 'Light'], ['dark', 'Dark']]
+      .map(([v, l]) => `<button class="chip" data-t="${v}" aria-pressed="${th === v}">${l}</button>`).join('')}
+  </div></div>`);
+  tc.querySelectorAll('[data-t]').forEach(b => b.onclick = async () => {
+    S.cfg.theme = b.dataset.t; await saveCfg(); applyTheme(); render();
+  });
+  app.appendChild(tc);
 
   app.appendChild(el(`<h2 style="margin:22px 0 10px">Household</h2>`));
   const h = S.household;
@@ -4275,6 +4565,30 @@ function viewSetup(app) {
    Not security. Attribution + kid mode. A password would kill it dead. */
 async function saveCfg() { await DB.put('meta', { id: 'cfg', ...S.cfg }); }
 
+/* ---------------- speed dial ---------------- */
+function closeDial() {
+  const d = document.getElementById('dial'), f = document.getElementById('fab');
+  d.classList.add('hide'); d.setAttribute('aria-hidden', 'true'); d.innerHTML = '';
+  f.setAttribute('aria-expanded', 'false');
+}
+function openDial() {
+  const d = document.getElementById('dial'), f = document.getElementById('fab');
+  if (f.getAttribute('aria-expanded') === 'true') return closeDial();
+  tap();
+  d.innerHTML = `<div class="opts">
+    <button data-d="scan">${icon('barcode', 19)}Scan a barcode</button>
+    <button data-d="receipt">${icon('receipt', 19)}Scan a receipt</button>
+    <button data-d="type">${icon('pencil', 19)}Type it in</button></div>
+    <input type="file" accept="image/*" class="hide" id="dialrc">`;
+  d.classList.remove('hide'); d.setAttribute('aria-hidden', 'false');
+  f.setAttribute('aria-expanded', 'true');
+  d.onclick = e => { if (e.target === d) closeDial(); };     // tap the scrim to dismiss
+  d.querySelector('[data-d=scan]').onclick = () => { closeDial(); S.cfg.scanMode = 'in'; S.view = 'scan'; render(); };
+  d.querySelector('[data-d=receipt]').onclick = () => d.querySelector('#dialrc').click();
+  d.querySelector('#dialrc').onchange = e => { const fl = e.target.files[0]; if (fl) { closeDial(); receiptFlow(fl); } };
+  d.querySelector('[data-d=type]').onclick = () => { closeDial(); manualSheet(); };
+}
+
 /* ---------------- add-food chooser (the one obvious way to add) ---------------- */
 function addFoodChooser() {
   const dlg = document.getElementById('dlg');
@@ -4306,7 +4620,7 @@ function viewHome(app) {
   const live = S.items.filter(i => !i.deleted);
   const soon = live.filter(i => freshness(i).left <= 3).sort((a, b) => a.expires - b.expires);
   const expired = live.filter(i => freshness(i).left < 0).length;
-  const m = moneyStats();
+  const m = monthStats();
   const h = new Date().getHours();
   const greet = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
   const first = (S.who?.name || '').split(' ')[0];
@@ -4331,26 +4645,12 @@ function viewHome(app) {
     <div class="gc"><div class="gn">${live.length}</div><div class="gl">Items</div></div>
     <div class="gc"><div class="gn" style="color:${soon.length ? 'var(--thaw)' : 'inherit'}">${soon.length}</div><div class="gl">Use soon</div></div>
     <div class="gc"><div class="gn" style="color:${expired ? 'var(--spoil)' : 'inherit'}">${expired}</div><div class="gl">Expired</div></div>
-    <div class="gc"><div class="gn">${m.priced ? money(m.value) : '—'}</div><div class="gl">Value</div></div>
+    <div class="gc"><div class="gn" style="color:${m.rescued ? 'var(--chill)' : 'inherit'}">${m.rescued}</div><div class="gl">Rescued</div></div>
   </div>`);
   g.querySelectorAll('.gc')[1].onclick = () => { S.view = 'soon'; render(); };
   g.querySelectorAll('.gc')[2].onclick = () => { S.view = 'pantry'; S.status = 'expired'; render(); };
+  g.querySelectorAll('.gc')[3].onclick = () => { S.view = 'soon'; render(); };
   app.appendChild(g);
-
-  const month = new Date().toLocaleDateString(undefined, { month: 'long' });
-  const mc = el(`<div class="mcard">
-    <div class="mh"><span class="mt">Money this month</span><span class="ms">${esc(month)}</span></div>
-    <div class="mrow">
-      <div><div class="mv" style="color:var(--chill)">${money(m.used)}</div><div class="ml">Eaten</div></div>
-      <div><div class="mv" style="color:var(--spoil)">${money(m.lost)}</div><div class="ml">Binned</div></div>
-      <div><div class="mv" style="color:var(--cold)">${money(m.saved)}</div><div class="ml">Rescued<br>just in time</div></div>
-    </div>
-    ${m.unpriced && !m.priced
-      ? `<div class="mhint">No prices yet, so these are all zero. <b>Scan a receipt</b> and prices come in with it — or add one on any item.</div>`
-      : m.unpriced ? `<div class="mhint">${m.unpriced} item${m.unpriced === 1 ? '' : 's'} with no price aren't counted.</div>`
-      : m.lost > 0 ? `<div class="mhint">That's ${money(m.lost * 12)} a year if this month is typical.</div>` : ''}
-  </div>`);
-  app.appendChild(mc);
 
   if (soon.length) {
     const sec = el(`<div class="section"><div class="section-head"><h2>Eat these first</h2>
@@ -4616,8 +4916,10 @@ function render() {
 
   (VIEWS[S.view] || viewPantry)(app);
 
-  // per-screen add button, Cooklist-style
-  const fabFor = { pantry: () => addFoodChooser(), inv: () => addFoodChooser(),
+  // per-screen add button. On the pantry it fans out; on the planner there's
+  // only one thing it can mean, so it just does it.
+  closeDial();
+  const fabFor = { home: () => openDial(), pantry: () => openDial(), inv: () => openDial(),
     plan: () => addMealDialog(dayKey(new Date(today()))) };
   if (fabFor[S.view]) { fab.classList.remove('hide'); fab.onclick = fabFor[S.view]; }
 
@@ -4649,6 +4951,7 @@ function render() {
   document.getElementById('searchBtn').onclick = () => { S.view = 'pantry'; S.loc = 'all'; S.focusSearch = true; render(); };
   render();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+  applyTheme();
   loadSnapshotSeed();   // opened one of the .html backups? bring its data in
   G.ensureModel();   // silently repair a discontinued Gemini model (e.g. the dead 2.0-flash)
   SYNC.start().then(() => PUSH.dailyCheck());   // pull + subscribe, then maybe ping the family about dying food
