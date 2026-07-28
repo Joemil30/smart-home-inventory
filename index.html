@@ -212,6 +212,10 @@ nav button.fab[aria-current="page"] svg{filter:brightness(1.05)}
 .btn.cold:active{filter:brightness(.96)}
 .btn:disabled{opacity:.45}
 .row{display:flex;gap:9px}
+.aisle-drag{cursor:grab}
+.aisle-drag .grip{color:var(--vapor-dim);display:flex;flex:0 0 auto;touch-action:none}
+.aisle-drag.dragging{opacity:.4}
+.aisle-drag.drag-over{background:var(--fog);border-radius:var(--r-sm)}
 label{display:block;margin-bottom:15px}
 label .lbl{font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--vapor);display:block;margin-bottom:7px}
 
@@ -323,7 +327,10 @@ label .lbl{font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:up
    the photo big enough to recognise while fitting ~3 rows on a phone. */
 .tile .tp{position:relative;aspect-ratio:4/3;background:var(--fog);display:grid;place-items:center;overflow:hidden}
 .tiles.one .tp{aspect-ratio:16/9}
-.tile .tp img{width:100%;height:100%;object-fit:cover;display:block}
+/* contain, not cover: a real product/shelf photo is rarely 4:3, and cropping
+   it to fit was cutting off the very thing the tile exists to show. The fog
+   background letterboxes whatever's left over instead of guessing what to lose. */
+.tile .tp img{width:100%;height:100%;object-fit:contain;display:block}
 .tile .tp .emoji{font-size:46px;line-height:1}
 .tiles.one .tp .emoji{font-size:64px}
 .tile .tb{position:absolute;top:8px;left:8px;font-size:11px;font-weight:700;padding:5px 9px;
@@ -458,9 +465,19 @@ label .lbl{font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:up
 .toast button{color:var(--ink);font-size:12px;font-weight:800;letter-spacing:.02em;
   background:var(--cold);padding:6px 11px;border-radius:8px}
 
-dialog{border:none;background:var(--shelf);color:var(--frost);border-radius:22px;
-  padding:20px;width:min(470px,calc(100vw - 24px));max-height:88dvh;overflow:auto;box-shadow:var(--shadow-lg)}
-dialog::backdrop{background:rgba(10,25,16,.44);backdrop-filter:blur(3px)}
+/* Full screen, not a centered card: every sheet in the app opens through this
+   one <dialog>, and a feature you can only half-see in a 470px box never
+   feels like a real place. A fixed back arrow (glued on in JS, see #dlgBack)
+   is the one consistent way out, on every one of them. */
+dialog{border:none;background:var(--shelf);color:var(--frost);border-radius:0;
+  padding:calc(env(safe-area-inset-top) + 62px) 18px calc(env(safe-area-inset-bottom) + 24px);
+  width:100vw;height:100dvh;max-width:100vw;max-height:100dvh;margin:0;position:fixed;inset:0;
+  overflow:auto;box-shadow:none}
+dialog::backdrop{background:var(--shelf)}
+#dlgBack{position:absolute;top:calc(env(safe-area-inset-top) + 14px);left:14px;z-index:5;
+  width:40px;height:40px;border-radius:50%;background:var(--fog);border:1px solid var(--rime);
+  display:flex;align-items:center;justify-content:center;color:var(--frost);box-shadow:var(--shadow-sm)}
+#dlgBack:active{transform:scale(.94)}
 
 .recipe{position:relative;background:var(--shelf);border:1px solid var(--rime);border-radius:var(--r);
   padding:14px 14px 14px 17px;margin-bottom:10px;box-shadow:var(--shadow-sm);overflow:hidden}
@@ -1929,6 +1946,7 @@ const ICON = {
   help:    '<circle cx="12" cy="12" r="8.8"/><path d="M9.6 9.4a2.5 2.5 0 0 1 4.9.8c0 1.7-2.5 2.5-2.5 2.5"/><path d="M12 16.6h.01"/>',
   book:    '<path d="M4 4.4A1.6 1.6 0 0 1 5.6 2.8H19a1 1 0 0 1 1 1v14.4a1 1 0 0 1-1 1H5.6A1.6 1.6 0 0 0 4 20.8z"/><path d="M4 17.6a1.6 1.6 0 0 1 1.6-1.6H20"/>',
   chevron: '<path d="m9.4 5.6 6.4 6.4-6.4 6.4"/>',
+  back:    '<path d="m14.6 5.6-6.4 6.4 6.4 6.4"/>',
   box:     '<path d="M20.6 7.8v8.4a1.8 1.8 0 0 1-.9 1.6l-6.8 3.8a1.8 1.8 0 0 1-1.8 0l-6.8-3.8a1.8 1.8 0 0 1-.9-1.6V7.8a1.8 1.8 0 0 1 .9-1.6l6.8-3.8a1.8 1.8 0 0 1 1.8 0l6.8 3.8a1.8 1.8 0 0 1 .9 1.6z"/><path d="m3.6 7 8.4 4.7L20.4 7M12 21v-9.3"/>',
 };
 const icon = (n, size = 19) =>
@@ -2121,8 +2139,7 @@ function searchHistory(box, q, shown = []) {
 
   if (seen.length) {
     box.appendChild(el(`<div class="sect"><h3>You've bought this before</h3><span class="n">not in the house</span></div>`));
-    const g = el(`<div class="tiles"></div>`);
-    seen.forEach(c => g.appendChild(tileEl({
+    paintTileList(box, seen.map(c => ({
       name: c.name, meta: statusPills(c.name) || `${c.count || 0}× · ${esc(storeLabel(c))}`,
       image: c.image, emoji: foodEmoji(c.name, c.cat) || '🛒',
       checked: listState(c.name).on,
@@ -2134,17 +2151,14 @@ function searchHistory(box, q, shown = []) {
       },
       onTap: () => restockSheet(c),
     })));
-    box.appendChild(g);
   }
   if (meals.length) {
     box.appendChild(el(`<div class="sect"><h3>Meals you've made with this</h3></div>`));
-    const g = el(`<div class="tiles"></div>`);
-    meals.forEach(c => g.appendChild(tileEl({
+    paintTileList(box, meals.map(c => ({
       name: c.name, meta: `${c.count || 0}× made`,
       image: c.image, emoji: foodEmoji(c.name, '') || '🍽️',
       checkLabel: 'Plan it', onCheck: () => pickDayForRecipe({ name: c.name, image: c.image, missing: [], uses: [] }),
     })));
-    box.appendChild(g);
   }
 }
 
@@ -2154,6 +2168,53 @@ function paintRows(box, rows) {
   const g = el(`<div class="tiles"></div>`);
   rows.forEach(i => g.appendChild(itemTile(i)));
   box.appendChild(g);
+}
+
+/* Every other catalog-style tile grid (bought-before, meal history, the "buy
+   it again" picker) used to ignore that same preference and stay locked to
+   photos. One tileEl() config, rendered as tiles or as a compact row — same
+   flip, same switch, no separate toggle to hunt for. */
+function paintTileList(box, cfgs) {
+  if (S.cfg.pantryView === 'list') { cfgs.forEach(cfg => box.appendChild(catRow(cfg))); return; }
+  const g = el(`<div class="tiles"></div>`);
+  cfgs.forEach(cfg => g.appendChild(tileEl(cfg)));
+  box.appendChild(g);
+}
+
+/* The compact-row twin of tileEl — same config shape, line-by-line instead
+   of a photo square. */
+function catRow({ name, meta = '', image = null, emoji = '🍽️', checked = false, checkClass = 'got',
+                  checkLabel = '', onCheck = null, onTap = null, stick = false, stickLabel = 'Added ✓',
+                  onCorner = null, cornerIcon = icon('more', 17), cornerLabel = 'More', badge = '' }) {
+  // No photo for a badge to sit on in row view, so it folds into the meta line instead.
+  const metaLine = badge ? (meta ? `${meta} · ${badge}` : badge) : meta;
+  const row = el(`<div class="item">
+    <div class="thumb">${image ? `<img src="${esc(image)}" loading="lazy" alt="">` : `<span class="emoji">${emoji}</span>`}</div>
+    <div class="body"${onTap ? ' style="cursor:pointer"' : ''}>
+      <div class="nm">${esc(name)}</div>
+      ${metaLine ? `<div class="meta">${metaLine}</div>` : ''}
+    </div>
+    <div class="act">
+      ${onCheck ? `<button class="plus" data-a="chk" aria-label="${esc(checkLabel || 'Add')}">${checked ? icon('check', 17) : icon('plus', 17)}</button>` : ''}
+      ${onCorner ? `<button data-a="more" aria-label="${esc(cornerLabel)} ${esc(name)}">${cornerIcon}</button>` : ''}
+    </div>
+  </div>`);
+  const img = image && row.querySelector('.thumb img');
+  if (img) img.onerror = () => { img.parentNode.innerHTML = `<span class="ph">${firstLetter(name)}</span>`; };
+  if (onTap) row.querySelector('.body').onclick = onTap;
+  const chk = row.querySelector('[data-a=chk]');
+  if (chk) chk.onclick = async e => {
+    e.stopPropagation();
+    if (row.dataset.busy) return;
+    row.dataset.busy = '1';
+    try {
+      await onCheck();
+      if (stick) { chk.innerHTML = icon('check', 17); chk.setAttribute('aria-label', stickLabel); chk.classList.add(checkClass); }
+    } finally { delete row.dataset.busy; }
+  };
+  const more = row.querySelector('[data-a=more]');
+  if (more) more.onclick = e => { e.stopPropagation(); onCorner(); };
+  return row;
 }
 
 /* The inverse of deplete — "I didn't mean to" and "we got more". Mirrors
@@ -3997,17 +4058,19 @@ function storeSheet() {
   dlg.showModal();
 }
 
-/* Reorder the aisles to match how you actually walk this shop. Up/down rather
-   than drag: it works with a thumb, works with a screen reader, and can't drop
-   a row somewhere you didn't mean. */
+/* Reorder the aisles to match how you actually walk this shop. Drag the grip
+   to move a row in one motion; the arrows stay for a thumb that doesn't want
+   to drag, or a screen reader that can't. */
 function aisleOrderSheet(store, after) {
   const dlg = document.getElementById('dlg');
   let order = aisleOrder(store);
+  let dragFrom = null;
   const draw = () => {
     dlg.innerHTML = `<div class="eyebrow">${esc(storeName(store) || 'General list')}</div>
       <h1 style="margin:6px 0 6px">Aisle order</h1>
-      <p class="note" style="margin:0 0 14px">Put these in the order you walk the shop. Your list follows it.</p>
-      ${order.map((a, i) => `<div class="row" style="margin-bottom:7px;align-items:center">
+      <p class="note" style="margin:0 0 14px">Drag a row to reorder, or use the arrows. Your list follows it.</p>
+      ${order.map((a, i) => `<div class="row aisle-drag" draggable="true" data-i="${i}" style="margin-bottom:7px;align-items:center">
+        <span class="grip">${icon('rows', 16)}</span>
         <span style="flex:1;font-weight:650;font-size:14px">${esc(AISLE_NAME(a))}</span>
         <button class="btn ghost" data-up="${i}" ${i === 0 ? 'disabled' : ''} aria-label="Move ${esc(AISLE_NAME(a))} up" style="width:auto;padding:0 13px">↑</button>
         <button class="btn ghost" data-dn="${i}" ${i === order.length - 1 ? 'disabled' : ''} aria-label="Move ${esc(AISLE_NAME(a))} down" style="width:auto;padding:0 13px">↓</button>
@@ -4018,6 +4081,27 @@ function aisleOrderSheet(store, after) {
     const swap = (i, j) => { [order[i], order[j]] = [order[j], order[i]]; draw(); };
     dlg.querySelectorAll('[data-up]').forEach(b => b.onclick = () => swap(+b.dataset.up, +b.dataset.up - 1));
     dlg.querySelectorAll('[data-dn]').forEach(b => b.onclick = () => swap(+b.dataset.dn, +b.dataset.dn + 1));
+    dlg.querySelectorAll('.aisle-drag').forEach(row => {
+      row.ondragstart = e => {
+        dragFrom = +row.dataset.i;
+        e.dataTransfer.effectAllowed = 'move';
+        try { e.dataTransfer.setData('text/plain', row.dataset.i); } catch (x) {}
+        row.classList.add('dragging');
+      };
+      row.ondragend = () => row.classList.remove('dragging');
+      row.ondragover = e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; row.classList.add('drag-over'); };
+      row.ondragleave = () => row.classList.remove('drag-over');
+      row.ondrop = e => {
+        e.preventDefault();
+        row.classList.remove('drag-over');
+        const to = +row.dataset.i;
+        if (dragFrom === null || dragFrom === to) return;
+        const [moved] = order.splice(dragFrom, 1);
+        order.splice(to, 0, moved);
+        dragFrom = null;
+        draw();
+      };
+    });
     dlg.querySelector('[data-a=save]').onclick = async () => {
       await saveAisleOrder(store, order); dlg.close(); if (after) after(); toast('Aisle order saved');
     };
@@ -4040,13 +4124,28 @@ function catalogPicker({ kind = CAT_PRODUCT, store = '', onPick, multi = true })
   const dlg = document.getElementById('dlg');
   const meal = kind === CAT_MEAL;
   const added = new Set();
+  let grid = S.cfg.pantryView !== 'list';
+  const swapLabel = () => grid ? 'Switch to a compact list' : 'Switch to photos';
   dlg.innerHTML = `<div class="eyebrow">From your history</div>
     <h1 style="margin:6px 0 12px">${meal ? "Meals you've made" : "Things you've bought"}</h1>
-    <input id="cpq" placeholder="Search — spelling doesn't have to be perfect" autocomplete="off" style="margin-bottom:12px">
+    <div class="row" style="margin-bottom:12px">
+      <input id="cpq" placeholder="Search — spelling doesn't have to be perfect" autocomplete="off" style="flex:1">
+      <button class="btn ghost" data-a="vt" title="${swapLabel()}" aria-label="${swapLabel()}"
+        style="width:auto;padding:0 15px">${grid ? icon('rows') : icon('grid')}</button>
+    </div>
     <div id="cpl"></div>
     <button class="btn ${multi ? 'cold' : 'ghost'}" data-a="c" style="margin-top:12px">Done</button>`;
   const listBox = dlg.querySelector('#cpl');
   const doneBtn = dlg.querySelector('[data-a=c]');
+  const vtBtn = dlg.querySelector('[data-a=vt]');
+  vtBtn.onclick = async () => {
+    grid = !grid;
+    S.cfg.pantryView = grid ? 'grid' : 'list';
+    await saveCfg();
+    vtBtn.title = vtBtn.ariaLabel = swapLabel();
+    vtBtn.innerHTML = grid ? icon('rows') : icon('grid');
+    paint();
+  };
   const count = () => { doneBtn.textContent = added.size ? `Done — ${added.size} added` : 'Done'; };
   const paint = () => {
     const q = dlg.querySelector('#cpq').value.trim();
@@ -4066,8 +4165,7 @@ function catalogPicker({ kind = CAT_PRODUCT, store = '', onPick, multi = true })
                  : 'Things land here once you buy or stock them.'}</div></div>`));
       return;
     }
-    const g = el(`<div class="tiles"></div>`);
-    rows.forEach(c => g.appendChild(tileEl({
+    paintTileList(listBox, rows.map(c => ({
       name: c.name,
       // Status rides on the item itself: already on a list, and what's in the
       // house. Both are things you want to know before tapping Add again.
@@ -4087,7 +4185,6 @@ function catalogPicker({ kind = CAT_PRODUCT, store = '', onPick, multi = true })
       },
       onCorner: () => pickPhoto(c, () => paint()), cornerIcon: icon('camera',16), cornerLabel: 'Set a photo for',
     })));
-    listBox.appendChild(g);
   };
   dlg.querySelector('#cpq').oninput = paint;
   doneBtn.onclick = () => { dlg.close(); render(); };
@@ -4213,31 +4310,38 @@ function paintShopping(box, flashId = '') {
   // No "Need to get" heading — the list IS the things to get. A header over
   // the only content on the screen just pushes the content down.
   if (todo.length) {
-    // Grouped by aisle, in this store's walking order, so you cross the shop
-    // once instead of doubling back for the milk you wrote down first.
-    const groups = new Map();
-    todo.forEach(s => {
-      const a = aisleOf(s.cat || guessCat(s.name));
-      if (!groups.has(a)) groups.set(a, []);
-      groups.get(a).push(s);
-    });
-    const order = aisleOrder(store).filter(a => groups.has(a));
-    order.forEach(a => {
-      const rows = groups.get(a);
-      // One aisle needs no header — a label over the only group is noise.
-      if (order.length > 1)
-        box.appendChild(el(`<div class="aisle"><span>${esc(AISLE_NAME(a))}</span><i>${rows.length}</i></div>`));
-      if (S.cfg.shopView === 'photos') {
-        const g = el(`<div class="tiles"></div>`);
-        rows.forEach(s => g.appendChild(shopTile(s, box, s.id === flashId)));
-        box.appendChild(g);
-      } else rows.forEach(s => box.appendChild(shopRow(s, box, s.id === flashId)));
-    });
-    if (order.length > 1) {
-      const ro = el(`<button class="btn ghost" style="margin-bottom:4px">${icon('rows')}Reorder aisles for ${esc(storeName(store) || 'this list')}</button>`);
-      ro.onclick = () => aisleOrderSheet(store, () => paintShopping(box));
-      box.appendChild(ro);
-    }
+    // Aisle grouping + reorder is a per-store thing — Costco's walk isn't the
+    // corner shop's. The General list has no single store to walk, so it
+    // stays what it's actually for: a plain checklist, nothing to reorder.
+    if (store) {
+      const groups = new Map();
+      todo.forEach(s => {
+        const a = aisleOf(s.cat || guessCat(s.name));
+        if (!groups.has(a)) groups.set(a, []);
+        groups.get(a).push(s);
+      });
+      const order = aisleOrder(store).filter(a => groups.has(a));
+      order.forEach(a => {
+        const rows = groups.get(a);
+        // One aisle needs no header — a label over the only group is noise.
+        if (order.length > 1)
+          box.appendChild(el(`<div class="aisle"><span>${esc(AISLE_NAME(a))}</span><i>${rows.length}</i></div>`));
+        if (S.cfg.shopView === 'photos') {
+          const g = el(`<div class="tiles"></div>`);
+          rows.forEach(s => g.appendChild(shopTile(s, box, s.id === flashId)));
+          box.appendChild(g);
+        } else rows.forEach(s => box.appendChild(shopRow(s, box, s.id === flashId)));
+      });
+      if (order.length > 1) {
+        const ro = el(`<button class="btn ghost" style="margin-bottom:4px">${icon('rows')}Reorder aisles for ${esc(storeName(store) || 'this list')}</button>`);
+        ro.onclick = () => aisleOrderSheet(store, () => paintShopping(box));
+        box.appendChild(ro);
+      }
+    } else if (S.cfg.shopView === 'photos') {
+      const g = el(`<div class="tiles"></div>`);
+      todo.forEach(s => g.appendChild(shopTile(s, box, s.id === flashId)));
+      box.appendChild(g);
+    } else todo.forEach(s => box.appendChild(shopRow(s, box, s.id === flashId)));
   } else {
     box.appendChild(el(`<div class="empty"><div class="ei">${icon('cart', 34)}</div><div class="big">${done.length ? 'All done' : 'Nothing on the list'}</div>
       <div class="sub">${done.length ? "Everything here is in the cart."
@@ -4741,8 +4845,8 @@ function pantryHistory(app) {
 
   const head = el(`<div class="sect"><h3>Had before, not here now</h3><span class="n">${gone.length}</span></div>`);
   app.appendChild(head);
-  const g = el(`<div class="tiles"></div>`);
-  gone.forEach(c => g.appendChild(tileEl({
+  const box = el(`<div></div>`);
+  paintTileList(box, gone.map(c => ({
     name: c.name,
     meta: statusPills(c.name) || `${c.count || 0}× · ${esc(storeLabel(c))}`,
     image: c.image, emoji: foodEmoji(c.name, c.cat) || '🛒',
@@ -4756,7 +4860,7 @@ function pantryHistory(app) {
     onTap: () => restockSheet(c),
     onCorner: () => pickPhoto(c, () => render()), cornerIcon: icon('camera',16), cornerLabel: 'Set a photo for',
   })));
-  app.appendChild(g);
+  app.appendChild(box);
 }
 
 /* Tapping something in the history: put it straight back on a shelf, or just
@@ -4934,6 +5038,18 @@ function render() {
     nav.appendChild(b);
   });
 }
+
+/* One back arrow, glued to the shared <dialog>, that survives every sheet's
+   own dlg.innerHTML swap. No call site needs to know it exists: the observer
+   re-inserts it the instant a sheet replaces the dialog's content, and it
+   paints on top because it's the one positioned child in there. */
+(function wireDialogBack() {
+  const dlgEl = document.getElementById('dlg');
+  const back = el(`<button id="dlgBack" aria-label="Back">${icon('back', 20)}</button>`);
+  back.onclick = () => dlgEl.close();
+  new MutationObserver(() => { if (!dlgEl.contains(back)) dlgEl.prepend(back); }).observe(dlgEl, { childList: true });
+  dlgEl.prepend(back);
+})();
 
 (async function boot() {
   await DB.init();
