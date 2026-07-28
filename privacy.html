@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ShelfLife — Privacy Policy</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background: #f7f9f7;
+      padding: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1, h2 { margin: 20px 0 10px; color: #12A150; }
+    h1 { font-size: 28px; }
+    h2 { font-size: 20px; }
+    p { margin: 10px 0; }
+    a { color: #12A150; }
+    code { background: #f0f0f0; padding: 2px 6px; border-radius: 3px; }
+    .note { background: #f0f8f5; padding: 12px; border-radius: 6px; margin: 10px 0; border-left: 4px solid #12A150; }
+  </style>
+</head>
+<body>
+  <h1>ShelfLife — Privacy Policy</h1>
+  <p><strong>Effective: July 28, 2026</strong></p>
+
+  <h2>Overview</h2>
+  <p>ShelfLife is designed with privacy as the default. Your inventory data lives on your device and syncs only to services you control.</p>
+
+  <h2>Data Storage</h2>
+
+  <h3>On Your Device (IndexedDB)</h3>
+  <p>All core app data (items, shopping list, recipes, household settings) lives in your browser's <code>IndexedDB</code> database on the device itself. The app works fully offline. No server ever sees this data unless you opt into sync.</p>
+  <ul style="margin-left: 20px; margin-top: 10px;">
+    <li>Items and expiry dates</li>
+    <li>Shopping list and stores</li>
+    <li>Meal plan and saved recipes</li>
+    <li>Household members and settings</li>
+    <li>Usage history and waste log</li>
+  </ul>
+
+  <div class="note">
+    <strong>Backup & export:</strong> You can export your entire app as a JSON file or an HTML snapshot (Settings → Backup). This file lives on your computer; we never access it.
+  </div>
+
+  <h3>Optional Supabase Cloud Sync</h3>
+  <p>If you enable family sync (Settings → Family sync), your household data is synced to a <strong>Supabase project that you own and control</strong>. This is optional; the app works perfectly without it.</p>
+  <ul style="margin-left: 20px; margin-top: 10px;">
+    <li><strong>You choose:</strong> You create the free Supabase project; we don't operate any servers</li>
+    <li><strong>You control access:</strong> Only people with your project URL + key + household code can see your data</li>
+    <li><strong>You own the keys:</strong> Your Supabase keys stay on your devices; we never store them</li>
+    <li><strong>Read Supabase's privacy policy:</strong> Supabase is a PostgreSQL hosting service. Data is encrypted at rest and in transit</li>
+  </ul>
+
+  <h2>AI Services (Optional)</h2>
+
+  <h3>Gemini or OpenAI</h3>
+  <p>Label reading, receipt scanning, and recipe suggestions require an AI model. These are optional features; barcodes work without them. You choose which provider:</p>
+  <ul style="margin-left: 20px; margin-top: 10px;">
+    <li><strong>Gemini (Google):</strong> You bring your own free API key. Google's privacy policy applies to what you send</li>
+    <li><strong>OpenAI (via OpenRouter):</strong> You bring your own free API key. OpenRouter's privacy policy applies</li>
+  </ul>
+  <p><strong>What gets sent:</strong> Only the images/text you ask the app to analyze (a receipt photo, a shelf photo for recognition). No inventory data is sent unless you explicitly ask.</p>
+
+  <div class="note">
+    <strong>On Gemini free tier:</strong> Google may use images you send to improve their models (same privacy terms as Google Photos with analysis off). If that concerns you, enable billing on your Google Cloud project—it opts you out and costs roughly $0.01 per month at household volume.
+  </div>
+
+  <h3>Open Food Facts (Barcode Lookup)</h3>
+  <p>Barcode scans are sent to Open Food Facts (free, non-profit) to look up product info. Read their privacy policy at <code>openfoodfacts.org/privacy</code>.</p>
+
+  <h3>TheMealDB (Recipe Photos)</h3>
+  <p>Recipe suggestions fetch photos from TheMealDB. No personal data is sent; only recipe queries. Read their policy at <code>themealdb.com</code>.</p>
+
+  <h2>On-Device Features (Zero Internet)</h2>
+  <p>These features work entirely offline and send no data anywhere:</p>
+  <ul style="margin-left: 20px; margin-top: 10px;">
+    <li><strong>Barcode scanning:</strong> Uses your device's camera via the ZXing decoder (vendored locally)</li>
+    <li><strong>Date OCR:</strong> Reads printed expiry dates via Tesseract (vendored locally), never sent to any server</li>
+    <li><strong>Voice recognition:</strong> Web Speech API (device-local on Android; iOS uses Apple's Siri)</li>
+    <li><strong>Search:</strong> Typo-tolerant search runs entirely in IndexedDB</li>
+    <li><strong>Expiry estimation:</strong> Calculated from category and shelf type, stored on your device</li>
+  </ul>
+
+  <h2>Push Notifications (Optional)</h2>
+  <p>If you enable push notifications (Settings → Notifications):</p>
+  <ul style="margin-left: 20px; margin-top: 10px;">
+    <li>Your subscription endpoint is stored in your Supabase project</li>
+    <li>Only users with access to your Supabase project can send you notifications</li>
+    <li>Notifications are triggered by a Supabase Edge Function running in your project</li>
+  </ul>
+
+  <h2>What We Don't Collect</h2>
+  <p>ShelfLife has no analytics, telemetry, or tracking. We don't:</p>
+  <ul style="margin-left: 20px; margin-top: 10px;">
+    <li>Track which recipes you view</li>
+    <li>Track how often you use the app</li>
+    <li>Track your location</li>
+    <li>Collect ads or third-party advertising data</li>
+    <li>Sell or share your data with anyone</li>
+  </ul>
+
+  <h2>App Store Data Practices</h2>
+  <p>For iOS App Store and Google Play Store privacy labels:</p>
+  <ul style="margin-left: 20px; margin-top: 10px;">
+    <li><strong>Data not collected:</strong> The app itself collects no data; all storage is device-local</li>
+    <li><strong>Linked to your identity:</strong> Only if you create a Supabase account (optional)</li>
+    <li><strong>Not used for tracking:</strong> No third parties receive your data</li>
+  </ul>
+
+  <h2>Your Rights</h2>
+  <p>You have full control over your data:</p>
+  <ul style="margin-left: 20px; margin-top: 10px;">
+    <li><strong>Access:</strong> Export your data as JSON from Settings → Backup</li>
+    <li><strong>Delete:</strong> Delete items within the app; use soft-delete (6-second undo)</li>
+    <li><strong>Disconnect:</strong> Disable sync at any time (Settings → Family sync → Disconnect)</li>
+    <li><strong>Move:</strong> Your Supabase data is yours; you can migrate to a different host</li>
+  </ul>
+
+  <h2>Changes to This Policy</h2>
+  <p>We'll update this policy if the app's data practices change. The "Effective" date at the top will be updated.</p>
+
+  <h2>Questions?</h2>
+  <p>
+    Contact us at <strong>josephmiller30@icloud.com</strong> with privacy questions or concerns.
+  </p>
+
+  <hr style="margin: 40px 0; border: none; border-top: 1px solid #ccc;">
+  <p style="font-size: 12px; color: #666; margin-top: 20px;">
+    ShelfLife is open-source. The code is at <code>github.com/joemil30/smart-home-inventory</code>.
+  </p>
+</body>
+</html>
