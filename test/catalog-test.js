@@ -162,10 +162,14 @@ const server = http.createServer((q, r) => {
     b.done = true; b.doneAt = Date.now(); await saveShopping(b);
     S.view = 'shop'; render();
     const txt = document.getElementById('app').textContent;
-    const sects = [...document.querySelectorAll('.sect h3')].map(h => h.textContent);
+    // Scoped to the list itself: the per-store history below it is a
+    // separate section and legitimately carries its own heading, the
+    // same way "Bought" does.
+    const sects = [...document.querySelectorAll('#shoplist .sect h3')].map(h => h.textContent);
+    const hasHistory = !!document.querySelector('#shophist .sect h3');
     const tiles = document.querySelectorAll('#shoplist .tile').length;
     const doneTiles = document.querySelectorAll('#shoplist .tile.done').length;
-    return { sects, tiles, doneTiles, hasApples: /Apples/.test(txt), hasDone: /Bought/.test(txt) };
+    return { sects, hasHistory, tiles, doneTiles, hasApples: /Apples/.test(txt), hasDone: /Bought/.test(txt) };
   });
   // The active list carries no heading — it IS the screen. Only "Bought"
   // earns one, because it's a genuinely different state.
@@ -173,6 +177,7 @@ const server = http.createServer((q, r) => {
     shop.sects.length === 1 && /Bought/.test(shop.sects[0]), shop.sects.join(' | '));
   ok('shop: bought items are still split out under their own heading',
     shop.hasDone && shop.hasApples);
+  ok('shop: the store history renders below the list', shop.hasHistory);
   ok('shop: the checked item moved out of the active list', shop.doneTiles === 1 && shop.tiles === 2);
 
   // ---- H. tiles put the name ABOVE the photo ----

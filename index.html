@@ -1372,26 +1372,39 @@ async function addItem({ name, cat, loc, qty = 1, barcode = null, packSize = nul
   return it;
 }
 
-/* Depletion, the make-or-break. Every path funnels here.
+/* Is this the last of it? Drives the wording of the confirm — "use one" and
+   "finish it off" are different enough decisions to be worth saying. */
+const isLastOf = it => it.mode === 'level' ? (it.level || 0) <= 1
+  : it.mode === 'pack' ? (it.qty || 0) <= 1 && (it.unitsLeft ?? it.packSize) <= 1
+  : (it.qty || 0) <= 1;
 
-   `ask:false` is for paths that ALREADY confirmed — the cook sheet lists
-   every line it's about to deduct, a receipt/scan is itself a deliberate
-   act. Everywhere else a single mis-tap would silently eat the last of
-   something, so it asks. Returns null (not an undo) when declined, so
-   callers can tell "cancelled" from "done". */
-async function deplete(it, why = 'used', { ask = true } = {}) {
-  if (ask) {
-    const last = it.mode === 'level' ? (it.level || 0) <= 1
-      : it.mode === 'pack' ? (it.qty || 0) <= 1 && (it.unitsLeft ?? it.packSize) <= 1
-      : (it.qty || 0) <= 1;
-    const ok = await confirmed({
-      title: last ? `Finish off ${it.name}?` : `Use one ${it.name}?`,
-      body: last ? `That's the last one — it comes off your shelves.`
-                 : `Takes one off. You'll still have some left.`,
-      yes: last ? 'Yes, all gone' : 'Yes, use one',
-    });
-    if (!ok) return null;
-  }
+/* The confirm lives HERE, at the tap — deliberately not inside deplete().
+   deplete() is also driven by the cook sheet, receipt review, barcode scans
+   and voice; a data funnel that blocks on a dialog is a funnel that hangs
+   the moment nothing is there to answer it. Returns null when declined, so
+   a caller can tell "cancelled" from "done". */
+async function tapDeplete(it, why = 'used') {
+  if (!await confirmed({
+    title: isLastOf(it) ? `Finish off ${it.name}?` : `Use one ${it.name}?`,
+    body: isLastOf(it) ? `That's the last one — it comes off your shelves.`
+                       : `Takes one off. You'll still have some left.`,
+    yes: isLastOf(it) ? 'Yes, all gone' : 'Yes, use one',
+  })) return null;
+  return deplete(it, why);
+}
+
+async function tapToss(it) {
+  if (!await confirmed({
+    title: `Throw out ${it.name}?`,
+    body: `Logged as wasted so the waste report stays honest. This doesn't put it on your shopping list.`,
+    yes: 'Yes, bin it', danger: true,
+  })) return null;
+  return tossItem(it);
+}
+
+/* Depletion, the make-or-break. Every path funnels here — and it stays a
+   plain data operation, never a dialog. */
+async function deplete(it, why = 'used') {
   const before = JSON.parse(JSON.stringify(it));
   const undo = async () => { await saveItem(before); };
   if (it.mode === 'level') {
@@ -1428,12 +1441,7 @@ async function markOpened(it) {
 /* The waste log. The only feature here that saves money instead of
    just organising. Six months of this and you know exactly which
    good intentions you keep throwing away. */
-async function tossItem(it, { ask = true } = {}) {
-  if (ask && !await confirmed({
-    title: `Throw out ${it.name}?`,
-    body: `Logged as wasted so the waste report stays honest. This doesn't put it on your shopping list.`,
-    yes: 'Yes, bin it', danger: true,
-  })) return null;
+async function tossItem(it) {
   const before = JSON.parse(JSON.stringify(it));
   it.deleted = true; it.wasted = true; it.wastedAt = Date.now();
   await saveItem(it);
@@ -2344,7 +2352,7 @@ function itemRow(it) {
   </div>`);
   const img = it.image && row.querySelector('.thumb img');
   if (img) img.onerror = () => { img.parentNode.innerHTML = `<span class="ph">${firstLetter(it.name)}</span>`; };
-  row.querySelector('[data-a=minus]').onclick = async () => { await deplete(it); render(); };
+  row.querySelector('[data-a=minus]').onclick = async () => { await tapDeplete(it); render(); };
   row.querySelector('[data-a=plus]').onclick = async () => { await addOne(it); render(); };
   row.querySelector('[data-a=more]').onclick = () => itemSheet(it);
   return row;
@@ -2365,7 +2373,7 @@ function itemTile(it) {
     image: it.image, emoji: foodEmoji(it.name, it.cat) || '🍽️',
     badge: esc(q) + (it.opened ? ' · opened' : ''),
     onTap: () => itemSheet(it),
-    checkLabel: 'Used one', onCheck: async () => { await deplete(it); render(); },
+    checkLabel: 'Used one', onCheck: async () => { await tapDeplete(it); render(); },
     onCorner: () => itemSheet(it), cornerIcon: icon('more',17), cornerLabel: 'Options for',
   });
 }
@@ -2537,7 +2545,7 @@ function itemSheet(it) {
       toast(`${it.name} — all gone`, async () => { await saveItem(before); });
     });
   };
-  dlg.querySelector('[data-a=toss]').onclick = () => go(() => tossItem(it));
+  dlg.querySelector('[data-a=toss]').onclick = () => go(() => tapToss(it));
   dlg.querySelector('[data-a=move]').onclick = () => { dlg.close(); moveSheet(it); };
   dlg.querySelector('[data-a=tolist]').onclick = () => go(() => addToList(it.name));
   dlg.querySelector('[data-a=scandate]').onclick = () => { dlg.close(); liveDateScan(it); };
@@ -2979,6 +2987,9 @@ async function handleVoice(text) {
   if (!hits.length) hits = S.items.filter(i => !i.deleted && fuzzyHit(q, i.name, 0.55));
   if (!hits.length) return toast(`No "${p.name}" in the house`);
   const it = hits.sort((a, b) => a.expires - b.expires)[0];
+  // No confirm dialog here on purpose: voice exists for the moment your
+  // hands are covered in raw chicken. A sheet you have to tap defeats the
+  // whole feature, so the toast's undo is the safety net instead.
   if (p.action === 'toss') await tossItem(it); else await deplete(it, 'voice');
   render();
 }
@@ -3689,7 +3700,7 @@ function cookDeduct(r) {
   dlg.querySelector('[data-a=go]').onclick = async () => {
     const ids = [...dlg.querySelectorAll('input:checked')].map(c => c.dataset.id);
     const undos = [];
-    for (const id of ids) undos.push(await deplete(S.items.find(i => i.id === id), 'cooked', { ask: false }));
+    for (const id of ids) undos.push(await deplete(S.items.find(i => i.id === id), 'cooked'));
     // "I made this" is the only honest signal that a meal is really part of
     // the rotation — it's what makes Plan's history worth offering back.
     await recordCatalog({ name: r.name, kind: CAT_MEAL, image: r.image || null,
@@ -3931,7 +3942,7 @@ async function onCode(code, mode) {
     const it = S.items.find(i => !i.deleted && i.barcode === code);
     if (!it) { scanFeedback(false); return toast(`Scanned ${code} — not in your inventory`); }
     scanFeedback(true);
-    await deplete(it, 'binned', { ask: false });
+    await deplete(it, 'binned');
     return;
   }
   const p = await lookupBarcode(code);
@@ -4083,7 +4094,7 @@ async function photoFlow(file) {
       } else {
         for (const f of picks) {
           const it = f.id && S.items.find(i => i.id === f.id && !i.deleted);
-          if (it) for (let n = 0; n < (f.count || 1); n++) await deplete(it, 'cooked', { ask: false });
+          if (it) for (let n = 0; n < (f.count || 1); n++) await deplete(it, 'cooked');
         }
         toast(`${picks.length} deducted`);
       }

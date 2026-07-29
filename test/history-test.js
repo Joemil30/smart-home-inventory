@@ -101,7 +101,7 @@ const server = http.createServer((q, r) => {
     const it = await addItem({ name:'Carrots', cat:'produce-root', loc:'uf', qty:3 });
 
     // Decline: the dialog opens, we say no, nothing changes.
-    const p = deplete(it);
+    const p = tapDeplete(it);
     await new Promise(r => setTimeout(r, 30));
     const opened = document.getElementById('cdlg').open;
     document.getElementById('cdlg').querySelector('[data-a=n]').click();
@@ -109,7 +109,7 @@ const server = http.createServer((q, r) => {
     const qtyAfterNo = S.items.find(i => i.id === it.id).qty;
 
     // Accept: same dialog, we say yes, it actually deducts.
-    const p2 = deplete(it);
+    const p2 = tapDeplete(it);
     await new Promise(r => setTimeout(r, 30));
     document.getElementById('cdlg').querySelector('[data-a=y]').click();
     await p2;
@@ -136,7 +136,7 @@ const server = http.createServer((q, r) => {
   const ungated = await page.evaluate(async id => {
     S.cfg.confirmActions = false; await saveCfg();
     const it = S.items.find(i => i.id === id);
-    await deplete(it);                       // must NOT open anything
+    await tapDeplete(it);                    // must NOT open anything
     return { open: document.getElementById('cdlg').open, qty: S.items.find(i => i.id === id).qty };
   }, gated.id);
   ok('"just do it" setting skips the confirm', !ungated.open);
@@ -146,11 +146,13 @@ const server = http.createServer((q, r) => {
   const noDouble = await page.evaluate(async () => {
     S.cfg.confirmActions = true; await saveCfg();
     const it = await addItem({ name:'Peppers', cat:'produce-hardy', loc:'uf', qty:2 });
-    await deplete(it, 'cooked', { ask: false });
+    // deplete() itself must never block on a dialog: the cook sheet, receipt
+    // review and barcode scans all drive it with nothing there to answer.
+    await deplete(it, 'cooked');
     return { open: document.getElementById('cdlg').open, qty: S.items.find(i => i.id === it.id).qty };
   });
-  ok('ask:false skips the dialog (cook/receipt paths)', !noDouble.open);
-  ok('ask:false still deducts', noDouble.qty === 1, `qty=${noDouble.qty}`);
+  ok('deplete() never opens a dialog (cook/receipt/scan paths)', !noDouble.open);
+  ok('deplete() still deducts', noDouble.qty === 1, `qty=${noDouble.qty}`);
 
   /* ---- 4. history records are editable -------------------------------- */
   const edit = await page.evaluate(async () => {
