@@ -511,6 +511,18 @@ dialog::backdrop{background:var(--shelf)}
   display:flex;align-items:center;justify-content:center;color:var(--frost);box-shadow:var(--shadow-sm)}
 #dlgBack:active{transform:scale(.94)}
 
+/* The confirm layer is the ONE dialog that isn't full-screen. It has to be
+   able to open on top of a sheet (confirming a delete from inside an item
+   sheet), and it has to read as "answer this, then carry on" — a full-screen
+   takeover for a yes/no question loses the thing you were looking at. */
+#cdlg{width:min(400px,calc(100vw - 40px));height:auto;max-height:80dvh;inset:auto;
+  margin:auto;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  border:1px solid var(--rime);border-radius:var(--r);padding:22px 20px 18px;
+  box-shadow:0 24px 60px rgba(0,0,0,.5)}
+#cdlg::backdrop{background:rgba(0,0,0,.55)}
+#cdlg h2{margin:0 0 8px;font-size:19px;font-weight:750;letter-spacing:-.01em}
+#cdlg .cb{margin:0 0 18px;color:var(--vapor);font-size:14px;line-height:1.5}
+
 .recipe{position:relative;background:var(--shelf);border:1px solid var(--rime);border-radius:var(--r);
   padding:14px 14px 14px 17px;margin-bottom:10px;box-shadow:var(--shadow-sm);overflow:hidden}
 .recipe::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--rail,var(--rime-hi))}
@@ -585,6 +597,7 @@ dialog::backdrop{background:var(--shelf)}
 <nav id="nav"></nav>
 
 <dialog id="dlg"></dialog>
+<dialog id="cdlg"></dialog>
 
 <script>
 /* ================================================================
@@ -1039,6 +1052,51 @@ async function logAction(action, detail) {
   await DB.put('log', { id: uid(), ts: Date.now(), who: S.who?.name || '?', action, detail });
 }
 
+/* ---------------- confirm ----------------
+   A thumb on a phone in a shop mis-taps. Consuming the last of something,
+   or wiping a line off the list, has no visible "are you sure" and undo in
+   a toast is easy to miss while you're walking. So: destructive and
+   count-changing actions ask first.
+
+   Opens on its OWN <dialog> (#cdlg), not the shared sheet — a confirm has
+   to be able to appear on top of an item sheet without destroying it.
+
+   `await confirmed({...})` -> true/false. When the setting is off, it
+   resolves true immediately and nothing is drawn, so every call site can
+   stay a plain `if (await confirmed(...))` with no branching. */
+const asksFirst = () => S.cfg.confirmActions !== false;   // default ON
+
+/* `close` fires asynchronously, so the event from a dialog we just dismissed
+   can land AFTER the next confirm has opened — silently answering "no" to a
+   question the user never saw. Each invocation takes a generation number and
+   ignores close events that aren't its own. */
+let confirmGen = 0;
+
+function confirmed({ title, body = '', yes = 'Yes', no = 'Cancel', danger = false, always = false }) {
+  if (!always && !asksFirst()) return Promise.resolve(true);
+  const dlg = document.getElementById('cdlg');
+  const gen = ++confirmGen;
+  return new Promise(res => {
+    let done = false;
+    const finish = v => { if (done) return; done = true; dlg.close(); res(v); };
+    dlg.innerHTML = `<h2>${esc(title)}</h2>
+      ${body ? `<div class="cb">${body}</div>` : ''}
+      <button class="btn ${danger ? 'ghost left danger' : 'cold'}" data-a="y">${esc(yes)}</button>
+      <button class="btn ghost" data-a="n" style="margin-top:8px;border:none;color:var(--vapor)">${esc(no)}</button>`;
+    dlg.querySelector('[data-a=y]').onclick = () => finish(true);
+    dlg.querySelector('[data-a=n]').onclick = () => finish(false);
+    /* Esc, the backdrop, and the hardware back button all mean "no".
+       Two guards, because `close` is delivered asynchronously and `onclose`
+       is a property the NEXT confirm overwrites: a stale event would
+       otherwise run this handler while the next dialog is on screen. If the
+       dialog is open right now, the event we're seeing belongs to a question
+       that's already been answered. */
+    dlg.onclose = () => { if (gen === confirmGen && !dlg.open) finish(false); };
+    dlg.onclick = e => { if (e.target === dlg) finish(false); };
+    dlg.showModal();
+  });
+}
+
 /* ---------------- item mutations ---------------- */
 async function saveItem(it) {
   it.updatedAt = Date.now();
@@ -1137,8 +1195,14 @@ function itemInStock(name) {
 }
 /* `store` scopes the line to one shop's list ('' = any store). Dedupe is
    per-store: milk on the Costco list and milk on the corner-shop list are
-   two real errands, not a double entry. */
-async function addToList(name, qty, store = '') {
+   two real errands, not a double entry.
+
+   Defaults to the shop you're currently working in, NOT to General. Every
+   "add this to the list" button elsewhere in the app (an item sheet, voice,
+   a recipe's missing ingredients) used to dump into General — which, now
+   that General is the last tab rather than the default one, means the thing
+   you just added is on a list you aren't looking at. */
+async function addToList(name, qty, store = S.store || '') {
   const ex = S.shopping.find(s => !s.deleted && !s.done && (s.store || '') === store && norm(s.name) === norm(name));
   if (ex) { toast(`${name} is already on the list`); return ex; }
   // Already on a DIFFERENT list? Adding is still allowed — two shops really
@@ -1252,11 +1316,12 @@ function shoppingToPantry(s, after) {
   const finish = async () => { dlg.close(); if (after) after(); else render(); };
   const q = (s.qty && /^\d+$/.test(String(s.qty))) ? String(s.qty) : '1';
   dlg.innerHTML = `<div class="eyebrow">Bought it?</div><h1 style="margin:6px 0 10px">${esc(s.name)}</h1>
-    <p class="note" style="margin:0 0 14px">Add it to your pantry so it's tracked — expiry is estimated for you.</p>
+    <p class="note" style="margin:0 0 14px">Either way it goes into your ${esc(storeName(s.store) || 'general')} history.
+      Adding it to the pantry also tracks it — expiry is estimated for you.</p>
     <label><span class="lbl">Shelf</span><select id="cloc">${S.household.locations.map(l => `<option value="${l.id}">${esc(l.name)}</option>`).join('')}</select></label>
     <label><span class="lbl">How many</span><input type="number" id="cqty" value="${q}" min="1"></label>
     <button class="btn cold" data-a="pantry">${icon('check')}Add to pantry</button>
-    <button class="btn ghost left" data-a="just" style="margin-top:8px">Just check it off</button>
+    <button class="btn ghost left" data-a="just" style="margin-top:8px">${icon('clock')}Just check it off — remember it</button>
     <button class="btn ghost left" data-a="miss" style="margin-top:8px">${icon('ban')}They didn't have it</button>
     <button class="btn ghost" data-a="c" style="margin-top:8px;border:none;color:var(--vapor)">Cancel</button>`;
   dlg.querySelector('#cloc').value = s.lastLoc || catalogFind(s.name)?.lastLoc || defaultLoc(guessCat(s.name));
@@ -1268,10 +1333,12 @@ function shoppingToPantry(s, after) {
   };
   dlg.querySelector('[data-a=just]').onclick = async () => {
     // Bought but not shelved — still a purchase, still worth remembering,
-    // still tagged with the store it came from.
+    // still tagged with the store it came from. recordCatalog upserts by
+    // canonical name, so buying the same thing again bumps the one record
+    // rather than filling the history with near-copies.
     await recordCatalog({ name: s.name, cat: s.cat || guessCat(s.name), image: s.image || null }, { store: s.store || '' });
     s.done = true; s.missing = false; s.doneAt = Date.now(); await saveShopping(s);
-    finish();
+    finish(); toast(`${s.name} saved to your ${storeName(s.store) || 'general'} history`);
   };
   dlg.querySelector('[data-a=miss]').onclick = async () => {
     // Out of stock at the shop. Off the active list so you stop looking for
@@ -1305,8 +1372,26 @@ async function addItem({ name, cat, loc, qty = 1, barcode = null, packSize = nul
   return it;
 }
 
-/* Depletion, the make-or-break. Every path funnels here. */
-async function deplete(it, why = 'used') {
+/* Depletion, the make-or-break. Every path funnels here.
+
+   `ask:false` is for paths that ALREADY confirmed — the cook sheet lists
+   every line it's about to deduct, a receipt/scan is itself a deliberate
+   act. Everywhere else a single mis-tap would silently eat the last of
+   something, so it asks. Returns null (not an undo) when declined, so
+   callers can tell "cancelled" from "done". */
+async function deplete(it, why = 'used', { ask = true } = {}) {
+  if (ask) {
+    const last = it.mode === 'level' ? (it.level || 0) <= 1
+      : it.mode === 'pack' ? (it.qty || 0) <= 1 && (it.unitsLeft ?? it.packSize) <= 1
+      : (it.qty || 0) <= 1;
+    const ok = await confirmed({
+      title: last ? `Finish off ${it.name}?` : `Use one ${it.name}?`,
+      body: last ? `That's the last one — it comes off your shelves.`
+                 : `Takes one off. You'll still have some left.`,
+      yes: last ? 'Yes, all gone' : 'Yes, use one',
+    });
+    if (!ok) return null;
+  }
   const before = JSON.parse(JSON.stringify(it));
   const undo = async () => { await saveItem(before); };
   if (it.mode === 'level') {
@@ -1343,7 +1428,12 @@ async function markOpened(it) {
 /* The waste log. The only feature here that saves money instead of
    just organising. Six months of this and you know exactly which
    good intentions you keep throwing away. */
-async function tossItem(it) {
+async function tossItem(it, { ask = true } = {}) {
+  if (ask && !await confirmed({
+    title: `Throw out ${it.name}?`,
+    body: `Logged as wasted so the waste report stays honest. This doesn't put it on your shopping list.`,
+    yes: 'Yes, bin it', danger: true,
+  })) return null;
   const before = JSON.parse(JSON.stringify(it));
   it.deleted = true; it.wasted = true; it.wastedAt = Date.now();
   await saveItem(it);
@@ -2437,11 +2527,16 @@ function itemSheet(it) {
   dlg.querySelector('[data-a=ext7]').onclick = () => go(() => extendItem(it, 7));
   dlg.querySelector('[data-a=plus]').onclick = () => go(() => addOne(it));
   dlg.querySelector('[data-a=open]')?.addEventListener('click', () => go(() => markOpened(it)));
-  dlg.querySelector('[data-a=gone]').onclick = () => go(async () => {
-    const before = JSON.parse(JSON.stringify(it));
-    it.deleted = true; await saveItem(it); await logAction('used up', it.name);
-    toast(`${it.name} — all gone`, async () => { await saveItem(before); });
-  });
+  dlg.querySelector('[data-a=gone]').onclick = async () => {
+    if (!await confirmed({ title: `Finished all the ${it.name}?`,
+      body: `It comes off your shelves. Your history keeps it, so it's one tap to buy again.`,
+      yes: 'Yes, all gone' })) return;
+    go(async () => {
+      const before = JSON.parse(JSON.stringify(it));
+      it.deleted = true; await saveItem(it); await logAction('used up', it.name);
+      toast(`${it.name} — all gone`, async () => { await saveItem(before); });
+    });
+  };
   dlg.querySelector('[data-a=toss]').onclick = () => go(() => tossItem(it));
   dlg.querySelector('[data-a=move]').onclick = () => { dlg.close(); moveSheet(it); };
   dlg.querySelector('[data-a=tolist]').onclick = () => go(() => addToList(it.name));
@@ -3313,6 +3408,9 @@ function viewCook(app) {
     const srow = el(`<input id="mq" placeholder="Search your meals…" value="${esc(S.mq || '')}" autocomplete="off" style="margin-bottom:12px">`);
     srow.oninput = e => { S.mq = e.target.value; paintMade(box); };
     app.appendChild(srow);
+    const addm = el(`<button class="btn ghost" style="margin-bottom:14px">${icon('plus')}Add a meal you've made</button>`);
+    addm.onclick = () => addHistorySheet({ kind: CAT_MEAL, after: () => render() });
+    app.appendChild(addm);
     app.appendChild(box);
     paintMade(box);
     if (S.mq) { srow.focus(); srow.setSelectionRange(srow.value.length, srow.value.length); }
@@ -3403,26 +3501,10 @@ const agoLabel = ts => {
     : d < 60 ? `${Math.round(d / 7)} weeks ago` : `${Math.round(d / 30)} months ago`;
 };
 
-/* A meal from history: plan it again, re-photograph it, or forget it. */
-function madeMealSheet(c) {
-  const dlg = document.getElementById('dlg');
-  dlg.innerHTML = `<div class="eyebrow">Made ${c.count || 0}×${c.last ? ` · last ${esc(agoLabel(c.last))}` : ''}</div>
-    <h1 style="margin:6px 0 14px">${esc(c.name)}</h1>
-    <button class="btn cold" data-a="plan">${icon('calendar')}Plan it for a day</button>
-    <button class="btn ghost left" data-a="photo" style="margin-top:8px">${icon('camera')}${c.image ? 'Change the photo' : 'Add a photo'}</button>
-    <button class="btn ghost left danger" data-a="forget" style="margin-top:8px">${icon('trash')}Forget this meal</button>
-    <button class="btn ghost" data-a="c" style="margin-top:8px;border:none;color:var(--vapor)">Close</button>`;
-  dlg.querySelector('[data-a=plan]').onclick = () => {
-    dlg.close(); pickDayForRecipe({ name: c.name, image: c.image, uses: [], missing: [] });
-  };
-  dlg.querySelector('[data-a=photo]').onclick = () => { dlg.close(); pickPhoto(c, () => render()); };
-  dlg.querySelector('[data-a=forget]').onclick = async () => {
-    await forgetCatalog(c); dlg.close(); render();
-    toast(`Forgot ${c.name}`, async () => { await recordCatalog({ ...c, id: c.id }, { bump: false }); render(); });
-  };
-  dlg.querySelector('[data-a=c]').onclick = () => dlg.close();
-  dlg.showModal();
-}
+/* A meal from history. Same editor as everything else in the catalog — one
+   sheet, so "rename it / fix the count / delete it" works the same wherever
+   you meet a remembered thing. */
+const madeMealSheet = c => historySheet(c);
 
 /* Drop something out of the household's memory. Soft-deleted so the change
    travels to the other phones instead of quietly coming back on next sync. */
@@ -3432,6 +3514,160 @@ async function forgetCatalog(c) {
   const i = S.catalog.findIndex(x => x.id === c.id);
   if (i > -1) S.catalog[i] = rec;
   SYNC.push('catalog', c.id, rec);
+}
+
+/* ---------------- history: add, edit, forget ----------------
+   "History" is the catalog seen from the user's side: everything this house
+   has ever bought or cooked. Three verbs have to work on every one of them,
+   from every surface — add one by hand, fix one that's wrong, drop one you
+   don't want offered back. */
+
+/* Write a record as-is. `recordCatalog` is the upsert-and-bump path for
+   things that just happened; this is the plain save an editor needs, where
+   the numbers are whatever the user typed. */
+async function saveCatalog(rec) {
+  rec.updatedAt = Date.now();
+  await DB.put('catalog', rec);
+  const i = S.catalog.findIndex(x => x.id === rec.id);
+  if (i > -1) S.catalog[i] = rec; else S.catalog.push(rec);
+  SYNC.push('catalog', rec.id, rec);
+  return rec;
+}
+
+/* A rename is really a move: the canonical name IS the id (that's what
+   collapses "chedar" and "Cheddar" into one memory), so renaming has to
+   write under the new id and tombstone the old. If something already lives
+   at the new id, the two histories merge rather than one clobbering the
+   other — you renamed it because they're the same thing. */
+async function renameCatalog(c, name) {
+  const kind = catKind(c);
+  const id = c.barcode ? c.id : catId(name, null, kind);
+  if (id === c.id) return saveCatalog({ ...c, name });
+  const into = S.catalog.find(x => !x.deleted && x.id === id);
+  const rec = {
+    ...c, ...(into || {}), id, kind, name,
+    count: (c.count || 0) + (into?.count || 0),
+    stores: { ...(into?.stores || {}), ...(c.stores || {}) },
+    image: c.image || into?.image || null,
+    cat: c.cat || into?.cat || '',
+    first: Math.min(c.first || Date.now(), into?.first || Date.now()),
+    last: Math.max(c.last || 0, into?.last || 0),
+    deleted: false,
+  };
+  await saveCatalog(rec);
+  await forgetCatalog(c);
+  return rec;
+}
+
+/* The editor. One sheet for both kinds — a bought product and a cooked meal
+   differ only in which fields make sense (a meal has no aisle and no shop). */
+function historySheet(c, after) {
+  const dlg = document.getElementById('dlg');
+  const meal = catKind(c) === CAT_MEAL;
+  const done = () => { dlg.close(); if (after) after(); else render(); };
+  const shops = storeList();
+  const mine = c.stores || {};
+  dlg.innerHTML = `<div class="eyebrow">${meal ? 'Meal' : 'Product'} in your history</div>
+    <h1 style="margin:6px 0 4px">${esc(c.name)}</h1>
+    <p class="note" style="margin:0 0 16px">${meal ? 'Made' : 'Bought'} <b>${c.count || 0}×</b>${
+      c.last ? ` · last ${esc(agoLabel(c.last))}` : ''}. Everything here is editable.</p>
+    <label><span class="lbl">Name</span><input id="hn" value="${esc(c.name)}" autocomplete="off"></label>
+    ${meal ? '' : `<label><span class="lbl">Aisle</span><select id="hc">
+      ${CATS.map(k => `<option value="${esc(k)}" ${((c.cat || '') === k) ? 'selected' : ''}>${esc(CAT_LABEL(k))}</option>`).join('')}
+      <option value="" ${!c.cat ? 'selected' : ''}>— not set —</option></select></label>`}
+    ${meal || !shops.length ? '' : `<div class="lbl" style="margin:14px 0 7px">Bought at</div>
+      <div class="note" style="margin:0 0 9px">This is what decides which store's history it shows up in.</div>
+      ${shops.map(s => `<label style="display:flex;gap:10px;align-items:center;margin-bottom:9px;font-size:14px;font-weight:600">
+        <input type="checkbox" data-st="${esc(s.id)}" ${mine[s.id] ? 'checked' : ''} style="width:19px;height:19px;flex:0 0 auto">
+        ${s.emoji || '🏬'} ${esc(s.name)}</label>`).join('')}`}
+    <label style="margin-top:12px"><span class="lbl">${meal ? 'Times made' : 'Times bought'}</span>
+      <input type="number" id="hcount" min="0" value="${c.count || 0}"></label>
+    <button class="btn cold" data-a="save" style="margin-top:6px">${icon('check')}Save changes</button>
+    <button class="btn ghost left" data-a="photo" style="margin-top:8px">${icon('camera')}${c.image ? 'Change the photo' : 'Add a photo'}</button>
+    ${meal ? `<button class="btn ghost left" data-a="plan" style="margin-top:8px">${icon('calendar')}Plan it for a day</button>`
+           : `<button class="btn ghost left" data-a="tolist" style="margin-top:8px">${icon('cart')}Add to the shopping list</button>`}
+    <button class="btn ghost left danger" data-a="forget" style="margin-top:8px">${icon('trash')}Delete from history</button>
+    <button class="btn ghost" data-a="c" style="margin-top:8px;border:none;color:var(--vapor)">Cancel</button>`;
+
+  dlg.querySelector('[data-a=save]').onclick = async () => {
+    const name = dlg.querySelector('#hn').value.trim();
+    if (!name) return toast('Give it a name');
+    const count = Math.max(0, parseInt(dlg.querySelector('#hcount').value) || 0);
+    let rec = { ...c, count };
+    if (!meal) {
+      const cat = dlg.querySelector('#hc')?.value ?? c.cat;
+      const stores = {};
+      dlg.querySelectorAll('[data-st]').forEach(b => {
+        if (!b.checked) return;
+        const id = b.dataset.st;
+        // keep the real history for shops that were already ticked; a newly
+        // ticked one starts from this edit rather than inventing a past
+        stores[id] = mine[id] || { n: Math.max(1, count), last: c.last || Date.now() };
+      });
+      rec = { ...rec, cat, stores };
+    }
+    await (name === c.name ? saveCatalog(rec) : renameCatalog(rec, name));
+    done(); toast('History updated');
+  };
+  dlg.querySelector('[data-a=photo]').onclick = () => { dlg.close(); pickPhoto(c, () => (after ? after() : render())); };
+  dlg.querySelector('[data-a=plan]')?.addEventListener('click', () => {
+    dlg.close(); pickDayForRecipe({ name: c.name, image: c.image, uses: [], missing: [] });
+  });
+  dlg.querySelector('[data-a=tolist]')?.addEventListener('click', async () => {
+    // Prefer the store you're standing in; otherwise the shop this thing
+    // actually comes from, so it lands on a list you'll really walk.
+    const st = S.store || Object.keys(mine)[0] || '';
+    await addToList(c.name, '', st);
+    done(); toast(`${c.name} on the ${storeName(st) || 'general'} list`);
+  });
+  dlg.querySelector('[data-a=forget]').onclick = async () => {
+    if (!await confirmed({ title: `Delete ${c.name} from history?`,
+      body: `It stops being suggested and stops appearing in ${meal ? 'your meals' : "this store's history"}. Anything in the house right now is untouched.`,
+      yes: 'Yes, delete', danger: true })) return;
+    await forgetCatalog(c); done();
+    toast(`Deleted ${c.name}`, async () => { await saveCatalog({ ...c, deleted: false }); render(); });
+  };
+  dlg.querySelector('[data-a=c]').onclick = () => dlg.close();
+  dlg.showModal();
+}
+
+/* Add something to history by hand. The point: history shouldn't only be
+   things the app happened to watch you do — a shop you've used for years
+   already has a past, and typing it in is how you tell it so. */
+function addHistorySheet({ kind = CAT_PRODUCT, store = '', after } = {}) {
+  const dlg = document.getElementById('dlg');
+  const meal = kind === CAT_MEAL;
+  const shops = storeList();
+  dlg.innerHTML = `<div class="eyebrow">Add to history</div>
+    <h1 style="margin:6px 0 6px">${meal ? "A meal you've made" : "Something you've bought"}</h1>
+    <p class="note" style="margin:0 0 16px">Straight into your history — not onto a list, and not into the pantry.</p>
+    <label><span class="lbl">Name</span><input id="an" placeholder="${meal ? 'Sunday gravy' : 'Organic brown eggs'}" autocomplete="off" enterkeyhint="done"></label>
+    ${meal || !shops.length ? '' : `<label><span class="lbl">Which shop</span><select id="as">
+      ${shops.map(s => `<option value="${esc(s.id)}" ${s.id === store ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}
+      <option value="">No particular shop</option></select></label>`}
+    <label><span class="lbl">${meal ? 'Times made' : 'Times bought'}</span><input type="number" id="ac" value="1" min="1"></label>
+    <button class="btn cold" data-a="add">${icon('plus')}Add to history</button>
+    <button class="btn ghost" data-a="c" style="margin-top:8px;border:none;color:var(--vapor)">Cancel</button>`;
+  const go = async () => {
+    const name = dlg.querySelector('#an').value.trim();
+    if (!name) return toast('Give it a name');
+    const n = Math.max(1, parseInt(dlg.querySelector('#ac').value) || 1);
+    const st = meal ? '' : (dlg.querySelector('#as')?.value ?? store);
+    const rec = await recordCatalog({ name, kind,
+      cat: meal ? '' : guessCat(name), emoji: foodEmoji(name, meal ? '' : guessCat(name)) || '' },
+      { store: st, bump: false });
+    // The count is a claim about the past, so set it rather than bumping —
+    // "I've bought this twenty times" isn't twenty trips through the app.
+    const stores = st ? { ...(rec.stores || {}), [st]: { n, last: rec.last || Date.now() } } : rec.stores;
+    await saveCatalog({ ...rec, count: n, stores });
+    dlg.close(); if (after) after(); else render();
+    toast(`${name} added to ${storeName(st) || 'your'} history`);
+  };
+  dlg.querySelector('[data-a=add]').onclick = go;
+  dlg.querySelector('#an').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); go(); } };
+  dlg.querySelector('[data-a=c]').onclick = () => dlg.close();
+  dlg.showModal();
+  dlg.querySelector('#an').focus();
 }
 
 /* Auto-deduct on cook — but confirm first, because the recipe is
@@ -3453,7 +3689,7 @@ function cookDeduct(r) {
   dlg.querySelector('[data-a=go]').onclick = async () => {
     const ids = [...dlg.querySelectorAll('input:checked')].map(c => c.dataset.id);
     const undos = [];
-    for (const id of ids) undos.push(await deplete(S.items.find(i => i.id === id), 'cooked'));
+    for (const id of ids) undos.push(await deplete(S.items.find(i => i.id === id), 'cooked', { ask: false }));
     // "I made this" is the only honest signal that a meal is really part of
     // the rotation — it's what makes Plan's history worth offering back.
     await recordCatalog({ name: r.name, kind: CAT_MEAL, image: r.image || null,
@@ -3695,7 +3931,7 @@ async function onCode(code, mode) {
     const it = S.items.find(i => !i.deleted && i.barcode === code);
     if (!it) { scanFeedback(false); return toast(`Scanned ${code} — not in your inventory`); }
     scanFeedback(true);
-    await deplete(it, 'binned');
+    await deplete(it, 'binned', { ask: false });
     return;
   }
   const p = await lookupBarcode(code);
@@ -3847,7 +4083,7 @@ async function photoFlow(file) {
       } else {
         for (const f of picks) {
           const it = f.id && S.items.find(i => i.id === f.id && !i.deleted);
-          if (it) for (let n = 0; n < (f.count || 1); n++) await deplete(it, 'cooked');
+          if (it) for (let n = 0; n < (f.count || 1); n++) await deplete(it, 'cooked', { ask: false });
         }
         toast(`${picks.length} deducted`);
       }
@@ -4349,14 +4585,19 @@ function catalogPicker({ kind = CAT_PRODUCT, store = '', onPick, multi = true })
    out of, and what's already in the cart — split per store, because a Costco
    run and a corner-shop run are different errands with different lists. */
 function viewShopping(app) {
-  const store = S.store || '';
   const stores = storeList();
+  // Shops come first and General comes LAST, because that's the order the
+  // lists actually matter in: a Costco run is a real errand with its own
+  // history; "General" is the catch-all for things that belong to no shop
+  // yet. Landing on a real shop by default follows from the same idea.
+  if (S.store == null) S.store = stores[0]?.id || '';
+  const store = S.store || '';
 
   const tabs = el(`<div class="chips">
-    <button class="chip" data-s="" aria-pressed="${!store}">General</button>
     ${stores.map(s => `<button class="chip" data-s="${esc(s.id)}" aria-pressed="${store === s.id}">${s.emoji || '🏬'} ${esc(s.name)}</button>`).join('')}
+    <button class="chip" data-s="" aria-pressed="${!store}">General</button>
     <button class="chip" data-a="stores" aria-pressed="false">${icon('plus',16)} Store</button></div>`);
-  tabs.querySelectorAll('[data-s]').forEach(b => b.onclick = () => { S.store = b.dataset.s; render(); });
+  tabs.querySelectorAll('[data-s]').forEach(b => b.onclick = () => { S.store = b.dataset.s; S.hq = ''; render(); });
   tabs.querySelector('[data-a=stores]').onclick = () => storeSheet();
   app.appendChild(tabs);
 
@@ -4387,18 +4628,85 @@ function viewShopping(app) {
   inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); doAdd(); } };
   app.appendChild(add);
 
-  const out = restockList(store, 99).length;
-  // "Buy it again" is the phrase every grocery app already trained people on.
-  const hist = el(`<button class="btn ghost" style="margin-bottom:14px">${icon('clock')}Buy it again${out ? ` · ${out} you're out of` : ''}</button>`);
-  hist.onclick = () => catalogPicker({ kind: CAT_PRODUCT, store,
-    onPick: async c => { await addToList(c.name, '', store); paintShopping(listBox); } });
-  app.appendChild(hist);
-
   if (!SYNC.configured())
     app.appendChild(el(`<div class="note" style="margin:0 0 12px">This list is on this phone only. Turn on <b>Profile → Family sync</b> and the whole family shares one list.</div>`));
 
   app.appendChild(listBox);
   paintShopping(listBox);
+
+  // The history sits under the live list, scoped to the shop you're standing
+  // in. Ticking something off at the till lands it here; tapping it here puts
+  // it back on the list. That round trip is the whole feature.
+  app.appendChild(el(`<div id="shophist" style="margin-top:26px"></div>`));
+  paintHistory(document.getElementById('shophist'), store);
+}
+
+/* Everything this house has bought at this shop. On the General tab there's
+   no shop to scope to, so it shows the lot — deliberately the fallback view,
+   not the main event. */
+function paintHistory(box, store) {
+  if (!box) return;
+  box.innerHTML = '';
+  const q = (S.hq || '').trim();
+  const all = catalogList(CAT_PRODUCT, { store, q });
+  const label = storeName(store) || 'Everything, all shops';
+
+  box.appendChild(el(`<div class="sect"><h3>${icon('clock', 15)} ${esc(label)} history</h3><span class="n">${all.length}</span></div>`));
+  box.appendChild(el(`<div class="note" style="margin:-2px 0 12px">${store
+    ? `Everything you've bought at ${esc(storeName(store))}. Tick one to put it back on this list; tap it to edit or delete it.`
+    : `Every shop at once. Pick a shop above to keep its history separate.`}</div>`));
+
+  const bar = el(`<div class="row" style="margin-bottom:12px">
+    <input id="hq" placeholder="Search this history…" value="${esc(S.hq || '')}" autocomplete="off" style="flex:1">
+    <button class="btn ghost" data-a="addh" style="width:auto;padding:0 15px" aria-label="Add to history">${icon('plus', 16)}</button></div>`);
+  bar.querySelector('#hq').oninput = e => {
+    S.hq = e.target.value;
+    paintHistory(box, store);
+    const f = box.querySelector('#hq');
+    if (f) { f.focus(); f.setSelectionRange(f.value.length, f.value.length); }
+  };
+  bar.querySelector('[data-a=addh]').onclick = () =>
+    addHistorySheet({ kind: CAT_PRODUCT, store, after: () => render() });
+  box.appendChild(bar);
+
+  if (!all.length) {
+    box.appendChild(el(`<div class="empty" style="padding:26px 10px"><div class="ei">${icon('clock', 30)}</div>
+      <div class="big">${q ? 'No match' : 'Nothing here yet'}</div>
+      <div class="sub">${q ? 'Nothing in this history looks like that.'
+        : `Tick things off ${store ? `your ${esc(storeName(store))} list` : 'your list'} and they land here automatically — or add one by hand with +.`}</div></div>`));
+    return;
+  }
+
+  // Things you're out of float to the top: a history you scroll is an
+  // archive, a history that leads with "you're out of this" is a shortcut.
+  const rank = c => (listState(c.name).on ? 2 : stockState(c.name).state === 'out' ? 0 : 1);
+  const rows = q ? all : [...all].sort((a, b) => rank(a) - rank(b));
+  const cap = S.hAll ? rows.length : 12;
+
+  paintTileList(box, rows.slice(0, cap).map(c => ({
+    name: c.name,
+    meta: statusPills(c.name) || `${c.count || 0}× · ${esc(storeLabel(c, store))}`,
+    image: c.image, emoji: foodEmoji(c.name, c.cat || '') || '🛒',
+    badge: store ? '' : esc(storeLabel(c, store)),
+    checked: listState(c.name).on,
+    checkClass: 'got', stick: true,
+    checkLabel: listState(c.name).on ? 'On the list' : 'Add to list',
+    onCheck: async () => {
+      if (listState(c.name).on) return;
+      await addToList(c.name, '', store);
+      const lb = document.getElementById('shoplist');
+      if (lb) paintShopping(lb); else render();
+      toast(`${c.name} on the ${storeName(store) || 'general'} list`);
+    },
+    onTap: () => historySheet(c, () => render()),
+    onCorner: () => historySheet(c, () => render()), cornerIcon: icon('more', 17), cornerLabel: 'Edit',
+  })));
+
+  if (rows.length > cap) {
+    const more = el(`<button class="btn ghost">Show all ${rows.length}</button>`);
+    more.onclick = () => { S.hAll = true; paintHistory(box, store); };
+    box.appendChild(more);
+  }
 }
 
 /* One line of the list. Checked items keep their photo and move to Completed
@@ -4422,8 +4730,22 @@ function shopRow(s, box, flash = false) {
     if (s.done) { s.done = false; s.missing = false; await saveShopping(s); paintShopping(box); }
     else shoppingToPantry(s, () => { row.classList.add('leaving'); setTimeout(() => paintShopping(box), 210); });
   };
-  row.querySelector('[data-a=del]').onclick = async () => { s.deleted = true; await saveShopping(s); paintShopping(box); };
+  row.querySelector('[data-a=del]').onclick = () => removeFromList(s, () => paintShopping(box));
   return row;
+}
+
+/* Taking a line off the list. The X sits a thumb's width from the checkbox,
+   so this is the single easiest thing in the app to hit by accident. */
+async function removeFromList(s, after) {
+  if (!await confirmed({
+    title: `Remove ${s.name}?`,
+    body: `Off the ${esc(storeName(s.store) || 'general')} list. It stays in your history, so you can add it back in one tap.`,
+    yes: 'Yes, remove', danger: true,
+  })) return;
+  s.deleted = true;
+  await saveShopping(s);
+  toast(`${s.name} removed`, async () => { s.deleted = false; await saveShopping(s); render(); });
+  if (after) after();
 }
 
 function shopTile(s, box, flash = false) {
@@ -4446,7 +4768,7 @@ function shopTile(s, box, flash = false) {
       // Bought, so the change is something you watch rather than discover.
       else shoppingToPantry(s, () => { t.classList.add('leaving'); setTimeout(() => paintShopping(box), 210); });
     },
-    onCorner: async () => { s.deleted = true; await saveShopping(s); paintShopping(box); },
+    onCorner: () => removeFromList(s, () => paintShopping(box)),
   });
   if (flash) t.classList.add('added');   // so you can see where a new line landed
   return t;
@@ -4508,9 +4830,20 @@ function paintShopping(box, flashId = '') {
       box.appendChild(g);
     } else done.forEach(s => box.appendChild(shopRow(s, box)));
     const clr = el(`<button class="btn ghost">Clear bought</button>`);
-    clr.onclick = async () => { for (const s of done) { s.deleted = true; await saveShopping(s); } paintShopping(box); };
+    clr.onclick = async () => {
+      if (!await confirmed({ title: `Clear ${done.length} bought item${done.length === 1 ? '' : 's'}?`,
+        body: `They're already saved in this store's history — clearing just tidies the list.`,
+        yes: 'Yes, clear them', danger: true })) return;
+      for (const s of done) { s.deleted = true; await saveShopping(s); }
+      paintShopping(box);
+    };
     box.appendChild(clr);
   }
+
+  // Ticking something off changes what the history says ("on the list" ->
+  // available again), so the two panes always repaint together.
+  const hb = document.getElementById('shophist');
+  if (hb) paintHistory(hb, store);
 }
 
 /* ---------------- view: settings ---------------- */
@@ -4580,6 +4913,25 @@ function viewSet(app) {
     }
   };
   app.appendChild(card);
+
+  app.appendChild(el(`<h2 style="margin:22px 0 10px">Taps &amp; confirmations</h2>`));
+  const ask = asksFirst();
+  const ac = el(`<div class="card">
+    <div class="note" style="margin:0 0 12px">Using something up, throwing it out and taking a line off the
+      shopping list all ask first. Worth keeping on — the checkbox and the ✕ sit a thumb's width apart.</div>
+    <button class="btn ghost left topt${ask ? ' on' : ''}" data-c="1" role="radio" aria-checked="${ask}">
+      <span class="tk">${ask ? icon('check', 18) : ''}</span>
+      <span><b>Ask me first</b><span class="td">A quick "are you sure?" before anything is used up or removed.</span></span></button>
+    <button class="btn ghost left topt${ask ? '' : ' on'}" data-c="0" role="radio" aria-checked="${!ask}">
+      <span class="tk">${ask ? '' : icon('check', 18)}</span>
+      <span><b>Just do it</b><span class="td">Faster, but a mis-tap costs you an item. Undo still appears in the toast.</span></span></button>
+  </div>`);
+  ac.setAttribute('role', 'radiogroup');
+  ac.setAttribute('aria-label', 'Confirmations');
+  ac.querySelectorAll('[data-c]').forEach(b => b.onclick = async () => {
+    S.cfg.confirmActions = b.dataset.c === '1'; await saveCfg(); tap(); render();
+  });
+  app.appendChild(ac);
 
   app.appendChild(el(`<h2 style="margin:22px 0 10px">Appearance</h2>`));
   const th = S.cfg.theme || 'system';
@@ -4665,6 +5017,33 @@ function viewSet(app) {
   const sc = el(`<div class="card"></div>`);
   renderSyncCard(sc);
   app.appendChild(sc);
+
+  /* The old written-down shopping list, shipped with the app as a seed file.
+     It merges — every ticked line becomes history under the shop it was
+     bought at, every unticked one becomes a live list line — so running it
+     on a household that's already going adds to it rather than replacing it. */
+  app.appendChild(el(`<h2 style="margin:22px 0 10px">Your old shopping list</h2>`));
+  const seedCard = el(`<div class="card">
+    <div class="note" style="margin:0 0 12px">The list you kept before this app: everything already ticked off goes into
+      <b>each shop's history</b>, and everything still outstanding goes onto <b>that shop's list</b>. Safe to run twice —
+      it merges by item, so nothing you've added since gets overwritten.</div>
+    <button class="btn cold" data-a="seed">${icon('clock')}Import it</button>
+    <div id="seedout" style="margin-top:10px"></div></div>`);
+  seedCard.querySelector('[data-a=seed]').onclick = async () => {
+    const out = seedCard.querySelector('#seedout');
+    out.innerHTML = `<span class="spin"></span> <span class="note">Importing&hellip;</span>`;
+    try {
+      const data = await (await fetch('my-list.json', { cache: 'no-store' })).json();
+      await applyBackup(data);
+      const hist = (data.catalog || []).length, list = (data.shopping || []).length;
+      out.innerHTML = `<div class="note" style="color:var(--chill)"><b>&#10003; Done.</b>
+        ${hist} thing${hist === 1 ? '' : 's'} into your shop histories, ${list} onto your lists.</div>`;
+      render();
+    } catch (e) {
+      out.innerHTML = `<div class="warn">Couldn't load the list — you need to be online for this one.</div>`;
+    }
+  };
+  app.appendChild(seedCard);
 
   app.appendChild(el(`<h2 style="margin:22px 0 10px">Backup &amp; restore</h2>`));
   const statusCard = el(`<div class="card"><div class="note" id="storeStatus">Checking on-device storage&hellip;</div></div>`);
@@ -4776,18 +5155,62 @@ async function readBackup(file) {
 async function applyBackup(data) {
   if (!data || typeof data !== 'object') throw new Error('not a backup');
   if (!BACKUP_STORES.some(s => Array.isArray(data[s])) && !data.household) throw new Error('not a backup');
+
+  /* A seed carries its own store ids. If this household already shops at a
+     shop by the same name, every seed record has to be re-pointed at the
+     REAL one — otherwise a year of Costco history lands on a second, empty
+     "Costco" the user never made, and their own tab still looks untouched. */
+  let remap = null;
+  if (data.seed && data.household) {
+    const local = await DB.get('meta', 'household');
+    const byName = new Map((local?.stores || []).map(s => [norm(s.name), s.id]));
+    remap = new Map();
+    for (const s of (data.household.stores || [])) {
+      const hit = byName.get(norm(s.name));
+      if (hit && hit !== s.id) remap.set(s.id, hit);
+    }
+    if (!remap.size) remap = null;
+  }
+  const mapStore = id => (remap && remap.get(id)) || id;
+
   for (const s of BACKUP_STORES)
-    for (const r of (data[s] || [])) if (r && r.id) await DB.put(s, r);
+    for (const r of (data[s] || [])) {
+      if (!r || !r.id) continue;
+      let rec = r;
+      if (remap && s === 'shopping' && r.store) rec = { ...r, store: mapStore(r.store) };
+      if (remap && s === 'catalog' && r.stores)
+        rec = { ...r, stores: Object.fromEntries(Object.entries(r.stores).map(([k, v]) => [mapStore(k), v])) };
+      /* Seeding history is additive by nature: "I've also bought this at
+         Greens" must not erase "and 12 times at Costco". Straight put() is
+         still right for a real restore, where the file IS the truth. */
+      if (data.seed && s === 'catalog') {
+        const prev = await DB.get('catalog', rec.id);
+        if (prev && !prev.deleted) rec = {
+          ...prev, ...rec,
+          count: Math.max(prev.count || 0, rec.count || 0),
+          stores: { ...(prev.stores || {}), ...(rec.stores || {}) },
+          image: prev.image || rec.image || null,
+          first: Math.min(prev.first || Infinity, rec.first || Infinity) || rec.first,
+          last: Math.max(prev.last || 0, rec.last || 0),
+        };
+      }
+      await DB.put(s, rec);
+    }
   if (data.household) {
     const local = await DB.get('meta', 'household');
     // A `seed` file is a bundle of data to fold in (an old list, a starter
     // catalog), not a snapshot of a whole household. It may only contribute
     // the shops its lines point at — overwriting the real household's shelves,
     // allergies and members with a seed's placeholders would be destructive.
-    if (data.seed && local) {
-      const have = new Set((local.stores || []).map(s => norm(s.name)));
+    /* ...and it must never CREATE one either. A seed's household is a stub
+       (no shelves, no members) that exists only to carry the shop names;
+       writing it as-is on a fresh phone yields a household with nowhere to
+       put food, which breaks every "which shelf?" sheet in the app. */
+    if (data.seed) {
+      const base = local || S.household;
+      const have = new Set((base?.stores || []).map(s => norm(s.name)));
       const add = (data.household.stores || []).filter(s => !have.has(norm(s.name)));
-      await DB.put('meta', { ...local, id: 'household', stores: [...(local.stores || []), ...add] });
+      if (base) await DB.put('meta', { ...base, id: 'household', stores: [...(base.stores || []), ...add] });
     } else {
       await DB.put('meta', { id: 'household', ...data.household });
     }
@@ -5091,12 +5514,17 @@ function restockSheet(c) {
     <button class="btn cold" data-a="stock">✓ Put it back in the pantry</button>
     <button class="btn ghost left" data-a="list" style="margin-top:8px">${icon('cart')}Just add it to the shopping list</button>
     <button class="btn ghost left" data-a="photo" style="margin-top:8px">${icon('camera')}Set a photo</button>
+    <button class="btn ghost left" data-a="edit" style="margin-top:8px">${icon('pencil')}Edit this history entry</button>
     <button class="btn ghost left danger" data-a="forget" style="margin-top:8px">${icon('trash')}Forget this — stop suggesting it</button>
     <button class="btn ghost" data-a="c" style="margin-top:8px;border:none;color:var(--vapor)">Cancel</button>`;
   if (c.lastLoc) dlg.querySelector('#rloc2').value = c.lastLoc;
+  dlg.querySelector('[data-a=edit]').onclick = () => { dlg.close(); historySheet(c); };
   dlg.querySelector('[data-a=forget]').onclick = async () => {
+    if (!await confirmed({ title: `Forget ${c.name}?`,
+      body: `It stops being suggested and leaves your history. Anything in the house right now is untouched.`,
+      yes: 'Yes, forget it', danger: true })) return;
     await forgetCatalog(c); dlg.close(); render();
-    toast(`Forgot ${c.name}`, async () => { await recordCatalog({ ...c, id: c.id }, { bump: false }); render(); });
+    toast(`Forgot ${c.name}`, async () => { await saveCatalog({ ...c, deleted: false }); render(); });
   };
   dlg.querySelector('[data-a=stock]').onclick = async () => {
     await addItem({ name: c.name, cat: c.cat || guessCat(c.name), loc: dlg.querySelector('#rloc2').value,

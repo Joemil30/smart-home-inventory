@@ -63,3 +63,28 @@ This is the day most of the current app's shape was decided:
   running app) — see `[[08 iOS Safari Quirks]]`.
 - Started this `notes/` vault + `CLAUDE.md` project memory, and set up the
   Obsidian ↔ repo sync loop — see `[[10 Working Notes and Obsidian]]`.
+
+## 2026-07-29 — History as a first-class surface, and a confirm layer
+The user's own framing: the list is a checklist, the history is what was
+previously on it, and ticking something off at the till should file it away
+by itself. What shipped:
+- **Per-store history in the Shop screen.** Each shop tab shows its own
+  history (search, add by hand, tap to edit, tick to re-list). Store tabs
+  now come FIRST and **General is last** — General is the catch-all, not the
+  default. The app also opens on a real shop rather than General.
+- **A confirm layer** (`confirmed()`, `#cdlg`). Using something up, throwing
+  it out, removing a list line and clearing the bought pile all ask first —
+  the checkbox and the ✕ sit a thumb's width apart. Settings → *Taps &
+  confirmations* can turn it off. Paths that already confirm (the cook
+  sheet, receipt review, a deliberate bin-scan) pass `ask:false`.
+- **Everything in history is editable** — one `historySheet()` for products
+  and meals: rename, re-aisle, re-assign shops, fix the count, photo,
+  delete. Renaming merges when it collides with an existing record.
+- **One-tap import** of the old written-down shopping list (Settings → *Your
+  old shopping list*), which folds `my-list.json` in: ticked lines become
+  per-shop history, outstanding ones become live list lines.
+- Fixed a real dialog bug found by the new tests: `close` is delivered
+  asynchronously and `onclose` is a property the next confirm overwrites, so
+  a dismissed dialog's event silently answered "no" to the *next* question.
+  See `[[11 Confirmations and History]]`.
+- New suite `history-test` (45 checks) — `[[09 Testing]]`.

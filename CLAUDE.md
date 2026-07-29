@@ -39,6 +39,12 @@ them green).
   Safari.** `DB.init()` must keep its try/catch fallback to an in-memory
   store, or opening a backup shows a blank screen. See
   `[[08 iOS Safari Quirks]]`.
+- **Store tabs come first, General LAST**, and history is scoped to the shop
+  you're on. General is the fallback, not the default view.
+- **Destructive actions go through `confirmed()`**, which lives on its own
+  `#cdlg` dialog. Never route it through the shared `#dlg` — a confirm has
+  to be able to stack on an open sheet. Its `close` handling has two guards
+  for a real async bug; don't simplify them (`[[11 Confirmations and History]]`).
 - **`guessCat` must match whole words, not substrings**, and check specific
   phrases before general ones — "cola" ⊂ "chocolate", "egg" ⊂ "eggplant" are
   real regressions that happened once already.
@@ -56,6 +62,8 @@ them green).
 
 - Cloud sync ("Family sync" in Settings) is Supabase-backed, opt-in, and
   fully built — see `[[06 Family Sync]]`.
+- History is a real surface, scoped per shop, and editable everywhere;
+  destructive taps ask first. See `[[11 Confirmations and History]]`.
 - App Store path (Capacitor wrap) is scoped in `APP_STORE_LAUNCH.md` but not
   started; PWA is the live, recommended path today.
 - Full chronological history: `[[01 Timeline]]`.

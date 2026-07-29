@@ -29,6 +29,7 @@ PLAYWRIGHT_MODULE=playwright CHROME_PATH=/path/to/chrome sh test/run.sh
 | `update-test` | the Settings update card, and that a clean reinstall never eats your data |
 | `theme-test` | light/dark override beating the phone, and the status-bar colour following the app |
 | `ai-test` | model auto-pick, dead-model healing, quota-error wording |
+| `history-test` | per-store history, the confirm layer, and editing/merging history records |
 
 `genlist.js` is not a test — it regenerates `my-list.json` from the shopping
 list in its header, by driving the app's own `addStore`/`addToList`/
