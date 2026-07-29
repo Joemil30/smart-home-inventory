@@ -1,0 +1,69 @@
+# Stocked — project memory
+
+Read this first, every session. It's the standing context: what this app is,
+how it's built, and what's already been decided — so decisions don't get
+re-litigated and old bugs don't get re-introduced.
+
+Deep history and reasoning live in `notes/` (Obsidian-compatible, linked with
+`[[wikilinks]]`). This file is the index + the load-bearing facts; `notes/`
+is the narrative.
+
+## What this is
+
+A single-file offline-first household food inventory PWA. One person's
+family uses it daily on iPhone home screens. Live at
+`https://joemil30.github.io/smart-home-inventory/`. Deploys automatically
+on every push to `claude/cold-room-pwa-mpph5h` (see `.github/workflows/deploy.yml`)
+— **there is no staging step; every push is live on the user's phone within
+seconds.** Test before claiming done.
+
+## Architecture, in one paragraph
+
+Everything is `index.html` (~5300+ lines): markup, styles, and app logic in
+one file, no build step, no framework. `sw.js` is the offline service worker
+(cache-first shell, `IMG` cache for product thumbnails that survives app
+updates). `DB` (index.html) is a tiny IndexedDB wrapper with an in-memory
+fallback for contexts where IndexedDB is unavailable (see
+`[[08 iOS Safari Quirks]]`). `manifest.webmanifest` + `icon.svg` +
+`apple-touch-icon.png` are the installable-app identity. `test/` is 12
+Playwright-driven suites that boot the real `index.html` and call the app's
+own functions — nothing is mocked (`sh test/run.sh` runs all of them; keep
+them green).
+
+## Non-obvious rules that must not get re-broken
+
+- **Bump `CACHE` in `sw.js` on every release.** If `sw.js` is byte-identical,
+  the browser never re-registers it and shipped fixes never arrive on
+  installed phones.
+- **`file://` (a double-tapped backup `.html`) has no IndexedDB on iOS
+  Safari.** `DB.init()` must keep its try/catch fallback to an in-memory
+  store, or opening a backup shows a blank screen. See
+  `[[08 iOS Safari Quirks]]`.
+- **`guessCat` must match whole words, not substrings**, and check specific
+  phrases before general ones — "cola" ⊂ "chocolate", "egg" ⊂ "eggplant" are
+  real regressions that happened once already.
+- **Home-screen icon/name only update if the user deletes and re-adds the
+  shortcut.** iOS never re-reads `manifest.webmanifest` for an existing
+  "Add to Home Screen" icon. Don't promise an icon change will "just show up."
+- **`https://github.com/...` and `https://joemil30.github.io/...` are
+  different sites.** The user confused these once — github.com is the code
+  viewer, github.io is the running app. Always give the `.io` link.
+- **The user is a phone-only, non-technical user.** No local git clone, no
+  terminal on their end. Every instruction I give them has to be "open
+  Safari, tap this, type this" — not "run this command."
+
+## Where things stand
+
+- Cloud sync ("Family sync" in Settings) is Supabase-backed, opt-in, and
+  fully built — see `[[06 Family Sync]]`.
+- App Store path (Capacitor wrap) is scoped in `APP_STORE_LAUNCH.md` but not
+  started; PWA is the live, recommended path today.
+- Full chronological history: `[[01 Timeline]]`.
+
+## Keeping this current
+
+A recurring job re-reads recent commits and updates `notes/` and this file
+without the user needing to ask — see `[[10 Working Notes and Obsidian]]`
+for how that's wired. If you're reading this as part of that job: check
+`git log` since the date in `notes/01 Timeline.md`'s last entry, add
+what's new, keep it terse.
