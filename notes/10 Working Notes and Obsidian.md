@@ -29,6 +29,10 @@ in place, which would fight with a sync plugin expecting stable filenames.
    makes the user's vault "just stay current" — see the setup steps Claude
    gave them in chat when this was set up (2026-07-29).
 
+## Sync check
+Last pushed from Claude: 2026-07-29, ~01:20 UTC. If you can see this line
+in Obsidian after pulling, the loop is working end to end.
+
 ## Rule for future sessions
 Before making non-trivial changes, skim `CLAUDE.md` and whichever notes
 here are relevant — that's the point of this file existing. After making a
