@@ -64,8 +64,12 @@ them green).
   fully built — see `[[06 Family Sync]]`.
 - History is a real surface, scoped per shop, and editable everywhere;
   destructive taps ask first. See `[[11 Confirmations and History]]`.
-- App Store path (Capacitor wrap) is scoped in `APP_STORE_LAUNCH.md` but not
-  started; PWA is the live, recommended path today.
+- App Store path (Capacitor wrap) is scoped in `APP_STORE_LAUNCH.md` +
+  `[[12 Going Public]]` but not started; PWA is the live, recommended path
+  today. **The shipped Supabase RLS policy is `using (true)`** — safe only
+  because every family runs their own project and holds their own key. It
+  is a breach the moment one backend serves many households, so any "let
+  strangers use it" work starts with Supabase Auth, not with Capacitor.
 - Full chronological history: `[[01 Timeline]]`.
 
 ## Keeping this current

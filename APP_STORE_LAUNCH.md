@@ -1,5 +1,12 @@
 # Stocked — App Store Launch Strategy
 
+> **Read `notes/12 Going Public.md` first.** This file is the marketing and
+> checklist half. That one covers the four hard gates (a Mac, age of
+> majority, real costs, Guideline 4.2) and the three security changes that
+> must land *before* strangers use the app — chiefly that the shipped RLS
+> policy is `using (true)`, which is safe only while every family owns their
+> own Supabase project.
+
 ## Competitive Position
 
 **Your unique angle:** Offline-first family inventory with real-time sync. Every competitor goes cloud-only (dead in bad WiFi). You work in the basement with zero network, yet stay in sync when WiFi returns.
@@ -64,8 +71,13 @@ Use **Capacitor** to wrap the PWA as a native app and submit to Google Play and 
 - ✅ Auto-updates via the App Stores
 - ✅ Same codebase as PWA (no rewrite)
 - ✅ Native push notifications work better on iOS
-- ⚠️ Requires developer accounts ($25 Google, $99/year Apple)
+- ⚠️ Requires developer accounts ($25 Google once, $99/year Apple forever)
+- ⚠️ **iOS requires a Mac** — Xcode is macOS-only, and there is no workaround
+- ⚠️ **Both stores require the account holder to be of legal age of majority**
 - ⚠️ App Store review can take 1–3 days per update
+- ⚠️ Guideline 4.2: a wrapper that loads a *remote* URL gets rejected. Capacitor
+  must bundle the app into the binary, and the native capabilities (camera,
+  barcode, OCR, notifications) should be called out in the review notes.
 
 **Steps:**
 1. Install Capacitor CLI: `npm install -g @capacitor/cli`
@@ -191,13 +203,21 @@ Link from app stores to the privacy policy.
 ## Go/No-Go Checklist for Today
 
 - [x] PWA tested and working offline
-- [x] All 287 tests passing
+- [x] All tests passing (13 suites, ~400 checks — `sh test/run.sh`)
 - [x] Manifest and icon configured
 - [x] GitHub Pages auto-deploys on push
 - [x] README documents usage
 - [x] Differentiation clear (offline-first + family sync)
-- [ ] Privacy policy drafted and hosted
+- [x] Privacy policy drafted and hosted (`privacy.html`)
 - [ ] Test with 2–3 family members (feedback)
-- [ ] Decide: PWA-only launch today, or wait for Capacitor?
+- [ ] Own domain bought and pointed at Pages (before sharing the URL widely)
+- [ ] GitHub 2FA on, recovery codes saved off-device
+- [ ] Trademark search on "Stocked" (USPTO classes 009 + 042)
+- [ ] Supabase Auth + `auth.uid()` RLS — **blocks any public launch**
+- [ ] AI key moved behind an Edge Function — **blocks any public launch**
+- [ ] In-app account deletion (Apple Guideline 5.1.1(v))
 
-**Recommendation:** Launch PWA today to family, start building Capacitor app in parallel, submit to app stores in 1–2 weeks.
+**Recommendation:** keep the PWA as the live path for the family. Then
+**Android/Play first** — $25, no Mac, no age-of-majority friction in
+practice, review in hours — and use it to build every store asset once.
+Do the auth/backend rebuild before iOS, not after.

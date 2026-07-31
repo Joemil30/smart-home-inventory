@@ -88,3 +88,14 @@ by itself. What shipped:
   a dismissed dialog's event silently answered "no" to the *next* question.
   See `[[11 Confirmations and History]]`.
 - New suite `history-test` (45 checks) — `[[09 Testing]]`.
+
+## 2026-07-31 — The question changes to "how do I launch this"
+No code shipped; the scope did. The user wants Stocked in the App Store and
+open to strangers. Wrote `[[12 Going Public]]`: what "independent of GitHub"
+actually means (the repo is the backup — a domain and 2FA are the real
+independence), the four hard gates (a Mac for Xcode, age of majority for a
+developer account, ~$99/yr + $25/mo, and Guideline 4.2), and the three
+security changes that must land before strangers arrive — the shipped RLS
+policy is `using (true)`, the AI key must never enter a binary, and accounts
+mean Supabase Auth plus an in-app delete button Apple actually checks for.
+Recommended order: Android first, backend rebuild second, iOS last.
