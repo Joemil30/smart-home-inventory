@@ -45,6 +45,11 @@ them green).
   `#cdlg` dialog. Never route it through the shared `#dlg` — a confirm has
   to be able to stack on an open sheet. Its `close` handling has two guards
   for a real async bug; don't simplify them (`[[11 Confirmations and History]]`).
+- **The confirm belongs on the tap, not in the data funnel.** `deplete()`
+  and `tossItem()` must stay dialog-free — the cook sheet, receipt review,
+  barcode scans and voice all drive them with nothing there to answer a
+  dialog. Ask in `tapDeplete()` / `tapToss()` instead. Voice never confirms
+  on purpose; its undo toast is the safety net.
 - **`guessCat` must match whole words, not substrings**, and check specific
   phrases before general ones — "cola" ⊂ "chocolate", "egg" ⊂ "eggplant" are
   real regressions that happened once already.

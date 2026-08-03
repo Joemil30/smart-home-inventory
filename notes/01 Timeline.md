@@ -88,6 +88,11 @@ by itself. What shipped:
   a dismissed dialog's event silently answered "no" to the *next* question.
   See `[[11 Confirmations and History]]`.
 - New suite `history-test` (45 checks) — `[[09 Testing]]`.
+- Same day, corrected: the confirm had been put *inside* `deplete()` and
+  `tossItem()`, which hung every programmatic caller (cook sheet, receipt
+  review, scans, voice) on a dialog nothing could answer. Moved onto
+  `tapDeplete()` / `tapToss()`; the data funnels are plain operations again.
+  Voice stays unconfirmed by design. See `[[11 Confirmations and History]]`.
 
 ## 2026-07-31 — The question changes to "how do I launch this"
 No code shipped; the scope did. The user wants Stocked in the App Store and

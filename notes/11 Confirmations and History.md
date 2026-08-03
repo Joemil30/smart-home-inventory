@@ -53,11 +53,21 @@ shops) imports in one tap from Settings. Two non-obvious rules in
 a confirm has to be able to stack on top of an item sheet without destroying
 it, and a yes/no question shouldn't take over the screen.
 
-Gated: `deplete`, `tossItem`, the item sheet's "all gone", `removeFromList`,
-"Clear bought", and every history/store deletion. Paths that already showed
-the user exactly what they were about to change pass `ask:false` — the cook
-sheet, receipt review, and a deliberate bin-scan (a dialog per beep would
-destroy the rapid scan flow).
+**The confirm lives on the tap, never in the data funnel.** `deplete()` and
+`tossItem()` are plain data operations that must never open a dialog;
+`tapDeplete()` / `tapToss()` are thin wrappers that ask first and are only
+ever reached from a click handler. This was learned by breaking it: with the
+confirm inside `deplete()`, every programmatic caller — the cook sheet,
+receipt review, barcode scans, voice — blocked forever on a dialog that
+nothing was there to answer.
+
+Gated: `tapDeplete`, `tapToss`, the item sheet's "all gone",
+`removeFromList`, "Clear bought", and every history/store deletion.
+
+**Voice deliberately does not confirm.** It calls `deplete()` / `tossItem()`
+straight, because it exists for the moment your hands are covered in raw
+chicken and a sheet you have to tap defeats the entire feature. The toast's
+undo is the safety net there.
 
 Settings → **Taps & confirmations** turns it off (`cfg.confirmActions`),
 default on. When off, `confirmed()` resolves `true` immediately, so every
