@@ -441,6 +441,14 @@ label .lbl{font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:up
   box-shadow:0 1px 4px rgba(18,50,30,.2)}
 .loc .lx svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.9}
 
+/* Review row for a bulk import: keep-or-drop, the name, and a count you can
+   correct. The count is the field the model gets wrong most often. */
+.revrow{display:flex;gap:10px;align-items:center;margin-bottom:9px}
+.revrow input[type=checkbox]{width:19px;height:19px;flex:0 0 auto}
+.revrow .rn{flex:1;font-size:14px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.revrow .rq{width:58px;flex:0 0 auto;text-align:center;font-size:14px;padding:7px 4px}
+.hintline{display:block;font-size:11.5px;font-weight:500;color:var(--vapor-dim);margin-top:2px}
+
 /* ---- the map ---- */
 .zonewrap{position:relative;border-radius:var(--r);overflow:hidden;border:1px solid var(--rime);
   background:var(--fog);line-height:0}
@@ -1425,7 +1433,7 @@ function shoppingToPantry(s, after) {
   dlg.innerHTML = `<div class="eyebrow">Bought it?</div><h1 style="margin:6px 0 10px">${esc(s.name)}</h1>
     <p class="note" style="margin:0 0 14px">Either way it goes into your ${esc(storeName(s.store) || 'general')} history.
       Adding it to the pantry also tracks it — expiry is estimated for you.</p>
-    <label><span class="lbl">Shelf</span><select id="cloc">${S.household.locations.map(l => `<option value="${l.id}">${esc(l.name)}</option>`).join('')}</select></label>
+    <label><span class="lbl">Shelf</span><select id="cloc">${locOptions()}</select></label>
     <label><span class="lbl">How many</span><input type="number" id="cqty" value="${q}" min="1"></label>
     <button class="btn cold" data-a="pantry">${icon('check')}Add to pantry</button>
     <button class="btn ghost left" data-a="just" style="margin-top:8px">${icon('clock')}Just check it off — remember it</button>
@@ -2695,7 +2703,7 @@ function moveSheet(it) {
   const dlg = document.getElementById('dlg');
   dlg.innerHTML = `<div class="eyebrow">Move</div><h1 style="margin:6px 0 14px">${esc(it.name)}</h1>
     <p class="note" style="margin:0 0 12px">Different shelf, different clock. The date re-estimates automatically.</p>
-    ${S.household.locations.map(l => `<button class="btn ghost" data-l="${l.id}" style="margin-bottom:6px;text-align:left">${esc(l.name)}</button>`).join('')}
+    ${(S.household.locations||[]).map(l => `<button class="btn ghost" data-l="${l.id}" style="margin-bottom:6px;text-align:left">${l.parent ? '&nbsp;&nbsp;└ ' : ''}${esc(l.name)}</button>`).join('')}
     <button class="btn ghost" data-a="close" style="margin-top:6px;border:none;color:var(--vapor)">Cancel</button>`;
   dlg.querySelectorAll('[data-l]').forEach(b => b.onclick = async () => {
     const before = JSON.parse(JSON.stringify(it));
@@ -4015,8 +4023,7 @@ function viewScan(app) {
     </div>
     ${mode === 'in' ? `<div class="chips" style="padding-bottom:8px">
       <button class="chip" data-a="rapid" aria-pressed="${rapid}">⚡ Rapid add</button>
-      ${rapid ? `<select id="rloc" style="width:auto;flex:1;min-width:0;font-size:11px;padding:7px 10px">${S.household.locations.map(l =>
-        `<option value="${l.id}" ${l.id === rapidLoc ? 'selected' : ''}>${esc(l.name)}</option>`).join('')}</select>` : ''}
+      ${rapid ? `<select id="rloc" style="width:auto;flex:1;min-width:0;font-size:11px;padding:7px 10px">${locOptions(rapidLoc)}</select>` : ''}
     </div>` : ''}
     <div id="scanwrap"><video id="video" playsinline muted></video><div class="reticle"></div>
       <button id="torch" class="torchbtn hide" aria-label="Toggle flashlight" aria-pressed="false">🔦</button></div>
@@ -4192,8 +4199,7 @@ function confirmAdd(p, code) {
   const guessLoc = S.catalog.find(c => c.id === code)?.lastLoc || defaultLoc(p.cat);
   dlg.innerHTML = `<div class="eyebrow">${p.source === 'yours' ? 'From your catalog' : 'Open Food Facts'} · ${esc(code)}</div>
     <h1 style="margin:6px 0 14px">${esc(p.name)}</h1>
-    <label><span class="lbl">Shelf</span><select id="loc">${S.household.locations.map(l =>
-      `<option value="${l.id}" ${l.id === guessLoc ? 'selected' : ''}>${esc(l.name)}</option>`).join('')}</select></label>
+    <label><span class="lbl">Shelf</span><select id="loc">${locOptions(guessLoc)}</select></label>
     <div class="row"><label style="flex:1"><span class="lbl">How many</span><input type="number" id="qty" value="1" min="1"></label>
     <label style="flex:1"><span class="lbl">Pack of (blank = single)</span><input type="number" id="pk" placeholder="40" value="${p.packSize || ''}"></label></div>
     <button class="btn cold" data-a="add">Put it away</button>
@@ -4230,7 +4236,7 @@ function unknownSheet(code) {
     <div class="eyebrow" style="text-align:center;margin:14px 0 10px">or type it</div>
     <label><span class="lbl">Name</span><input id="nm" placeholder="Kirkland Organic Eggs"></label>
     <label><span class="lbl">What kind of thing</span><select id="cat">${CATS.map(c => `<option value="${c}">${c}</option>`).join('')}</select></label>
-    <label><span class="lbl">Shelf</span><select id="loc">${S.household.locations.map(l => `<option value="${l.id}">${esc(l.name)}</option>`).join('')}</select></label>
+    <label><span class="lbl">Shelf</span><select id="loc">${locOptions()}</select></label>
     <label><span class="lbl">Pack of (blank = single)</span><input type="number" id="pk" placeholder="40"></label>
     <button class="btn ghost" data-a="save">Save &amp; remember</button>
     <input type="file" accept="image/*" capture="environment" id="lp" class="hide">`;
@@ -4288,14 +4294,23 @@ async function photoFlow(file) {
     dlg.innerHTML = `<div class="eyebrow">${mode === 'add' ? 'Putting away' : 'Using these up'}</div>
       <h1 style="margin:6px 0 6px">Found ${found.length}</h1>
       <p class="note" style="margin:0 0 14px">Untick anything it got wrong.</p>
-      ${found.map((f, i) => `<label style="display:flex;gap:10px;align-items:center;margin-bottom:9px;font-size:14px;font-weight:600">
-        <input type="checkbox" checked data-i="${i}" style="width:19px;height:19px;flex:0 0 auto">
-        ${esc(f.name)} <span style="color:var(--vapor-dim)">×${f.count || 1}</span></label>`).join('')}
-      ${mode === 'add' ? `<label style="margin-top:6px"><span class="lbl">Onto which shelf</span><select id="loc">${S.household.locations.map(l => `<option value="${l.id}">${esc(l.name)}</option>`).join('')}</select></label>` : ''}
+      ${found.map((f, i) => `<div class="revrow">
+        <input type="checkbox" checked data-i="${i}" aria-label="Keep ${esc(f.name)}">
+        <span class="rn">${esc(f.name)}</span>
+        <input type="number" class="rq" data-q="${i}" value="${f.count || 1}" min="1" max="99"
+          aria-label="How many ${esc(f.name)}"></div>`).join('')}
+      ${mode === 'add' ? `<label style="margin-top:6px"><span class="lbl">Onto which shelf</span><select id="loc">${locOptions()}</select></label>` : ''}
       <button class="btn cold" data-a="go">${mode === 'add' ? 'Put them away' : 'Deduct them'}</button>
       <button class="btn ghost" data-a="c" style="margin-top:8px;border:none;color:var(--vapor)">Cancel</button>`;
     dlg.querySelector('[data-a=go]').onclick = async () => {
-      const picks = [...dlg.querySelectorAll('input:checked')].map(c => found[+c.dataset.i]);
+      /* Read the count back off the row rather than trusting the model's
+         guess — "how many did it see" is exactly the thing it gets wrong,
+         and correcting it here is cheaper than editing five items after. */
+      const picks = [...dlg.querySelectorAll('input[type=checkbox]:checked')].map(c => {
+        const i = +c.dataset.i;
+        const q = parseInt(dlg.querySelector(`[data-q="${i}"]`)?.value, 10);
+        return { ...found[i], count: Number.isFinite(q) && q > 0 ? q : (found[i].count || 1) };
+      });
       if (mode === 'add') {
         const loc = dlg.querySelector('#loc').value;
         const added = [];
@@ -4396,7 +4411,7 @@ async function receiptFlow(file) {
         </div></div>`).join('')}</div>
       <label style="margin-top:2px"><span class="lbl">Put them on</span><select id="loc">
         <option value="auto" selected>Auto — by food type</option>
-        ${S.household.locations.map(l => `<option value="${l.id}">${esc(l.name)}</option>`).join('')}</select></label>
+        ${locOptions()}</select></label>
       <button class="btn cold" data-a="go">Add to inventory</button>
       <button class="btn ghost" data-a="c" style="margin-top:8px;border:none;color:var(--vapor)">Cancel</button>`;
     dlg.querySelector('[data-a=go]').onclick = async () => {
@@ -4425,7 +4440,7 @@ function manualSheet() {
   dlg.innerHTML = `<div class="eyebrow">Add by hand</div><h1 style="margin:6px 0 14px">What is it</h1>
     <label><span class="lbl">Name</span><input id="nm" placeholder="Roma tomatoes" autofocus></label>
     <label><span class="lbl">What kind of thing</span><select id="cat">${CATS.map(c => `<option value="${c}">${c}</option>`).join('')}</select></label>
-    <label><span class="lbl">Shelf</span><select id="loc">${S.household.locations.map(l => `<option value="${l.id}">${esc(l.name)}</option>`).join('')}</select></label>
+    <label><span class="lbl">Shelf</span><select id="loc">${locOptions()}</select></label>
     <label><span class="lbl">How many</span><input type="number" id="qty" value="1" min="1"></label>
     <button class="btn cold" data-a="add">Put it away</button>
     <button class="btn ghost" data-a="c" style="margin-top:8px;border:none;color:var(--vapor)">Cancel</button>`;
@@ -5555,7 +5570,7 @@ function addFoodChooser() {
   dlg.innerHTML = `<div class="eyebrow">Add food</div><h1 style="margin:6px 0 15px">How do you want to add it?</h1>
     <button class="btn ghost left" data-a="barcode" style="margin-bottom:9px">${icon('camera')}Scan a barcode</button>
     <button class="btn ghost left" data-a="receipt" style="margin-bottom:9px">${icon('receipt')}Scan a receipt — a whole trip at once</button>
-    <button class="btn ghost left" data-a="photo" style="margin-bottom:9px">${icon('image')}Photograph a shelf</button>
+    <button class="btn ghost left" data-a="photo" style="margin-bottom:9px">${icon('image')}Photograph what you bought<span class="hintline">Lay it on the counter — everything goes in at once</span></button>
     <button class="btn ghost left" data-a="type" style="margin-bottom:14px">${icon('pencil')}Type it in</button>
     <input type="file" accept="image/*" capture="environment" id="afp" class="hide">
     <input type="file" accept="image/*" id="afr" class="hide">
@@ -5730,8 +5745,7 @@ function restockSheet(c) {
   const dlg = document.getElementById('dlg');
   dlg.innerHTML = `<div class="eyebrow">${esc(storeLabel(c))} · bought ${c.count || 0}×</div>
     <h1 style="margin:6px 0 12px">${esc(c.name)}</h1>
-    <label><span class="lbl">Shelf</span><select id="rloc2">${S.household.locations.map(l =>
-      `<option value="${l.id}">${esc(l.name)}</option>`).join('')}</select></label>
+    <label><span class="lbl">Shelf</span><select id="rloc2">${locOptions()}</select></label>
     <label><span class="lbl">How many</span><input type="number" id="rq" value="1" min="1"></label>
     <button class="btn cold" data-a="stock">✓ Put it back in the pantry</button>
     <button class="btn ghost left" data-a="list" style="margin-top:8px">${icon('cart')}Just add it to the shopping list</button>
@@ -5775,6 +5789,19 @@ function restockSheet(c) {
    eat the yoghurt and its pin is gone. A map you have to re-photograph is
    a map that is wrong by Thursday, which is how this idea usually dies.
    ================================================================ */
+/* Every "which shelf?" dropdown in the app renders through here, so the
+   moment you photograph a crisper drawer you can also put food straight
+   into it. Zones are indented under their shelf rather than listed flat —
+   a flat list of "Fridge, Top shelf, Crisper, Pantry, Baking shelf" gives
+   no clue which drawer belongs to which appliance. */
+function locOptions(sel = '') {
+  return topLocations().map(l => {
+    const kids = zonesOf(l.id);
+    return `<option value="${l.id}"${l.id === sel ? ' selected' : ''}>${esc(l.name)}</option>` +
+      kids.map(z => `<option value="${z.id}"${z.id === sel ? ' selected' : ''}>&nbsp;&nbsp;└ ${esc(z.name)}</option>`).join('');
+  }).join('');
+}
+
 const topLocations = () => (S.household?.locations || []).filter(l => !l.parent);
 const zonesOf = id => (S.household?.locations || []).filter(l => l.parent === id);
 const locFamily = id => [id, ...zonesOf(id).map(z => z.id)];

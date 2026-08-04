@@ -30,6 +30,8 @@ PLAYWRIGHT_MODULE=playwright CHROME_PATH=/path/to/chrome sh test/run.sh
 | `theme-test` | light/dark override beating the phone, and the status-bar colour following the app |
 | `ai-test` | model auto-pick, dead-model healing, quota-error wording |
 | `history-test` | per-store history, the confirm layer, and editing/merging history records |
+| `insights-test` | the eaten/wasted maths, rankings, date windowing, and the spending guard |
+| `map-test` | zones-as-locations, pin placement, and that the map maintains itself |
 
 `genlist.js` is not a test — it regenerates `my-list.json` from the shopping
 list in its header, by driving the app's own `addStore`/`addToList`/
