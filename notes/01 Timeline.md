@@ -116,3 +116,32 @@ lists the five concrete gaps in Stocked today.
 Discovered in the same batch: **"Stocked" is already a shipping App Store
 app** in the same category with the same pitch. The name has to change
 before any store filing — see `[[12 Going Public]]`.
+
+## 2026-08-04 — Building the whole reference list
+The user went through all 45 features found in the screenshots, chose
+essentially all of them, and asked for the lot. Shipped in order, each with
+its own suite:
+- **Design pass** — floating pill nav, stat tiles, shelf photo cards, the
+  split `−`/`+` tile footer. `[[13 Design Language]]`.
+- **Insights** — eaten-vs-binned rings, most-eaten/most-wasted rankings,
+  spending by category, 30/90/365 windows. Computed entirely from
+  tombstoned items; nothing new is recorded.
+- **The kitchen map** — photograph a shelf, tap food onto where it sits.
+  Zones are locations with a `parent`, so `loc` still works everywhere;
+  items gained `spot` {x,y} as fractions. Pins read live, so the map
+  maintains itself.
+- **Shopping** — "didn't get last time", low-stock thresholds, prices and a
+  running basket total.
+- **Store map** — the list drawn as the walk, per-store aisle names, store
+  colour and badge. Exposed three live `guessCat` collisions ("tortilla
+  chips" → Bakery, "potato chips" → Produce, "tinned tomatoes" → Produce),
+  now fixed and covered.
+- **Recipe import** — schema.org JSON-LD when a site allows the fetch, an
+  honest paste fallback when CORS blocks it, plus source/rating/times-cooked.
+- **Expiry calendar** and the list progress bar with member faces.
+
+Suites went 13 → 19 (`insights`, `map`, `shop`, `storemap`, `recipe`,
+`calendar`). Deferred by the user's own sequencing: everything needing the
+hosted backend (community photos and layouts, multi-language, global impact)
+and everything needing the native wrap (widgets, Siri, geofencing,
+pickup/delivery ordering).

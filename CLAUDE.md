@@ -20,12 +20,15 @@ seconds.** Test before claiming done.
 ## Architecture, in one paragraph
 
 Everything is `index.html` (~5300+ lines): markup, styles, and app logic in
-one file, no build step, no framework. `sw.js` is the offline service worker
+one file, no build step, no framework. **Zones (a fridge shelf, a drawer)
+are locations carrying a `parent`** — not a second hierarchy — so `item.loc`
+keeps working everywhere; items gained `spot` {x,y} for map pins. Shelf
+dropdowns all render through `locOptions()`. `sw.js` is the offline service worker
 (cache-first shell, `IMG` cache for product thumbnails that survives app
 updates). `DB` (index.html) is a tiny IndexedDB wrapper with an in-memory
 fallback for contexts where IndexedDB is unavailable (see
 `[[08 iOS Safari Quirks]]`). `manifest.webmanifest` + `icon.svg` +
-`apple-touch-icon.png` are the installable-app identity. `test/` is 12
+`apple-touch-icon.png` are the installable-app identity. `test/` is 19
 Playwright-driven suites that boot the real `index.html` and call the app's
 own functions — nothing is mocked (`sh test/run.sh` runs all of them; keep
 them green).

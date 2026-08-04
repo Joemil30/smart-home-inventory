@@ -6714,7 +6714,10 @@ function viewInsights(app) {
     app.appendChild(el(`<div class="card">${rankBars(d.binnedBy, 'var(--spoil)')}</div>`));
   }
 
-  app.appendChild(el(`<div class="sect"><h3>Spending</h3>${d.spend ? `<span class="n">$${d.spend.toFixed(0)}</span>` : ''}</div>`));
+  /* Cents below a hundred, whole dollars above it. "$5" for a $4.50 shop is
+     the kind of small lie that makes people stop trusting the whole screen. */
+  const money = n => n >= 100 ? `$${Math.round(n)}` : `$${n.toFixed(2)}`;
+  app.appendChild(el(`<div class="sect"><h3>Spending</h3>${d.spend ? `<span class="n">${money(d.spend)}</span>` : ''}</div>`));
   app.appendChild(d.catSpend.length
     ? el(`<div class="card">${rankBars(d.catSpend.map(c => ({ name: c.name, n: c.n })), 'var(--cold)')}</div>`)
     : el(`<div class="card note" style="padding:14px">No prices recorded yet. Put a price on things as you
