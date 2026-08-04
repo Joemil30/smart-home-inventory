@@ -8,7 +8,7 @@
    phone that already installed the app keeps serving the shell it cached
    until this string changes — if sw.js is byte-identical the browser never
    even re-registers, and shipped fixes silently never arrive. */
-const CACHE = 'stocked-v54';      // app shell — wiped on each version bump
+const CACHE = 'sidebyside-old-v42';   // own family: must never touch the live app's caches      // app shell — wiped on each version bump
 // Deliberately still 'shelflife-' after the rename: this cache holds every
 // product thumbnail already downloaded. Renaming it would orphan the lot and
 // blank out photos for anyone offline.
@@ -46,10 +46,10 @@ self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
       // keep the shell for this version and the persistent image cache; drop the rest
-      // Scoped to our own family on purpose. A second build of this app can be
-      // installed alongside (see old/), and Cache Storage is per-origin, so a
-      // blanket sweep would have the two wiping each other every launch.
-      .then(ks => Promise.all(ks.filter(k => k.startsWith('stocked-') && k !== CACHE).map(k => caches.delete(k))))
+      // Only ever delete caches in OUR family. Cache Storage is per-origin, so
+      // the blanket 'delete everything that isn't mine' this used to do would
+      // wipe the live app's shell on every launch, and it would wipe ours back.
+      .then(ks => Promise.all(ks.filter(k => k.startsWith('sidebyside-old-') && k !== CACHE).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });

@@ -1,0 +1,16 @@
+{
+  "name": "Stocked (Jul 29)",
+  "short_name": "Jul 29",
+  "id": "/smart-home-inventory/old/",
+  "description": "The 29 July build, kept installable next to the current one for comparison.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F7F9F7",
+  "theme_color": "#8A5A12",
+  "categories": ["food", "lifestyle", "utilities"],
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

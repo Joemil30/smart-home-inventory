@@ -1,0 +1,3782 @@
+{
+ "v": 2,
+ "at": 1785273012869,
+ "household": {
+  "id": "household",
+  "locations": [],
+  "members": [],
+  "staples": [],
+  "people": 2,
+  "stores": [
+   {
+    "id": "ms55ggt0ftrkeb",
+    "name": "Costco",
+    "emoji": "🏪"
+   },
+   {
+    "id": "ms55gguuoab3jn",
+    "name": "Greens",
+    "emoji": "🥬"
+   },
+   {
+    "id": "ms55ggv2eax7as",
+    "name": "ShopRite",
+    "emoji": "🛒"
+   },
+   {
+    "id": "ms55ggvjiwfd0c",
+    "name": "Restaurant Depot",
+    "emoji": "🏬"
+   },
+   {
+    "id": "ms55ggvp84fm2r",
+    "name": "Nonno's",
+    "emoji": "👨‍🍳"
+   },
+   {
+    "id": "ms55ggvsriarit",
+    "name": "Home Depot",
+    "emoji": "🔧"
+   },
+   {
+    "id": "ms55ggvvlomgyj",
+    "name": "Mary Kay",
+    "emoji": "💄"
+   }
+  ],
+  "aisleOrder": {},
+  "updatedAt": 1785273012859
+ },
+ "cfg": {},
+ "items": [],
+ "catalog": [
+  {
+   "id": "m:pesto blackened chicken wrap lettuce tomato red onion cucumber avocado extra caesar",
+   "kind": "meal",
+   "name": "Pesto blackened chicken wrap (lettuce, tomato, red onion, cucumber, avocado, extra Caesar)",
+   "brand": "",
+   "cat": "",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1782681012866,
+   "last": 1782681012866,
+   "learned": 1782681012866,
+   "deleted": false,
+   "updatedAt": 1785273012866
+  },
+  {
+   "id": "m:turkey provolone wrap lettuce tomato onion cucumber mayo",
+   "kind": "meal",
+   "name": "Turkey provolone wrap (lettuce, tomato, onion, cucumber, mayo)",
+   "brand": "",
+   "cat": "",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1782681012866,
+   "last": 1782681012866,
+   "learned": 1782681012866,
+   "deleted": false,
+   "updatedAt": 1785273012867
+  },
+  {
+   "id": "n:all laundry detergent",
+   "kind": "product",
+   "name": "All laundry detergent",
+   "brand": "",
+   "cat": "household",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1782767412817,
+   "last": 1782767412817,
+   "learned": 1782767412817,
+   "deleted": false,
+   "updatedAt": 1785273012817,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1782767412817
+    }
+   }
+  },
+  {
+   "id": "n:almond flour",
+   "kind": "product",
+   "name": "Almond flour",
+   "brand": "",
+   "cat": "baking",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1780780212783,
+   "last": 1780780212783,
+   "learned": 1780780212783,
+   "deleted": false,
+   "updatedAt": 1785273012783,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1780780212783
+    }
+   }
+  },
+  {
+   "id": "n:arborio rice",
+   "kind": "product",
+   "name": "Arborio rice",
+   "brand": "",
+   "cat": "dry-pasta-rice",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1780434612836,
+   "last": 1780434612836,
+   "learned": 1780434612836,
+   "deleted": false,
+   "updatedAt": 1785273012836,
+   "stores": {
+    "ms55ggv2eax7as": {
+     "n": 1,
+     "last": 1780434612836
+    }
+   }
+  },
+  {
+   "id": "n:artichoke",
+   "kind": "product",
+   "name": "Artichokes",
+   "brand": "",
+   "cat": "produce-hardy",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1779743412839,
+   "last": 1779743412839,
+   "learned": 1779743412839,
+   "deleted": false,
+   "updatedAt": 1785273012839,
+   "stores": {
+    "ms55ggv2eax7as": {
+     "n": 1,
+     "last": 1779743412839
+    }
+   }
+  },
+  {
+   "id": "n:arugula",
+   "kind": "product",
+   "name": "Arugula",
+   "brand": "",
+   "cat": "produce-leafy",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1782853812817,
+   "last": 1782853812817,
+   "learned": 1782853812817,
+   "deleted": false,
+   "updatedAt": 1785273012817,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1782853812817
+    }
+   }
+  },
+  {
+   "id": "n:avocado",
+   "kind": "product",
+   "name": "Avocados",
+   "brand": "",
+   "cat": "produce-avocado",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 2,
+   "first": 1782681012770,
+   "last": 1782594612770,
+   "learned": 1782681012770,
+   "deleted": false,
+   "updatedAt": 1785273012770,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 2,
+     "last": 1782594612770
+    }
+   }
+  },
+  {
+   "id": "n:avocado oil",
+   "kind": "product",
+   "name": "Avocado oil",
+   "brand": "",
+   "cat": "oil-vinegar",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1782940212817,
+   "last": 1782940212817,
+   "learned": 1782940212817,
+   "deleted": false,
+   "updatedAt": 1785273012817,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1782940212817
+    }
+   }
+  },
+  {
+   "id": "n:bacon",
+   "kind": "product",
+   "name": "Bacon",
+   "brand": "",
+   "cat": "meat-raw",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 2,
+   "first": 1778533812797,
+   "last": 1778447412797,
+   "learned": 1778533812797,
+   "deleted": false,
+   "updatedAt": 1785273012797,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 2,
+     "last": 1778447412797
+    }
+   }
+  },
+  {
+   "id": "n:banana",
+   "kind": "product",
+   "name": "Bananas",
+   "brand": "",
+   "cat": "produce-banana",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1776892212806,
+   "last": 1776892212806,
+   "learned": 1776892212806,
+   "deleted": false,
+   "updatedAt": 1785273012806,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1776892212806
+    }
+   }
+  },
+  {
+   "id": "n:basil",
+   "kind": "product",
+   "name": "Basil",
+   "brand": "",
+   "cat": "herbs-fresh",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1778274612850,
+   "last": 1778274612850,
+   "learned": 1778274612850,
+   "deleted": false,
+   "updatedAt": 1785273012850,
+   "stores": {
+    "ms55ggvjiwfd0c": {
+     "n": 1,
+     "last": 1778274612850
+    }
+   }
+  },
+  {
+   "id": "n:bell pepper",
+   "kind": "product",
+   "name": "Peppers",
+   "brand": "",
+   "cat": "produce-hardy",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1777151412804,
+   "last": 1777151412804,
+   "learned": 1777151412804,
+   "deleted": false,
+   "updatedAt": 1785273012804,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1777151412804
+    }
+   }
+  },
+  {
+   "id": "n:black bell pepper",
+   "kind": "product",
+   "name": "Black pepper",
+   "brand": "",
+   "cat": "spice",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1781557812778,
+   "last": 1781557812778,
+   "learned": 1781557812778,
+   "deleted": false,
+   "updatedAt": 1785273012778,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1781557812778
+    }
+   }
+  },
+  {
+   "id": "n:blackberry",
+   "kind": "product",
+   "name": "Blackberries",
+   "brand": "",
+   "cat": "produce-berry",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 2,
+   "first": 1780521012785,
+   "last": 1779397812841,
+   "learned": 1780521012785,
+   "deleted": false,
+   "updatedAt": 1785273012841,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1780521012785
+    },
+    "ms55ggv2eax7as": {
+     "n": 1,
+     "last": 1779397812841
+    }
+   }
+  },
+  {
+   "id": "n:blueberry",
+   "kind": "product",
+   "name": "Blueberries",
+   "brand": "",
+   "cat": "produce-berry",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 2,
+   "first": 1778101812799,
+   "last": 1779570612840,
+   "learned": 1778101812799,
+   "deleted": false,
+   "updatedAt": 1785273012840,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1778101812799
+    },
+    "ms55ggv2eax7as": {
+     "n": 1,
+     "last": 1779570612840
+    }
+   }
+  },
+  {
+   "id": "n:broccoli rabe",
+   "kind": "product",
+   "name": "Broccoli rabe",
+   "brand": "",
+   "cat": "produce-hardy",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 3,
+   "first": 1780953012833,
+   "last": 1780780212834,
+   "learned": 1780953012833,
+   "deleted": false,
+   "updatedAt": 1785273012834,
+   "stores": {
+    "ms55ggv2eax7as": {
+     "n": 3,
+     "last": 1780780212834
+    }
+   }
+  },
+  {
+   "id": "n:broccolini",
+   "kind": "product",
+   "name": "Broccolini",
+   "brand": "",
+   "cat": "produce-hardy",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1782594612823,
+   "last": 1782594612823,
+   "learned": 1782594612823,
+   "deleted": false,
+   "updatedAt": 1785273012823,
+   "stores": {
+    "ms55gguuoab3jn": {
+     "n": 1,
+     "last": 1782594612823
+    }
+   }
+  },
+  {
+   "id": "n:brown egg",
+   "kind": "product",
+   "name": "Brown eggs",
+   "brand": "",
+   "cat": "eggs",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1782249012773,
+   "last": 1782249012773,
+   "learned": 1782249012773,
+   "deleted": false,
+   "updatedAt": 1785273012773,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1782249012773
+    }
+   }
+  },
+  {
+   "id": "n:brown sugar",
+   "kind": "product",
+   "name": "Brown sugar",
+   "brand": "",
+   "cat": "baking",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1777065012805,
+   "last": 1777065012805,
+   "learned": 1777065012805,
+   "deleted": false,
+   "updatedAt": 1785273012805,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1777065012805
+    }
+   }
+  },
+  {
+   "id": "n:brussel sprout",
+   "kind": "product",
+   "name": "Brussels sprouts",
+   "brand": "",
+   "cat": "produce-hardy",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1779570612791,
+   "last": 1779570612791,
+   "learned": 1779570612791,
+   "deleted": false,
+   "updatedAt": 1785273012791,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1779570612791
+    }
+   }
+  },
+  {
+   "id": "n:cara cara orange",
+   "kind": "product",
+   "name": "Cara Cara oranges",
+   "brand": "",
+   "cat": "produce-citrus",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1777410612803,
+   "last": 1777410612803,
+   "learned": 1777410612803,
+   "deleted": false,
+   "updatedAt": 1785273012803,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1777410612803
+    }
+   }
+  },
+  {
+   "id": "n:carrot",
+   "kind": "product",
+   "name": "Carrots",
+   "brand": "",
+   "cat": "produce-root",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1778274612798,
+   "last": 1778274612798,
+   "learned": 1778274612798,
+   "deleted": false,
+   "updatedAt": 1785273012798,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1778274612798
+    }
+   }
+  },
+  {
+   "id": "n:cayenne bell pepper",
+   "kind": "product",
+   "name": "Cayenne pepper",
+   "brand": "",
+   "cat": "spice",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1778447412849,
+   "last": 1778447412849,
+   "learned": 1778447412849,
+   "deleted": false,
+   "updatedAt": 1785273012849,
+   "stores": {
+    "ms55ggvjiwfd0c": {
+     "n": 1,
+     "last": 1778447412849
+    }
+   }
+  },
+  {
+   "id": "n:celery",
+   "kind": "product",
+   "name": "Celery",
+   "brand": "",
+   "cat": "produce-hardy",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 2,
+   "first": 1783026612816,
+   "last": 1780175412837,
+   "learned": 1783026612816,
+   "deleted": false,
+   "updatedAt": 1785273012837,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1783026612816
+    },
+    "ms55ggv2eax7as": {
+     "n": 1,
+     "last": 1780175412837
+    }
+   }
+  },
+  {
+   "id": "n:chewy granola bar",
+   "kind": "product",
+   "name": "Chewy granola bars",
+   "brand": "",
+   "cat": "snack",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1776719412807,
+   "last": 1776719412807,
+   "learned": 1776719412807,
+   "deleted": false,
+   "updatedAt": 1785273012807,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1776719412807
+    }
+   }
+  },
+  {
+   "id": "n:chicken bouillon",
+   "kind": "product",
+   "name": "Chicken bouillon",
+   "brand": "",
+   "cat": "spice",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1778188212798,
+   "last": 1778188212798,
+   "learned": 1778188212798,
+   "deleted": false,
+   "updatedAt": 1785273012798,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1778188212798
+    }
+   }
+  },
+  {
+   "id": "n:chicken salad",
+   "kind": "product",
+   "name": "Chicken salad",
+   "brand": "",
+   "cat": "deli-meat",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1781644212828,
+   "last": 1781644212828,
+   "learned": 1781644212828,
+   "deleted": false,
+   "updatedAt": 1785273012829,
+   "stores": {
+    "ms55gguuoab3jn": {
+     "n": 1,
+     "last": 1781644212828
+    }
+   }
+  },
+  {
+   "id": "n:chocolate chip",
+   "kind": "product",
+   "name": "Chocolate chips",
+   "brand": "",
+   "cat": "baking",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1783113012815,
+   "last": 1783113012815,
+   "learned": 1783113012815,
+   "deleted": false,
+   "updatedAt": 1785273012815,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1783113012815
+    }
+   }
+  },
+  {
+   "id": "n:chocolate covered egg",
+   "kind": "product",
+   "name": "Chocolate covered eggs",
+   "brand": "",
+   "cat": "eggs",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1780521012835,
+   "last": 1780521012835,
+   "learned": 1780521012835,
+   "deleted": false,
+   "updatedAt": 1785273012835,
+   "stores": {
+    "ms55ggv2eax7as": {
+     "n": 1,
+     "last": 1780521012835
+    }
+   }
+  },
+  {
+   "id": "n:chocolate protein ice cream",
+   "kind": "product",
+   "name": "Chocolate protein ice cream",
+   "brand": "",
+   "cat": "ice-cream",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1781817012827,
+   "last": 1781817012827,
+   "learned": 1781817012827,
+   "deleted": false,
+   "updatedAt": 1785273012827,
+   "stores": {
+    "ms55gguuoab3jn": {
+     "n": 1,
+     "last": 1781817012827
+    }
+   }
+  },
+  {
+   "id": "n:chopped clam",
+   "kind": "product",
+   "name": "Chopped clams",
+   "brand": "",
+   "cat": "fish-raw",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1780089012837,
+   "last": 1780089012837,
+   "learned": 1780089012837,
+   "deleted": false,
+   "updatedAt": 1785273012837,
+   "stores": {
+    "ms55ggv2eax7as": {
+     "n": 1,
+     "last": 1780089012837
+    }
+   }
+  },
+  {
+   "id": "n:cilantro",
+   "kind": "product",
+   "name": "Cilantro",
+   "brand": "",
+   "cat": "herbs-fresh",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1782162612826,
+   "last": 1782162612826,
+   "learned": 1782162612826,
+   "deleted": false,
+   "updatedAt": 1785273012826,
+   "stores": {
+    "ms55gguuoab3jn": {
+     "n": 1,
+     "last": 1782162612826
+    }
+   }
+  },
+  {
+   "id": "n:clam",
+   "kind": "product",
+   "name": "Clams",
+   "brand": "",
+   "cat": "fish-raw",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1777324212803,
+   "last": 1777324212803,
+   "learned": 1777324212803,
+   "deleted": false,
+   "updatedAt": 1785273012803,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1777324212803
+    }
+   }
+  },
+  {
+   "id": "n:cocoa powder",
+   "kind": "product",
+   "name": "Cocoa powder",
+   "brand": "",
+   "cat": "baking",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1783285812765,
+   "last": 1783285812765,
+   "learned": 1783285812765,
+   "deleted": false,
+   "updatedAt": 1785273012765,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1783285812765
+    }
+   }
+  },
+  {
+   "id": "n:coconut water 1 5l",
+   "kind": "product",
+   "name": "Coconut water 1.5L",
+   "brand": "",
+   "cat": "juice-drink",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1780866612783,
+   "last": 1780866612783,
+   "learned": 1780866612783,
+   "deleted": false,
+   "updatedAt": 1785273012783,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1780866612783
+    }
+   }
+  },
+  {
+   "id": "n:crab meat",
+   "kind": "product",
+   "name": "Crab meat",
+   "brand": "",
+   "cat": "fish-raw",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1776633012807,
+   "last": 1776633012807,
+   "learned": 1776633012807,
+   "deleted": false,
+   "updatedAt": 1785273012808,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1776633012807
+    }
+   }
+  },
+  {
+   "id": "n:cranberry juice",
+   "kind": "product",
+   "name": "Cranberry juice",
+   "brand": "",
+   "cat": "juice-drink",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1779743412790,
+   "last": 1779743412790,
+   "learned": 1779743412790,
+   "deleted": false,
+   "updatedAt": 1785273012790,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1779743412790
+    }
+   }
+  },
+  {
+   "id": "n:crisco",
+   "kind": "product",
+   "name": "Crisco",
+   "brand": "",
+   "cat": "baking",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1779138612842,
+   "last": 1779138612842,
+   "learned": 1779138612842,
+   "deleted": false,
+   "updatedAt": 1785273012842,
+   "stores": {
+    "ms55ggv2eax7as": {
+     "n": 1,
+     "last": 1779138612842
+    }
+   }
+  },
+  {
+   "id": "n:dark chocolate",
+   "kind": "product",
+   "name": "Dark chocolate",
+   "brand": "",
+   "cat": "snack",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1778793012847,
+   "last": 1778793012847,
+   "learned": 1778793012847,
+   "deleted": false,
+   "updatedAt": 1785273012847,
+   "stores": {
+    "ms55ggvjiwfd0c": {
+     "n": 1,
+     "last": 1778793012847
+    }
+   }
+  },
+  {
+   "id": "n:dark chocolate quinoa crisp",
+   "kind": "product",
+   "name": "Dark chocolate quinoa crisps",
+   "brand": "",
+   "cat": "baking",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1783199412815,
+   "last": 1783199412815,
+   "learned": 1783199412815,
+   "deleted": false,
+   "updatedAt": 1785273012815,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1783199412815
+    }
+   }
+  },
+  {
+   "id": "n:dinner napkin",
+   "kind": "product",
+   "name": "Dinner napkins",
+   "brand": "",
+   "cat": "household",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1783285812814,
+   "last": 1783285812814,
+   "learned": 1783285812814,
+   "deleted": false,
+   "updatedAt": 1785273012814,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1783285812814
+    }
+   }
+  },
+  {
+   "id": "n:dish soap",
+   "kind": "product",
+   "name": "Dish soap",
+   "brand": "",
+   "cat": "household",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1783372212814,
+   "last": 1783372212814,
+   "learned": 1783372212814,
+   "deleted": false,
+   "updatedAt": 1785273012814,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1783372212814
+    }
+   }
+  },
+  {
+   "id": "n:double quiche",
+   "kind": "product",
+   "name": "Double quiche",
+   "brand": "",
+   "cat": "other",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1781212212780,
+   "last": 1781212212780,
+   "learned": 1781212212780,
+   "deleted": false,
+   "updatedAt": 1785273012780,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1781212212780
+    }
+   }
+  },
+  {
+   "id": "n:eggplant",
+   "kind": "product",
+   "name": "Eggplant",
+   "brand": "",
+   "cat": "produce-hardy",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1783458612813,
+   "last": 1783458612813,
+   "learned": 1783458612813,
+   "deleted": false,
+   "updatedAt": 1785273012813,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1783458612813
+    }
+   }
+  },
+  {
+   "id": "n:espresso",
+   "kind": "product",
+   "name": "Espresso",
+   "brand": "",
+   "cat": "coffee-tea",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1780002612838,
+   "last": 1780002612838,
+   "learned": 1780002612838,
+   "deleted": false,
+   "updatedAt": 1785273012838,
+   "stores": {
+    "ms55ggv2eax7as": {
+     "n": 1,
+     "last": 1780002612838
+    }
+   }
+  },
+  {
+   "id": "n:flat leaf parsley",
+   "kind": "product",
+   "name": "Flat leaf parsley",
+   "brand": "",
+   "cat": "herbs-fresh",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 2,
+   "first": 1782249012825,
+   "last": 1780348212836,
+   "learned": 1782249012825,
+   "deleted": false,
+   "updatedAt": 1785273012836,
+   "stores": {
+    "ms55gguuoab3jn": {
+     "n": 1,
+     "last": 1782249012825
+    },
+    "ms55ggv2eax7as": {
+     "n": 1,
+     "last": 1780348212836
+    }
+   }
+  },
+  {
+   "id": "n:flower",
+   "kind": "product",
+   "name": "Flowers",
+   "brand": "",
+   "cat": "other",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1783545012813,
+   "last": 1783545012813,
+   "learned": 1783545012813,
+   "deleted": false,
+   "updatedAt": 1785273012813,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1783545012813
+    }
+   }
+  },
+  {
+   "id": "n:fresh ginger",
+   "kind": "product",
+   "name": "Fresh ginger",
+   "brand": "",
+   "cat": "produce-root",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1781903412827,
+   "last": 1781903412827,
+   "learned": 1781903412827,
+   "deleted": false,
+   "updatedAt": 1785273012827,
+   "stores": {
+    "ms55gguuoab3jn": {
+     "n": 1,
+     "last": 1781903412827
+    }
+   }
+  },
+  {
+   "id": "n:fresh mozzarella",
+   "kind": "product",
+   "name": "Fresh mozzarella",
+   "brand": "",
+   "cat": "dairy-cheese-hard",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1783631412812,
+   "last": 1783631412812,
+   "learned": 1783631412812,
+   "deleted": false,
+   "updatedAt": 1785273012812,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1783631412812
+    }
+   }
+  },
+  {
+   "id": "n:frozen chicken",
+   "kind": "product",
+   "name": "Frozen chicken",
+   "brand": "",
+   "cat": "frozen-meal",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 2,
+   "first": 1781903412776,
+   "last": 1781817012776,
+   "learned": 1781903412776,
+   "deleted": false,
+   "updatedAt": 1785273012776,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 2,
+     "last": 1781817012776
+    }
+   }
+  },
+  {
+   "id": "n:frozen gf chicken tender real good",
+   "kind": "product",
+   "name": "Frozen GF chicken tenders (Real Good)",
+   "brand": "",
+   "cat": "frozen-meal",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1780348212786,
+   "last": 1780348212786,
+   "learned": 1780348212786,
+   "deleted": false,
+   "updatedAt": 1785273012786,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1780348212786
+    }
+   }
+  },
+  {
+   "id": "n:frozen mango",
+   "kind": "product",
+   "name": "Frozen mangoes",
+   "brand": "",
+   "cat": "frozen-meal",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 2,
+   "first": 1777669812801,
+   "last": 1777583412802,
+   "learned": 1777669812801,
+   "deleted": false,
+   "updatedAt": 1785273012802,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 2,
+     "last": 1777583412802
+    }
+   }
+  },
+  {
+   "id": "n:frozen organic strawberry",
+   "kind": "product",
+   "name": "Frozen organic strawberries",
+   "brand": "",
+   "cat": "frozen-meal",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1779829812789,
+   "last": 1779829812789,
+   "learned": 1779829812789,
+   "deleted": false,
+   "updatedAt": 1785273012789,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1779829812789
+    }
+   }
+  },
+  {
+   "id": "n:frozen pea",
+   "kind": "product",
+   "name": "Frozen peas",
+   "brand": "",
+   "cat": "frozen-meal",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1781039412832,
+   "last": 1781039412832,
+   "learned": 1781039412832,
+   "deleted": false,
+   "updatedAt": 1785273012832,
+   "stores": {
+    "ms55ggv2eax7as": {
+     "n": 1,
+     "last": 1781039412832
+    }
+   }
+  },
+  {
+   "id": "n:garbanzo bean",
+   "kind": "product",
+   "name": "Chickpeas",
+   "brand": "",
+   "cat": "canned",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1781989812775,
+   "last": 1781989812775,
+   "learned": 1781989812775,
+   "deleted": false,
+   "updatedAt": 1785273012775,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1781989812775
+    }
+   }
+  },
+  {
+   "id": "n:garlic",
+   "kind": "product",
+   "name": "Garlic",
+   "brand": "",
+   "cat": "produce-root",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1782681012823,
+   "last": 1782681012823,
+   "learned": 1782681012823,
+   "deleted": false,
+   "updatedAt": 1785273012823,
+   "stores": {
+    "ms55gguuoab3jn": {
+     "n": 1,
+     "last": 1782681012823
+    }
+   }
+  },
+  {
+   "id": "n:garlic powder",
+   "kind": "product",
+   "name": "Garlic powder",
+   "brand": "",
+   "cat": "spice",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1782767412769,
+   "last": 1782767412769,
+   "learned": 1782767412769,
+   "deleted": false,
+   "updatedAt": 1785273012769,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1782767412769
+    }
+   }
+  },
+  {
+   "id": "n:gf bread",
+   "kind": "product",
+   "name": "GF bread",
+   "brand": "",
+   "cat": "bread",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1783717812811,
+   "last": 1783717812811,
+   "learned": 1783717812811,
+   "deleted": false,
+   "updatedAt": 1785273012812,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1783717812811
+    }
+   }
+  },
+  {
+   "id": "n:gf pancake mix",
+   "kind": "product",
+   "name": "GF pancake mix",
+   "brand": "",
+   "cat": "baking",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1781557812829,
+   "last": 1781557812829,
+   "learned": 1781557812829,
+   "deleted": false,
+   "updatedAt": 1785273012829,
+   "stores": {
+    "ms55gguuoab3jn": {
+     "n": 1,
+     "last": 1781557812829
+    }
+   }
+  },
+  {
+   "id": "n:gf rice ball",
+   "kind": "product",
+   "name": "GF rice balls",
+   "brand": "",
+   "cat": "dry-pasta-rice",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1778965812843,
+   "last": 1778965812843,
+   "learned": 1778965812843,
+   "deleted": false,
+   "updatedAt": 1785273012843,
+   "stores": {
+    "ms55ggv2eax7as": {
+     "n": 1,
+     "last": 1778965812843
+    }
+   }
+  },
+  {
+   "id": "n:golden potato",
+   "kind": "product",
+   "name": "Golden potatoes",
+   "brand": "",
+   "cat": "produce-root",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1782508212771,
+   "last": 1782508212771,
+   "learned": 1782508212771,
+   "deleted": false,
+   "updatedAt": 1785273012771,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1782508212771
+    }
+   }
+  },
+  {
+   "id": "n:golden raisin",
+   "kind": "product",
+   "name": "Golden raisins",
+   "brand": "",
+   "cat": "snack",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1779225012842,
+   "last": 1779225012842,
+   "learned": 1779225012842,
+   "deleted": false,
+   "updatedAt": 1785273012842,
+   "stores": {
+    "ms55ggv2eax7as": {
+     "n": 1,
+     "last": 1779225012842
+    }
+   }
+  },
+  {
+   "id": "n:granny smith apple",
+   "kind": "product",
+   "name": "Granny Smith apples",
+   "brand": "",
+   "cat": "produce-hardy",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1782508212824,
+   "last": 1782508212824,
+   "learned": 1782508212824,
+   "deleted": false,
+   "updatedAt": 1785273012824,
+   "stores": {
+    "ms55gguuoab3jn": {
+     "n": 1,
+     "last": 1782508212824
+    }
+   }
+  },
+  {
+   "id": "n:grass fed beef stick kirkland",
+   "kind": "product",
+   "name": "Grass fed beef sticks (Kirkland)",
+   "brand": "",
+   "cat": "meat-raw",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1784063412758,
+   "last": 1784063412758,
+   "learned": 1784063412758,
+   "deleted": false,
+   "updatedAt": 1785273012758,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1784063412758
+    }
+   }
+  },
+  {
+   "id": "n:grated cheese",
+   "kind": "product",
+   "name": "Grated cheese",
+   "brand": "",
+   "cat": "dairy-cheese-hard",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1777842612854,
+   "last": 1777842612854,
+   "learned": 1777842612854,
+   "deleted": false,
+   "updatedAt": 1785273012854,
+   "stores": {
+    "ms55ggvp84fm2r": {
+     "n": 1,
+     "last": 1777842612854
+    }
+   }
+  },
+  {
+   "id": "n:greek yogurt",
+   "kind": "product",
+   "name": "Greek yogurt",
+   "brand": "",
+   "cat": "dairy-yogurt",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1777756212801,
+   "last": 1777756212801,
+   "learned": 1777756212801,
+   "deleted": false,
+   "updatedAt": 1785273012801,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1777756212801
+    }
+   }
+  },
+  {
+   "id": "n:green bean",
+   "kind": "product",
+   "name": "Green beans",
+   "brand": "",
+   "cat": "produce-hardy",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 2,
+   "first": 1783804212811,
+   "last": 1778879412843,
+   "learned": 1783804212811,
+   "deleted": false,
+   "updatedAt": 1785273012843,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1783804212811
+    },
+    "ms55ggv2eax7as": {
+     "n": 1,
+     "last": 1778879412843
+    }
+   }
+  },
+  {
+   "id": "n:ground beef",
+   "kind": "product",
+   "name": "Ground beef",
+   "brand": "",
+   "cat": "meat-raw",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1782421812824,
+   "last": 1782421812824,
+   "learned": 1782421812824,
+   "deleted": false,
+   "updatedAt": 1785273012824,
+   "stores": {
+    "ms55gguuoab3jn": {
+     "n": 1,
+     "last": 1782421812824
+    }
+   }
+  },
+  {
+   "id": "n:ground beef 85 15",
+   "kind": "product",
+   "name": "Ground beef 85/15",
+   "brand": "",
+   "cat": "meat-raw",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1782421812772,
+   "last": 1782421812772,
+   "learned": 1782421812772,
+   "deleted": false,
+   "updatedAt": 1785273012772,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1782421812772
+    }
+   }
+  },
+  {
+   "id": "n:half and half",
+   "kind": "product",
+   "name": "Half and half",
+   "brand": "",
+   "cat": "dairy-milk",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1778361012798,
+   "last": 1778361012798,
+   "learned": 1778361012798,
+   "deleted": false,
+   "updatedAt": 1785273012798,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1778361012798
+    }
+   }
+  },
+  {
+   "id": "n:heavy cream",
+   "kind": "product",
+   "name": "Heavy cream",
+   "brand": "",
+   "cat": "dairy-milk",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1781644212777,
+   "last": 1781644212777,
+   "learned": 1781644212777,
+   "deleted": false,
+   "updatedAt": 1785273012777,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1781644212777
+    }
+   }
+  },
+  {
+   "id": "n:hot turkey and provolone sandwich",
+   "kind": "product",
+   "name": "Hot turkey and provolone sandwich",
+   "brand": "",
+   "cat": "deli-meat",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1783890612810,
+   "last": 1783890612810,
+   "learned": 1783890612810,
+   "deleted": false,
+   "updatedAt": 1785273012810,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1783890612810
+    }
+   }
+  },
+  {
+   "id": "n:hydro strawberry",
+   "kind": "product",
+   "name": "Hydro strawberries",
+   "brand": "",
+   "cat": "produce-berry",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1782335412773,
+   "last": 1782335412773,
+   "learned": 1782335412773,
+   "deleted": false,
+   "updatedAt": 1785273012773,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1782335412773
+    }
+   }
+  },
+  {
+   "id": "n:iq bar",
+   "kind": "product",
+   "name": "IQ Bars",
+   "brand": "",
+   "cat": "snack",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1780002612788,
+   "last": 1780002612788,
+   "learned": 1780002612788,
+   "deleted": false,
+   "updatedAt": 1785273012788,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1780002612788
+    }
+   }
+  },
+  {
+   "id": "n:italian extra virgin olive oil",
+   "kind": "product",
+   "name": "Italian extra virgin olive oil",
+   "brand": "",
+   "cat": "oil-vinegar",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1783977012810,
+   "last": 1783977012810,
+   "learned": 1783977012810,
+   "deleted": false,
+   "updatedAt": 1785273012810,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1783977012810
+    }
+   }
+  },
+  {
+   "id": "n:italian pasta",
+   "kind": "product",
+   "name": "Italian pasta",
+   "brand": "",
+   "cat": "dry-pasta-rice",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1779916212838,
+   "last": 1779916212838,
+   "learned": 1779916212838,
+   "deleted": false,
+   "updatedAt": 1785273012838,
+   "stores": {
+    "ms55ggv2eax7as": {
+     "n": 1,
+     "last": 1779916212838
+    }
+   }
+  },
+  {
+   "id": "n:italian sausage",
+   "kind": "product",
+   "name": "Italian sausage",
+   "brand": "",
+   "cat": "meat-raw",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 2,
+   "first": 1780693812834,
+   "last": 1780607412835,
+   "learned": 1780693812834,
+   "deleted": false,
+   "updatedAt": 1785273012835,
+   "stores": {
+    "ms55ggv2eax7as": {
+     "n": 2,
+     "last": 1780607412835
+    }
+   }
+  },
+  {
+   "id": "n:ketchup",
+   "kind": "product",
+   "name": "Ketchup",
+   "brand": "",
+   "cat": "condiment",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1781212212831,
+   "last": 1781212212831,
+   "learned": 1781212212831,
+   "deleted": false,
+   "updatedAt": 1785273012831,
+   "stores": {
+    "ms55ggv2eax7as": {
+     "n": 1,
+     "last": 1781212212831
+    }
+   }
+  },
+  {
+   "id": "n:lactaid milk",
+   "kind": "product",
+   "name": "Lactaid milk",
+   "brand": "",
+   "cat": "dairy-milk",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1781385012779,
+   "last": 1781385012779,
+   "learned": 1781385012779,
+   "deleted": false,
+   "updatedAt": 1785273012779,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1781385012779
+    }
+   }
+  },
+  {
+   "id": "n:lactase pill",
+   "kind": "product",
+   "name": "Lactase pills",
+   "brand": "",
+   "cat": "other",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1778793012796,
+   "last": 1778793012796,
+   "learned": 1778793012796,
+   "deleted": false,
+   "updatedAt": 1785273012796,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1778793012796
+    }
+   }
+  },
+  {
+   "id": "n:lamb chop",
+   "kind": "product",
+   "name": "Lamb chops",
+   "brand": "",
+   "cat": "meat-raw",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1779484212791,
+   "last": 1779484212791,
+   "learned": 1779484212791,
+   "deleted": false,
+   "updatedAt": 1785273012791,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1779484212791
+    }
+   }
+  },
+  {
+   "id": "n:lemon",
+   "kind": "product",
+   "name": "Lemons",
+   "brand": "",
+   "cat": "produce-citrus",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1776373812809,
+   "last": 1776373812809,
+   "learned": 1776373812809,
+   "deleted": false,
+   "updatedAt": 1785273012809,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1776373812809
+    }
+   }
+  },
+  {
+   "id": "n:lemon hummus",
+   "kind": "product",
+   "name": "Lemon hummus",
+   "brand": "",
+   "cat": "condiment",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1782076212826,
+   "last": 1782076212826,
+   "learned": 1782076212826,
+   "deleted": false,
+   "updatedAt": 1785273012826,
+   "stores": {
+    "ms55gguuoab3jn": {
+     "n": 1,
+     "last": 1782076212826
+    }
+   }
+  },
+  {
+   "id": "n:lentil",
+   "kind": "product",
+   "name": "Lentils",
+   "brand": "",
+   "cat": "canned",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1779311412841,
+   "last": 1779311412841,
+   "learned": 1779311412841,
+   "deleted": false,
+   "updatedAt": 1785273012841,
+   "stores": {
+    "ms55ggv2eax7as": {
+     "n": 1,
+     "last": 1779311412841
+    }
+   }
+  },
+  {
+   "id": "n:magnesium glycinate",
+   "kind": "product",
+   "name": "Magnesium glycinate",
+   "brand": "",
+   "cat": "other",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1780261812787,
+   "last": 1780261812787,
+   "learned": 1780261812787,
+   "deleted": false,
+   "updatedAt": 1785273012787,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1780261812787
+    }
+   }
+  },
+  {
+   "id": "n:martini and rossi asti spumante",
+   "kind": "product",
+   "name": "Martini and Rossi Asti Spumante",
+   "brand": "",
+   "cat": "juice-drink",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1781125812832,
+   "last": 1781125812832,
+   "learned": 1781125812832,
+   "deleted": false,
+   "updatedAt": 1785273012832,
+   "stores": {
+    "ms55ggv2eax7as": {
+     "n": 1,
+     "last": 1781125812832
+    }
+   }
+  },
+  {
+   "id": "n:micro green",
+   "kind": "product",
+   "name": "Micro greens",
+   "brand": "",
+   "cat": "produce-leafy",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1780607412784,
+   "last": 1780607412784,
+   "learned": 1780607412784,
+   "deleted": false,
+   "updatedAt": 1785273012785,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1780607412784
+    }
+   }
+  },
+  {
+   "id": "n:milk",
+   "kind": "product",
+   "name": "Milk",
+   "brand": "",
+   "cat": "dairy-milk",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 2,
+   "first": 1783631412763,
+   "last": 1783545012763,
+   "learned": 1783631412763,
+   "deleted": false,
+   "updatedAt": 1785273012763,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 2,
+     "last": 1783545012763
+    }
+   }
+  },
+  {
+   "id": "n:millet noodle",
+   "kind": "product",
+   "name": "Millet noodles",
+   "brand": "",
+   "cat": "dry-pasta-rice",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1776460212808,
+   "last": 1776460212808,
+   "learned": 1776460212808,
+   "deleted": false,
+   "updatedAt": 1785273012808,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1776460212808
+    }
+   }
+  },
+  {
+   "id": "n:mini chocolate chip",
+   "kind": "product",
+   "name": "Mini chocolate chips",
+   "brand": "",
+   "cat": "baking",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1779052212842,
+   "last": 1779052212842,
+   "learned": 1779052212842,
+   "deleted": false,
+   "updatedAt": 1785273012842,
+   "stores": {
+    "ms55ggv2eax7as": {
+     "n": 1,
+     "last": 1779052212842
+    }
+   }
+  },
+  {
+   "id": "n:mini crab cake",
+   "kind": "product",
+   "name": "Mini crab cakes",
+   "brand": "",
+   "cat": "fish-raw",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1778015412799,
+   "last": 1778015412799,
+   "learned": 1778015412799,
+   "deleted": false,
+   "updatedAt": 1785273012799,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1778015412799
+    }
+   }
+  },
+  {
+   "id": "n:mini cucumber",
+   "kind": "product",
+   "name": "Mini cucumbers",
+   "brand": "",
+   "cat": "produce-hardy",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1783458612764,
+   "last": 1783458612764,
+   "learned": 1783458612764,
+   "deleted": false,
+   "updatedAt": 1785273012764,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1783458612764
+    }
+   }
+  },
+  {
+   "id": "n:minoxidil",
+   "kind": "product",
+   "name": "Minoxidil",
+   "brand": "",
+   "cat": "other",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1779916212789,
+   "last": 1779916212789,
+   "learned": 1779916212789,
+   "deleted": false,
+   "updatedAt": 1785273012789,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1779916212789
+    }
+   }
+  },
+  {
+   "id": "n:mint chip ice cream",
+   "kind": "product",
+   "name": "Mint chip ice cream",
+   "brand": "",
+   "cat": "ice-cream",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1781730612828,
+   "last": 1781730612828,
+   "learned": 1781730612828,
+   "deleted": false,
+   "updatedAt": 1785273012828,
+   "stores": {
+    "ms55gguuoab3jn": {
+     "n": 1,
+     "last": 1781730612828
+    }
+   }
+  },
+  {
+   "id": "n:miralax",
+   "kind": "product",
+   "name": "MiraLAX",
+   "brand": "",
+   "cat": "other",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1780434612786,
+   "last": 1780434612786,
+   "learned": 1780434612786,
+   "deleted": false,
+   "updatedAt": 1785273012786,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1780434612786
+    }
+   }
+  },
+  {
+   "id": "n:mozzarella loaf",
+   "kind": "product",
+   "name": "Mozzarella loaf",
+   "brand": "",
+   "cat": "dairy-cheese-hard",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1778015412851,
+   "last": 1778015412851,
+   "learned": 1778015412851,
+   "deleted": false,
+   "updatedAt": 1785273012851,
+   "stores": {
+    "ms55ggvjiwfd0c": {
+     "n": 1,
+     "last": 1778015412851
+    }
+   }
+  },
+  {
+   "id": "n:mushroom",
+   "kind": "product",
+   "name": "Mushrooms",
+   "brand": "",
+   "cat": "produce-hardy",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 2,
+   "first": 1782940212768,
+   "last": 1782853812769,
+   "learned": 1782940212768,
+   "deleted": false,
+   "updatedAt": 1785273012769,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 2,
+     "last": 1782853812769
+    }
+   }
+  },
+  {
+   "id": "n:nasacort",
+   "kind": "product",
+   "name": "Nasacort",
+   "brand": "",
+   "cat": "other",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1776546612808,
+   "last": 1776546612808,
+   "learned": 1776546612808,
+   "deleted": false,
+   "updatedAt": 1785273012808,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1776546612808
+    }
+   }
+  },
+  {
+   "id": "n:no solicitation sign",
+   "kind": "product",
+   "name": "No solicitation sign",
+   "brand": "",
+   "cat": "other",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1781471412830,
+   "last": 1781471412830,
+   "learned": 1781471412830,
+   "deleted": false,
+   "updatedAt": 1785273012830,
+   "stores": {
+    "ms55ggv2eax7as": {
+     "n": 1,
+     "last": 1781471412830
+    }
+   }
+  },
+  {
+   "id": "n:oatmeal milk",
+   "kind": "product",
+   "name": "Oat milk",
+   "brand": "",
+   "cat": "dairy-milk",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1781298612779,
+   "last": 1781298612779,
+   "learned": 1781298612779,
+   "deleted": false,
+   "updatedAt": 1785273012779,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1781298612779
+    }
+   }
+  },
+  {
+   "id": "n:orange juice",
+   "kind": "product",
+   "name": "Orange juice",
+   "brand": "",
+   "cat": "juice-drink",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1779829812839,
+   "last": 1779829812839,
+   "learned": 1779829812839,
+   "deleted": false,
+   "updatedAt": 1785273012839,
+   "stores": {
+    "ms55ggv2eax7as": {
+     "n": 1,
+     "last": 1779829812839
+    }
+   }
+  },
+  {
+   "id": "n:orange tea",
+   "kind": "product",
+   "name": "Orange tea",
+   "brand": "",
+   "cat": "coffee-tea",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1777756212855,
+   "last": 1777756212855,
+   "learned": 1777756212855,
+   "deleted": false,
+   "updatedAt": 1785273012855,
+   "stores": {
+    "ms55ggvp84fm2r": {
+     "n": 1,
+     "last": 1777756212855
+    }
+   }
+  },
+  {
+   "id": "n:organic blueberry",
+   "kind": "product",
+   "name": "Organic blueberries",
+   "brand": "",
+   "cat": "produce-berry",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1783372212765,
+   "last": 1783372212765,
+   "learned": 1783372212765,
+   "deleted": false,
+   "updatedAt": 1785273012765,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1783372212765
+    }
+   }
+  },
+  {
+   "id": "n:organic chicken breast",
+   "kind": "product",
+   "name": "Organic chicken breast",
+   "brand": "",
+   "cat": "poultry-raw",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 3,
+   "first": 1783804212761,
+   "last": 1779657012840,
+   "learned": 1783804212761,
+   "deleted": false,
+   "updatedAt": 1785273012840,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 2,
+     "last": 1783717812762
+    },
+    "ms55ggv2eax7as": {
+     "n": 1,
+     "last": 1779657012840
+    }
+   }
+  },
+  {
+   "id": "n:organic mango",
+   "kind": "product",
+   "name": "Organic mangoes",
+   "brand": "",
+   "cat": "produce-hardy",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1777497012802,
+   "last": 1777497012802,
+   "learned": 1777497012802,
+   "deleted": false,
+   "updatedAt": 1785273012802,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1777497012802
+    }
+   }
+  },
+  {
+   "id": "n:organic orange juice",
+   "kind": "product",
+   "name": "Organic orange juice",
+   "brand": "",
+   "cat": "juice-drink",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 2,
+   "first": 1782162612774,
+   "last": 1782076212775,
+   "learned": 1782162612774,
+   "deleted": false,
+   "updatedAt": 1785273012775,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 2,
+     "last": 1782076212775
+    }
+   }
+  },
+  {
+   "id": "n:organic pea",
+   "kind": "product",
+   "name": "Organic peas",
+   "brand": "",
+   "cat": "produce-hardy",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1779397812792,
+   "last": 1779397812792,
+   "learned": 1779397812792,
+   "deleted": false,
+   "updatedAt": 1785273012792,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1779397812792
+    }
+   }
+  },
+  {
+   "id": "n:organic shrimp tail off",
+   "kind": "product",
+   "name": "Organic shrimp, tail off",
+   "brand": "",
+   "cat": "fish-raw",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1783890612760,
+   "last": 1783890612760,
+   "learned": 1783890612760,
+   "deleted": false,
+   "updatedAt": 1785273012760,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1783890612760
+    }
+   }
+  },
+  {
+   "id": "n:organic strawberry",
+   "kind": "product",
+   "name": "Organic strawberries",
+   "brand": "",
+   "cat": "produce-berry",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1778620212848,
+   "last": 1778620212848,
+   "learned": 1778620212848,
+   "deleted": false,
+   "updatedAt": 1785273012848,
+   "stores": {
+    "ms55ggvjiwfd0c": {
+     "n": 1,
+     "last": 1778620212848
+    }
+   }
+  },
+  {
+   "id": "n:paper towel",
+   "kind": "product",
+   "name": "Paper towels",
+   "brand": "",
+   "cat": "household",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1777237812804,
+   "last": 1777237812804,
+   "learned": 1777237812804,
+   "deleted": false,
+   "updatedAt": 1785273012804,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1777237812804
+    }
+   }
+  },
+  {
+   "id": "n:parmigiano reggiano",
+   "kind": "product",
+   "name": "Parmigiano Reggiano",
+   "brand": "",
+   "cat": "dairy-cheese-hard",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1780693812784,
+   "last": 1780693812784,
+   "learned": 1780693812784,
+   "deleted": false,
+   "updatedAt": 1785273012784,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1780693812784
+    }
+   }
+  },
+  {
+   "id": "n:pecorino wheel",
+   "kind": "product",
+   "name": "Pecorino wheel",
+   "brand": "",
+   "cat": "dairy-cheese-hard",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1778361012849,
+   "last": 1778361012849,
+   "learned": 1778361012849,
+   "deleted": false,
+   "updatedAt": 1785273012849,
+   "stores": {
+    "ms55ggvjiwfd0c": {
+     "n": 1,
+     "last": 1778361012849
+    }
+   }
+  },
+  {
+   "id": "n:pellegrino",
+   "kind": "product",
+   "name": "Pellegrino",
+   "brand": "",
+   "cat": "juice-drink",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1778879412795,
+   "last": 1778879412795,
+   "learned": 1778879412795,
+   "deleted": false,
+   "updatedAt": 1785273012795,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1778879412795
+    }
+   }
+  },
+  {
+   "id": "n:pepperoni",
+   "kind": "product",
+   "name": "Pepperoni",
+   "brand": "",
+   "cat": "deli-meat",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1778188212850,
+   "last": 1778188212850,
+   "learned": 1778188212850,
+   "deleted": false,
+   "updatedAt": 1785273012850,
+   "stores": {
+    "ms55ggvjiwfd0c": {
+     "n": 1,
+     "last": 1778188212850
+    }
+   }
+  },
+  {
+   "id": "n:pickle",
+   "kind": "product",
+   "name": "Pickles",
+   "brand": "",
+   "cat": "condiment",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1780261812837,
+   "last": 1780261812837,
+   "learned": 1780261812837,
+   "deleted": false,
+   "updatedAt": 1785273012837,
+   "stores": {
+    "ms55ggv2eax7as": {
+     "n": 1,
+     "last": 1780261812837
+    }
+   }
+  },
+  {
+   "id": "n:pizza sauce",
+   "kind": "product",
+   "name": "Pizza sauce",
+   "brand": "",
+   "cat": "condiment",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1778533812848,
+   "last": 1778533812848,
+   "learned": 1778533812848,
+   "deleted": false,
+   "updatedAt": 1785273012848,
+   "stores": {
+    "ms55ggvjiwfd0c": {
+     "n": 1,
+     "last": 1778533812848
+    }
+   }
+  },
+  {
+   "id": "n:pomegranate juice",
+   "kind": "product",
+   "name": "Pomegranate juice",
+   "brand": "",
+   "cat": "juice-drink",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1783977012759,
+   "last": 1783977012759,
+   "learned": 1783977012759,
+   "deleted": false,
+   "updatedAt": 1785273012759,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1783977012759
+    }
+   }
+  },
+  {
+   "id": "n:potato",
+   "kind": "product",
+   "name": "Potatoes",
+   "brand": "",
+   "cat": "produce-root",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1778965812794,
+   "last": 1778965812794,
+   "learned": 1778965812794,
+   "deleted": false,
+   "updatedAt": 1785273012794,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1778965812794
+    }
+   }
+  },
+  {
+   "id": "n:provolone",
+   "kind": "product",
+   "name": "Provolone",
+   "brand": "",
+   "cat": "dairy-cheese-hard",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1778101812850,
+   "last": 1778101812850,
+   "learned": 1778101812850,
+   "deleted": false,
+   "updatedAt": 1785273012850,
+   "stores": {
+    "ms55ggvjiwfd0c": {
+     "n": 1,
+     "last": 1778101812850
+    }
+   }
+  },
+  {
+   "id": "n:raspberry",
+   "kind": "product",
+   "name": "Raspberries",
+   "brand": "",
+   "cat": "produce-berry",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1777842612800,
+   "last": 1777842612800,
+   "learned": 1777842612800,
+   "deleted": false,
+   "updatedAt": 1785273012800,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1777842612800
+    }
+   }
+  },
+  {
+   "id": "n:ready patch",
+   "kind": "product",
+   "name": "Ready patch",
+   "brand": "",
+   "cat": "other",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1780089012788,
+   "last": 1780089012788,
+   "learned": 1780089012788,
+   "deleted": false,
+   "updatedAt": 1785273012788,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1780089012788
+    }
+   }
+  },
+  {
+   "id": "n:red onion",
+   "kind": "product",
+   "name": "Red onion",
+   "brand": "",
+   "cat": "produce-root",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1781989812826,
+   "last": 1781989812826,
+   "learned": 1781989812826,
+   "deleted": false,
+   "updatedAt": 1785273012827,
+   "stores": {
+    "ms55gguuoab3jn": {
+     "n": 1,
+     "last": 1781989812826
+    }
+   }
+  },
+  {
+   "id": "n:romaine lettuce",
+   "kind": "product",
+   "name": "Romaine lettuce",
+   "brand": "",
+   "cat": "produce-leafy",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1781471412778,
+   "last": 1781471412778,
+   "learned": 1781471412778,
+   "deleted": false,
+   "updatedAt": 1785273012779,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1781471412778
+    }
+   }
+  },
+  {
+   "id": "n:rotisserie chicken",
+   "kind": "product",
+   "name": "Rotisserie chicken",
+   "brand": "",
+   "cat": "poultry-raw",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1776805812806,
+   "last": 1776805812806,
+   "learned": 1776805812806,
+   "deleted": false,
+   "updatedAt": 1785273012806,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1776805812806
+    }
+   }
+  },
+  {
+   "id": "n:salmon",
+   "kind": "product",
+   "name": "Salmon",
+   "brand": "",
+   "cat": "fish-raw",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1778706612796,
+   "last": 1778706612796,
+   "learned": 1778706612796,
+   "deleted": false,
+   "updatedAt": 1785273012796,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1778706612796
+    }
+   }
+  },
+  {
+   "id": "n:salt",
+   "kind": "product",
+   "name": "Salt",
+   "brand": "",
+   "cat": "spice",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1776978612806,
+   "last": 1776978612806,
+   "learned": 1776978612806,
+   "deleted": false,
+   "updatedAt": 1785273012806,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1776978612806
+    }
+   }
+  },
+  {
+   "id": "n:salted mixed nut",
+   "kind": "product",
+   "name": "Salted mixed nuts",
+   "brand": "",
+   "cat": "nuts-seeds",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1783199412766,
+   "last": 1783199412766,
+   "learned": 1783199412766,
+   "deleted": false,
+   "updatedAt": 1785273012766,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1783199412766
+    }
+   }
+  },
+  {
+   "id": "n:saran wrap",
+   "kind": "product",
+   "name": "Saran wrap",
+   "brand": "",
+   "cat": "household",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1780175412787,
+   "last": 1780175412787,
+   "learned": 1780175412787,
+   "deleted": false,
+   "updatedAt": 1785273012787,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1780175412787
+    }
+   }
+  },
+  {
+   "id": "n:sauce",
+   "kind": "product",
+   "name": "Sauce",
+   "brand": "",
+   "cat": "condiment",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1777929012854,
+   "last": 1777929012854,
+   "learned": 1777929012854,
+   "deleted": false,
+   "updatedAt": 1785273012854,
+   "stores": {
+    "ms55ggvp84fm2r": {
+     "n": 1,
+     "last": 1777929012854
+    }
+   }
+  },
+  {
+   "id": "n:shredded mozzarella",
+   "kind": "product",
+   "name": "Shredded mozzarella",
+   "brand": "",
+   "cat": "dairy-cheese-hard",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1778620212797,
+   "last": 1778620212797,
+   "learned": 1778620212797,
+   "deleted": false,
+   "updatedAt": 1785273012797,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1778620212797
+    }
+   }
+  },
+  {
+   "id": "n:siete grain free chip",
+   "kind": "product",
+   "name": "Siete grain free chips",
+   "brand": "",
+   "cat": "snack",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1783113012767,
+   "last": 1783113012767,
+   "learned": 1783113012767,
+   "deleted": false,
+   "updatedAt": 1785273012767,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1783113012767
+    }
+   }
+  },
+  {
+   "id": "n:sliced chicken breast",
+   "kind": "product",
+   "name": "Sliced chicken breast",
+   "brand": "",
+   "cat": "deli-meat",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1781298612831,
+   "last": 1781298612831,
+   "learned": 1781298612831,
+   "deleted": false,
+   "updatedAt": 1785273012831,
+   "stores": {
+    "ms55ggv2eax7as": {
+     "n": 1,
+     "last": 1781298612831
+    }
+   }
+  },
+  {
+   "id": "n:sliced steak",
+   "kind": "product",
+   "name": "Sliced steak",
+   "brand": "",
+   "cat": "meat-raw",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1777929012800,
+   "last": 1777929012800,
+   "learned": 1777929012800,
+   "deleted": false,
+   "updatedAt": 1785273012800,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1777929012800
+    }
+   }
+  },
+  {
+   "id": "n:sourdough bread",
+   "kind": "product",
+   "name": "Sourdough bread",
+   "brand": "",
+   "cat": "bread",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1782335412825,
+   "last": 1782335412825,
+   "learned": 1782335412825,
+   "deleted": false,
+   "updatedAt": 1785273012825,
+   "stores": {
+    "ms55gguuoab3jn": {
+     "n": 1,
+     "last": 1782335412825
+    }
+   }
+  },
+  {
+   "id": "n:strawberry",
+   "kind": "product",
+   "name": "Strawberries",
+   "brand": "",
+   "cat": "produce-berry",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 2,
+   "first": 1781125812781,
+   "last": 1779484212840,
+   "learned": 1781125812781,
+   "deleted": false,
+   "updatedAt": 1785273012840,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1781125812781
+    },
+    "ms55ggv2eax7as": {
+     "n": 1,
+     "last": 1779484212840
+    }
+   }
+  },
+  {
+   "id": "n:sugar",
+   "kind": "product",
+   "name": "Sugar",
+   "brand": "",
+   "cat": "baking",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1783026612767,
+   "last": 1783026612767,
+   "learned": 1783026612767,
+   "deleted": false,
+   "updatedAt": 1785273012767,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1783026612767
+    }
+   }
+  },
+  {
+   "id": "n:tissue",
+   "kind": "product",
+   "name": "Tissues",
+   "brand": "",
+   "cat": "household",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1779657012790,
+   "last": 1779657012790,
+   "learned": 1779657012790,
+   "deleted": false,
+   "updatedAt": 1785273012790,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1779657012790
+    }
+   }
+  },
+  {
+   "id": "n:toilet paper",
+   "kind": "product",
+   "name": "Toilet paper",
+   "brand": "",
+   "cat": "household",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1781730612777,
+   "last": 1781730612777,
+   "learned": 1781730612777,
+   "deleted": false,
+   "updatedAt": 1785273012777,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1781730612777
+    }
+   }
+  },
+  {
+   "id": "n:tru bar",
+   "kind": "product",
+   "name": "Tru bars",
+   "brand": "",
+   "cat": "snack",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1781039412781,
+   "last": 1781039412781,
+   "learned": 1781039412781,
+   "deleted": false,
+   "updatedAt": 1785273012781,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1781039412781
+    }
+   }
+  },
+  {
+   "id": "n:tru bar cooky and cream",
+   "kind": "product",
+   "name": "Tru bars (cookies and cream)",
+   "brand": "",
+   "cat": "dairy-milk",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1780953012782,
+   "last": 1780953012782,
+   "learned": 1780953012782,
+   "deleted": false,
+   "updatedAt": 1785273012782,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1780953012782
+    }
+   }
+  },
+  {
+   "id": "n:tylenol",
+   "kind": "product",
+   "name": "Tylenol",
+   "brand": "",
+   "cat": "other",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1779311412792,
+   "last": 1779311412792,
+   "learned": 1779311412792,
+   "deleted": false,
+   "updatedAt": 1785273012792,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1779311412792
+    }
+   }
+  },
+  {
+   "id": "n:unbleached flour",
+   "kind": "product",
+   "name": "Unbleached flour",
+   "brand": "",
+   "cat": "baking",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1781385012830,
+   "last": 1781385012830,
+   "learned": 1781385012830,
+   "deleted": false,
+   "updatedAt": 1785273012830,
+   "stores": {
+    "ms55ggv2eax7as": {
+     "n": 1,
+     "last": 1781385012830
+    }
+   }
+  },
+  {
+   "id": "n:unsalted cashew",
+   "kind": "product",
+   "name": "Unsalted cashews",
+   "brand": "",
+   "cat": "nuts-seeds",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1779225012793,
+   "last": 1779225012793,
+   "learned": 1779225012793,
+   "deleted": false,
+   "updatedAt": 1785273012793,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1779225012793
+    }
+   }
+  },
+  {
+   "id": "n:white onion",
+   "kind": "product",
+   "name": "White onions",
+   "brand": "",
+   "cat": "produce-root",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 2,
+   "first": 1779138612794,
+   "last": 1779052212794,
+   "learned": 1779138612794,
+   "deleted": false,
+   "updatedAt": 1785273012794,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 2,
+     "last": 1779052212794
+    }
+   }
+  },
+  {
+   "id": "n:white vinegar",
+   "kind": "product",
+   "name": "White vinegar",
+   "brand": "",
+   "cat": "condiment",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1784063412809,
+   "last": 1784063412809,
+   "learned": 1784063412809,
+   "deleted": false,
+   "updatedAt": 1785273012809,
+   "stores": {
+    "ms55ggt0ftrkeb": {
+     "n": 1,
+     "last": 1784063412809
+    }
+   }
+  },
+  {
+   "id": "n:wild gulf shrimp",
+   "kind": "product",
+   "name": "Wild gulf shrimp",
+   "brand": "",
+   "cat": "fish-raw",
+   "emoji": "",
+   "image": null,
+   "packSize": null,
+   "lastLoc": null,
+   "count": 1,
+   "first": 1778706612847,
+   "last": 1778706612847,
+   "learned": 1778706612847,
+   "deleted": false,
+   "updatedAt": 1785273012847,
+   "stores": {
+    "ms55ggvjiwfd0c": {
+     "n": 1,
+     "last": 1778706612847
+    }
+   }
+  }
+ ],
+ "shopping": [
+  {
+   "id": "ms55ggur8jnziy",
+   "name": "Honey citron ginger tea",
+   "qty": "",
+   "store": "ms55ggt0ftrkeb",
+   "image": null,
+   "cat": "coffee-tea",
+   "by": "",
+   "done": false,
+   "missing": false,
+   "deleted": false,
+   "updatedAt": 1785273012820
+  },
+  {
+   "id": "ms55ggurb0ziix",
+   "name": "OEM brake pads and rotors",
+   "qty": "",
+   "store": "ms55ggt0ftrkeb",
+   "image": null,
+   "cat": "other",
+   "by": "",
+   "done": false,
+   "missing": false,
+   "deleted": false,
+   "updatedAt": 1785273012819
+  },
+  {
+   "id": "ms55ggutadyfo3",
+   "name": "Small champagne cups",
+   "qty": "",
+   "store": "ms55ggt0ftrkeb",
+   "image": null,
+   "cat": "juice-drink",
+   "by": "",
+   "done": false,
+   "missing": false,
+   "deleted": false,
+   "updatedAt": 1785273012821
+  },
+  {
+   "id": "ms55ggutcyactg",
+   "name": "Organic brown eggs",
+   "qty": "3",
+   "store": "ms55ggt0ftrkeb",
+   "image": null,
+   "cat": "eggs",
+   "by": "",
+   "done": false,
+   "missing": false,
+   "deleted": false,
+   "updatedAt": 1785273012822
+  },
+  {
+   "id": "ms55ggv1tvmhwe",
+   "name": "Wraps",
+   "qty": "",
+   "store": "ms55gguuoab3jn",
+   "image": null,
+   "cat": "household",
+   "by": "",
+   "done": false,
+   "missing": false,
+   "deleted": false,
+   "updatedAt": 1785273012829
+  },
+  {
+   "id": "ms55ggvgv3a6de",
+   "name": "Grated cheese",
+   "qty": "",
+   "store": "ms55ggv2eax7as",
+   "image": null,
+   "cat": "dairy-cheese-hard",
+   "by": "",
+   "done": false,
+   "missing": false,
+   "deleted": false,
+   "updatedAt": 1785273012844
+  },
+  {
+   "id": "ms55ggvhipjml6",
+   "name": "Mustard",
+   "qty": "",
+   "store": "ms55ggv2eax7as",
+   "image": null,
+   "cat": "condiment",
+   "by": "",
+   "done": false,
+   "missing": false,
+   "deleted": false,
+   "updatedAt": 1785273012845
+  },
+  {
+   "id": "ms55ggvhq8yen8",
+   "name": "Relish",
+   "qty": "",
+   "store": "ms55ggv2eax7as",
+   "image": null,
+   "cat": "condiment",
+   "by": "",
+   "done": false,
+   "missing": false,
+   "deleted": false,
+   "updatedAt": 1785273012845
+  },
+  {
+   "id": "ms55ggvi6xqkns",
+   "name": "Pickle spice",
+   "qty": "",
+   "store": "ms55ggv2eax7as",
+   "image": null,
+   "cat": "spice",
+   "by": "",
+   "done": false,
+   "missing": false,
+   "deleted": false,
+   "updatedAt": 1785273012846
+  },
+  {
+   "id": "ms55ggvoiqjc89",
+   "name": "Good fresh fish",
+   "qty": "",
+   "store": "ms55ggvjiwfd0c",
+   "image": null,
+   "cat": "fish-raw",
+   "by": "",
+   "done": false,
+   "missing": false,
+   "deleted": false,
+   "updatedAt": 1785273012852
+  },
+  {
+   "id": "ms55ggvoj1fsmm",
+   "name": "Bison burger meat",
+   "qty": "",
+   "store": "ms55ggvjiwfd0c",
+   "image": null,
+   "cat": "meat-raw",
+   "by": "",
+   "done": false,
+   "missing": false,
+   "deleted": false,
+   "updatedAt": 1785273012852
+  },
+  {
+   "id": "ms55ggvpno27tc",
+   "name": "Milk chocolate",
+   "qty": "",
+   "store": "ms55ggvjiwfd0c",
+   "image": null,
+   "cat": "dairy-milk",
+   "by": "",
+   "done": false,
+   "missing": false,
+   "deleted": false,
+   "updatedAt": 1785273012853
+  },
+  {
+   "id": "ms55ggvr6sbe91",
+   "name": "Tupperware",
+   "qty": "",
+   "store": "ms55ggvp84fm2r",
+   "image": null,
+   "cat": "other",
+   "by": "",
+   "done": false,
+   "missing": false,
+   "deleted": false,
+   "updatedAt": 1785273012855
+  },
+  {
+   "id": "ms55ggvs679dkp",
+   "name": "Glass jars",
+   "qty": "",
+   "store": "ms55ggvp84fm2r",
+   "image": null,
+   "cat": "other",
+   "by": "",
+   "done": false,
+   "missing": false,
+   "deleted": false,
+   "updatedAt": 1785273012856
+  },
+  {
+   "id": "ms55ggvtxm02p0",
+   "name": "Wire rack 55x15 + parts",
+   "qty": "",
+   "store": "ms55ggvsriarit",
+   "image": null,
+   "cat": "other",
+   "by": "",
+   "done": false,
+   "missing": false,
+   "deleted": false,
+   "updatedAt": 1785273012857
+  },
+  {
+   "id": "ms55ggvufhfetf",
+   "name": "Black plant tarp",
+   "qty": "",
+   "store": "ms55ggvsriarit",
+   "image": null,
+   "cat": "other",
+   "by": "",
+   "done": false,
+   "missing": false,
+   "deleted": false,
+   "updatedAt": 1785273012858
+  },
+  {
+   "id": "ms55ggvujiu3hg",
+   "name": "Propane tank",
+   "qty": "",
+   "store": "ms55ggvsriarit",
+   "image": null,
+   "cat": "other",
+   "by": "",
+   "done": false,
+   "missing": false,
+   "deleted": false,
+   "updatedAt": 1785273012858
+  },
+  {
+   "id": "ms55ggvwvb5l87",
+   "name": "Oil free makeup remover",
+   "qty": "3",
+   "store": "ms55ggvvlomgyj",
+   "image": null,
+   "cat": "oil-vinegar",
+   "by": "",
+   "done": false,
+   "missing": false,
+   "deleted": false,
+   "updatedAt": 1785273012860
+  },
+  {
+   "id": "ms55ggvx44acfc",
+   "name": "Timewise 4-in-1 cleanser",
+   "qty": "",
+   "store": "ms55ggvvlomgyj",
+   "image": null,
+   "cat": "other",
+   "by": "",
+   "done": false,
+   "missing": false,
+   "deleted": false,
+   "updatedAt": 1785273012861
+  },
+  {
+   "id": "ms55ggvxq434g3",
+   "name": "Microdermabrasion tube",
+   "qty": "",
+   "store": "ms55ggvvlomgyj",
+   "image": null,
+   "cat": "other",
+   "by": "",
+   "done": false,
+   "missing": false,
+   "deleted": false,
+   "updatedAt": 1785273012861
+  },
+  {
+   "id": "ms55ggvymow3of",
+   "name": "Under eye corrector",
+   "qty": "",
+   "store": "ms55ggvvlomgyj",
+   "image": null,
+   "cat": "other",
+   "by": "",
+   "done": false,
+   "missing": false,
+   "deleted": false,
+   "updatedAt": 1785273012862
+  },
+  {
+   "id": "ms55ggvznttmuc",
+   "name": "Ultimate mascara, black",
+   "qty": "3",
+   "store": "ms55ggvvlomgyj",
+   "image": null,
+   "cat": "other",
+   "by": "",
+   "done": false,
+   "missing": false,
+   "deleted": false,
+   "updatedAt": 1785273012863
+  },
+  {
+   "id": "ms55ggw0y404sx",
+   "name": "Blush — shy blush",
+   "qty": "",
+   "store": "ms55ggvvlomgyj",
+   "image": null,
+   "cat": "other",
+   "by": "",
+   "done": false,
+   "missing": false,
+   "deleted": false,
+   "updatedAt": 1785273012864
+  },
+  {
+   "id": "ms55ggw187uiq4",
+   "name": "Waterproof eyeliner, black",
+   "qty": "",
+   "store": "ms55ggvvlomgyj",
+   "image": null,
+   "cat": "other",
+   "by": "",
+   "done": false,
+   "missing": false,
+   "deleted": false,
+   "updatedAt": 1785273012865
+  },
+  {
+   "id": "ms55ggw2m4h23f",
+   "name": "Waterproof eyeliner, steely",
+   "qty": "",
+   "store": "ms55ggvvlomgyj",
+   "image": null,
+   "cat": "other",
+   "by": "",
+   "done": false,
+   "missing": false,
+   "deleted": false,
+   "updatedAt": 1785273012866
+  }
+ ],
+ "plan": [],
+ "saved": [],
+ "log": [],
+ "seed": true
+}
