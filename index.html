@@ -494,6 +494,42 @@ label .lbl{font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:up
 .ab .ai{background:var(--scrim);border-radius:999px;padding:4px 10px;font-size:12px;
   font-weight:650;color:var(--frost)}
 /* Two-up segmented control — the iOS idiom for "same content, other view". */
+/* ---- list progress + who's sharing it ---- */
+.prog{display:flex;align-items:center;gap:11px;margin-bottom:12px}
+.faces{display:flex;flex:0 0 auto}
+.face{width:27px;height:27px;border-radius:50%;background:var(--cold-soft);color:var(--cold-2);
+  font-size:12px;font-weight:800;display:grid;place-items:center;border:2px solid var(--void);
+  margin-left:-7px}
+.face:first-child{margin-left:0}
+.pgrow{display:flex;align-items:center;gap:9px;flex:1;min-width:0}
+.pgbar{flex:1;height:7px;border-radius:999px;background:var(--fog);overflow:hidden}
+.pgbar i{display:block;height:100%;background:var(--cold);border-radius:999px;transition:width .25s ease}
+.prog b{font-size:12px;font-weight:800;color:var(--vapor);flex:0 0 auto;font-variant-numeric:tabular-nums}
+
+/* ---- expiry calendar ---- */
+.calnav{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.calnav b{font-size:17px;font-weight:750;letter-spacing:-.015em}
+.calnav button{width:38px;height:38px;border-radius:50%;background:var(--fog);color:var(--frost);
+  display:grid;place-items:center}
+.calnav button svg{stroke:currentColor;fill:none;stroke-width:2}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.cd{text-align:center;font-size:10.5px;font-weight:800;color:var(--vapor-dim);
+  letter-spacing:.05em;padding-bottom:4px}
+.cc{aspect-ratio:1;border-radius:11px;background:var(--fog);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:2px;position:relative}
+.cc.empty{background:transparent}
+.cc .dn{font-size:13px;font-weight:700;color:var(--vapor)}
+.cc .dc{font-size:9.5px;font-weight:800;padding:1px 6px;border-radius:999px;
+  background:var(--scrim);color:var(--frost)}
+/* A day with food on it is tinted by the worst thing on it, so a bad week is
+   visible as a block of colour before you read a single number. */
+.cc.has .dn{color:var(--frost);font-weight:800}
+.cc.has.have{background:var(--t-have-bg)}
+.cc.has.low{background:var(--t-low-bg)}
+.cc.has.out{background:var(--t-out-bg)}
+.cc.today{outline:2px solid var(--cold);outline-offset:-2px}
+.cc.has:active{filter:brightness(.95)}
+
 /* Recipe credentials: source, your stars, how many times you've cooked it. */
 .rc-cred{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:5px 0 8px;
   font-size:11.5px;font-weight:650;color:var(--vapor-dim)}
@@ -5425,6 +5461,24 @@ function lowStockBand(box, todo) {
   box.appendChild(wrap);
 }
 
+/* Who's in this list and how far through it you are. Sync already worked;
+   what it lacked was any sign on screen that it was working, which is why
+   the reference apps all put faces and a progress bar at the top. */
+function listProgress(box, todo, done) {
+  const total = todo.length + done.length;
+  if (!total) return;
+  const members = (S.household?.members || []).slice(0, 4);
+  const shared = SYNC.configured() && members.length > 1;
+  const pct = Math.round(done.length / total * 100);
+  const wrap = el(`<div class="prog">
+    ${shared ? `<div class="faces">${members.map(m =>
+      `<span class="face" title="${esc(m.name)}">${esc(m.emoji || m.name.slice(0, 1).toUpperCase())}</span>`).join('')}</div>` : ''}
+    <div class="pgrow">
+      <div class="pgbar"><i style="width:${pct}%"></i></div>
+      <b>${done.length}/${total}</b></div></div>`);
+  box.appendChild(wrap);
+}
+
 /* Basket vs list, live, while you walk the aisles. Only appears once prices
    exist — a total that always says $0 teaches people to ignore the bar. */
 function runningTotal(box, todo, done) {
@@ -5505,6 +5559,7 @@ function paintShopping(box, flashId = '') {
   const todo = mine.filter(s => !s.done).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
   const done = mine.filter(s => s.done).sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0));
 
+  listProgress(box, todo, done);
   missedBand(box, store);
   lowStockBand(box, todo);
   runningTotal(box, todo, done);
@@ -6185,7 +6240,8 @@ function viewPantry(app) {
   }
   const soon = live.filter(i => freshness(i).left <= 3).sort((a, b) => a.expires - b.expires);
   if (soon.length) {
-    const sec = el(`<div class="section" style="margin-bottom:8px"><div class="section-head"><h2>Use soon</h2><button class="more" data-a="allsoon">See all</button></div></div>`);
+    const sec = el(`<div class="section" style="margin-bottom:8px"><div class="section-head"><h2>Use soon</h2><button class="more" data-a="cal">${icon('calendar',14)} Calendar</button><button class="more" data-a="allsoon">See all</button></div></div>`);
+    sec.querySelector('[data-a=cal]').onclick = () => { S.view = 'calendar'; render(); };
     const sc = el(`<div class="hscroll"></div>`);
     soon.slice(0, 10).forEach(it => {
       const d = freshness(it).left;
@@ -6479,6 +6535,85 @@ function pickZonePhoto(z) {
   inp.click();
 }
 
+/* ---------------- the expiry calendar ----------------
+   The same dates the Use-soon rail already knows, laid out as a month so
+   you can see a bad week coming instead of meeting it one item at a time.
+   Reads live items only — nothing new is stored to make this work. */
+const MONTH_NAMES = ['January','February','March','April','May','June',
+  'July','August','September','October','November','December'];
+
+function viewCalendar(app) {
+  const base = S.calMonth ? new Date(S.calMonth) : new Date();
+  base.setDate(1); base.setHours(0, 0, 0, 0);
+  const y = base.getFullYear(), m = base.getMonth();
+
+  const live = S.items.filter(i => !i.deleted && i.expires);
+  const byDay = new Map();
+  live.forEach(i => {
+    const d = new Date(i.expires);
+    if (d.getFullYear() !== y || d.getMonth() !== m) return;
+    const k = d.getDate();
+    if (!byDay.has(k)) byDay.set(k, []);
+    byDay.get(k).push(i);
+  });
+
+  const nav = el(`<div class="calnav">
+    <button data-a="p" aria-label="Previous month">${icon('back', 18)}</button>
+    <b>${MONTH_NAMES[m]} ${y}</b>
+    <button data-a="n" aria-label="Next month">${icon('back', 18)}</button></div>`);
+  nav.querySelector('[data-a=n] svg').style.transform = 'rotate(180deg)';
+  nav.querySelector('[data-a=p]').onclick = () => { S.calMonth = new Date(y, m - 1, 1).getTime(); render(); };
+  nav.querySelector('[data-a=n]').onclick = () => { S.calMonth = new Date(y, m + 1, 1).getTime(); render(); };
+  app.appendChild(nav);
+
+  const inMonth = [...byDay.values()].reduce((n, a) => n + a.length, 0);
+  app.appendChild(el(`<div class="sect"><h3>Expiring this month</h3><span class="n">${inMonth}</span></div>`));
+
+  /* Monday-first, because that's how a shopping week reads. */
+  const grid = el(`<div class="cal"></div>`);
+  ['M','T','W','T','F','S','S'].forEach(d => grid.appendChild(el(`<div class="cd">${d}</div>`)));
+  const lead = (new Date(y, m, 1).getDay() + 6) % 7;
+  for (let i = 0; i < lead; i++) grid.appendChild(el(`<div class="cc empty"></div>`));
+
+  const days = new Date(y, m + 1, 0).getDate();
+  const todayD = new Date(); todayD.setHours(0, 0, 0, 0);
+  for (let d = 1; d <= days; d++) {
+    const items = byDay.get(d) || [];
+    const cellDate = new Date(y, m, d);
+    const past = cellDate < todayD;
+    const worst = items.length
+      ? (past ? 'out' : (cellDate - todayD) / 864e5 <= 3 ? 'low' : 'have') : '';
+    const c = el(`<div class="cc${items.length ? ' has ' + worst : ''}${cellDate.getTime() === todayD.getTime() ? ' today' : ''}">
+      <span class="dn">${d}</span>
+      ${items.length ? `<span class="dc">${items.length}</span>` : ''}</div>`);
+    if (items.length) c.onclick = () => dayExpirySheet(cellDate, items);
+    grid.appendChild(c);
+  }
+  app.appendChild(grid);
+
+  if (!inMonth) app.appendChild(el(`<div class="card note" style="padding:14px">
+    Nothing in the house has a date in ${MONTH_NAMES[m]}. Dates are estimated from category and
+    shelf unless you scan or type a real one.</div>`));
+}
+
+function dayExpirySheet(date, items) {
+  const dlg = document.getElementById('dlg');
+  dlg.innerHTML = `<div class="eyebrow">${date.toLocaleDateString(undefined, { weekday:'long' })}</div>
+    <h1 style="margin:6px 0 12px">${MONTH_NAMES[date.getMonth()]} ${date.getDate()}</h1>
+    <div id="dl"></div>
+    <button class="btn ghost" data-a="c" style="margin-top:10px;border:none;color:var(--vapor)">Close</button>`;
+  const box = dlg.querySelector('#dl');
+  items.forEach(i => {
+    const r = el(`<div class="item"><div class="thumb">${i.image ? photoLayers(i.image) : `<span class="emoji">${foodEmoji(i.name, i.cat) || '🍽️'}</span>`}</div>
+      <div class="body"><div class="nm">${esc(i.name)}</div>
+        <div class="meta">${esc(freshness(i).label)} · ${esc(locName(i.loc))}</div></div></div>`);
+    r.onclick = () => { dlg.close(); itemSheet(i); };
+    box.appendChild(r);
+  });
+  dlg.querySelector('[data-a=c]').onclick = () => dlg.close();
+  dlg.showModal();
+}
+
 /* ================================================================
    INSIGHTS — the only screen that argues the app is worth keeping.
    Everything here is computed from tombstoned items, which already carry
@@ -6679,13 +6814,13 @@ const ICONS = {
 const TABS = [['home','Home'],['shop','Shop'],['pantry','Pantry'],['cook','Cook'],['profile','Profile']];
 const TITLES = { home: 'Stocked', plan: 'Meal plan', shop: 'Shopping list', pantry: 'Pantry', cook: 'Cook',
   profile: 'Profile', inv: 'Pantry', soon: 'Use soon', scan: 'Add food', cat: 'Catalog', set: 'Settings',
-  insights: 'Insights', map: 'Your kitchen' };
+  insights: 'Insights', map: 'Your kitchen', calendar: 'Expiry calendar' };
 const VIEWS = { home: viewHome, plan: viewPlan, shop: viewShopping, pantry: viewPantry, cook: viewCook,
   profile: viewProfile, inv: viewInv, soon: viewSoon, scan: viewScan, cat: viewCatalog, set: viewSet,
-  insights: viewInsights, map: viewMap };
+  insights: viewInsights, map: viewMap, calendar: viewCalendar };
 // which tab in the bottom bar should read as active for non-tab sub-views
 const TAB_OF = { inv: 'pantry', soon: 'pantry', scan: 'pantry', cat: 'profile', set: 'profile', plan: 'home',
-  insights: 'profile', map: 'pantry' };
+  insights: 'profile', map: 'pantry', calendar: 'pantry' };
 let welcomed = false;
 
 function render() {
