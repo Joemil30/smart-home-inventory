@@ -2063,14 +2063,86 @@ function loadSupabase() {
   return supaLoading;
 }
 
+/* ---------------- AUTH ----------------
+   Optional today, mandatory before strangers. Under the shipped v1 schema a
+   household is one Supabase project and the anon key is the family secret;
+   that is a documented, deliberate trade-off (see [[06 Family Sync]]). Under
+   schema-v2-auth.sql the database checks a real user against a membership
+   table, and these are the client-side halves of that.
+
+   Email magic link only, on purpose: Apple Guideline 4.8 says that offering
+   ANY third-party sign-in (Google, Facebook) obliges you to offer Sign in
+   with Apple too. Email-only sidesteps that entirely, and is also the least
+   data we can possibly hold. */
+const AUTH = {
+  user: null,
+  ready: false,
+
+  available: () => !!(S.cfg.supaUrl && S.cfg.supaKey && window.supabase),
+
+  async load() {
+    this.ready = true;
+    if (!AUTH.available()) return null;
+    try {
+      const { data } = await SYNC.client().auth.getSession();
+      AUTH.user = data?.session?.user || null;
+    } catch (e) { AUTH.user = null; }
+    return AUTH.user;
+  },
+
+  async sendLink(email) {
+    const cli = SYNC.client();
+    if (!cli) throw new Error('Add your Supabase details first.');
+    /* Back to this exact page, so a phone that opens the link in Safari lands
+       in the app rather than on a blank success screen. */
+    const { error } = await cli.auth.signInWithOtp({
+      email: String(email).trim(),
+      options: { emailRedirectTo: location.origin + location.pathname },
+    });
+    if (error) throw new Error(error.message);
+  },
+
+  async signOut() {
+    try { await SYNC.client()?.auth.signOut(); } catch (e) {}
+    AUTH.user = null;
+  },
+
+  /* Apple Guideline 5.1.1(v): an account made in the app must be deletable
+     in the app. Two steps, because they fail differently — the rows go
+     first via a SECURITY DEFINER function, then the auth record via an Edge
+     Function holding the service key. If step two fails the user is still
+     un-joined from everything, which is the part that matters for privacy. */
+  async deleteAccount() {
+    const cli = SYNC.client();
+    if (!cli || !AUTH.user) throw new Error('Not signed in.');
+    const { error } = await cli.rpc('purge_my_data');
+    if (error) throw new Error(error.message);
+    try {
+      const { data } = await cli.auth.getSession();
+      await fetch(`${S.cfg.supaUrl.replace(/\/$/, '')}/functions/v1/delete-account`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${data?.session?.access_token || ''}`, apikey: S.cfg.supaKey },
+      });
+    } catch (e) { /* rows are already gone; the auth row is reaped separately */ }
+    await AUTH.signOut();
+    S.cfg.householdCode = ''; await saveCfg();
+  },
+};
+
 const SYNC = {
   cli: null, chan: null,
   configured: () => !!(S.cfg.supaUrl && S.cfg.supaKey && S.cfg.householdCode),
   on: () => SYNC.configured() && !!window.supabase,
   code: () => S.cfg.householdCode,
+  /* persistSession is now ON. Under the v1 schema there was no session to
+     keep — the anon key plus a random household code WAS the credential. The
+     hardened schema (supabase/schema-v2-auth.sql) puts a real user behind
+     every row, so the session has to survive a reload or the app signs
+     itself out every launch. Harmless under v1, required under v2. */
   client() {
     if (!this.cli && S.cfg.supaUrl && S.cfg.supaKey && window.supabase)
-      this.cli = window.supabase.createClient(S.cfg.supaUrl, S.cfg.supaKey, { auth: { persistSession: false } });
+      this.cli = window.supabase.createClient(S.cfg.supaUrl, S.cfg.supaKey,
+        { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
     return this.cli;
   },
   row(store, id, data) {
@@ -4920,6 +4992,68 @@ alter table public.sync enable row level security;
 create policy "family access" on public.sync for all using (true) with check (true);
 alter publication supabase_realtime add table public.sync;`;
 
+/* Sign-in lives above the household card because under the hardened schema
+   it's the prerequisite: without a session there is no auth.uid() for any
+   policy to check, and every query comes back empty. Under the shipped v1
+   schema it's simply optional, so this stays out of the way until the user
+   has Supabase details at all. */
+function renderAuthCard(box) {
+  if (!AUTH.available()) { box.innerHTML = ''; return; }
+  const u = AUTH.user;
+  if (u) {
+    box.innerHTML = `<div class="card">
+      <div class="eyebrow" style="margin-bottom:4px">Signed in</div>
+      <div style="font-weight:700;font-size:15px;margin-bottom:10px">${esc(u.email || 'your account')}</div>
+      <div class="note" style="margin:0 0 12px">Needed only if your Supabase project uses the hardened
+        schema (<code>schema-v2-auth.sql</code>). Without it, sync works on the household code alone.</div>
+      <button class="btn ghost left" data-a="out">${icon('back')}Sign out</button>
+      <button class="btn ghost left danger" data-a="del" style="margin-top:8px">${icon('trash')}Delete my account and data</button>
+    </div>`;
+    box.querySelector('[data-a=out]').onclick = async () => {
+      await AUTH.signOut(); renderAuthCard(box); toast('Signed out');
+    };
+    /* Deliberately two-step and typed, not a single tap. This is the one
+       button in the app that cannot be undone by a toast. */
+    box.querySelector('[data-a=del]').onclick = async () => {
+      if (!await confirmed({
+        title: 'Delete your account?',
+        body: `Your sign-in is removed and you leave every household. If you're the last member of a household, its synced copy is deleted too. What's on this phone stays until you clear it.`,
+        yes: 'Continue', danger: true })) return;
+      const dlg = document.getElementById('dlg');
+      dlg.innerHTML = `<h1 style="margin:0 0 10px">This cannot be undone</h1>
+        <p class="note" style="margin:0 0 12px">Type <b>DELETE</b> to confirm.</p>
+        <input id="dc" autocomplete="off" autocapitalize="characters" placeholder="DELETE">
+        <button class="btn ghost left danger" data-a="go" style="margin-top:12px">${icon('trash')}Delete it all</button>
+        <button class="btn ghost" data-a="c" style="margin-top:8px;border:none;color:var(--vapor)">Keep my account</button>`;
+      dlg.querySelector('[data-a=c]').onclick = () => dlg.close();
+      dlg.querySelector('[data-a=go]').onclick = async () => {
+        if (dlg.querySelector('#dc').value.trim().toUpperCase() !== 'DELETE') return toast('Type DELETE to confirm');
+        try { await AUTH.deleteAccount(); dlg.close(); render(); toast('Account deleted'); }
+        catch (e) { dlg.querySelector('[data-a=go]').insertAdjacentHTML('afterend', `<div class="warn" style="margin-top:8px">${esc(e.message)}</div>`); }
+      };
+      dlg.showModal();
+    };
+    return;
+  }
+  box.innerHTML = `<div class="card">
+    <div class="note" style="margin:0 0 12px">Optional. Only needed if your Supabase project uses the
+      hardened schema. We send a one-tap link — no password to remember, and no third-party sign-in,
+      which is also what keeps Apple's "Sign in with Apple" rule from applying.</div>
+    <label><span class="lbl">Email</span><input id="ae" type="email" inputmode="email"
+      autocomplete="email" placeholder="you@example.com"></label>
+    <button class="btn cold" data-a="link" style="margin-top:10px">${icon('sparkle')}Email me a sign-in link</button>
+    <div id="astat" style="margin-top:10px"></div>
+  </div>`;
+  box.querySelector('[data-a=link]').onclick = async () => {
+    const em = box.querySelector('#ae').value.trim();
+    const st = box.querySelector('#astat');
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) { st.innerHTML = `<div class="warn">That doesn't look like an email address.</div>`; return; }
+    st.innerHTML = `<div class="note"><span class="spin"></span> Sending…</div>`;
+    try { await AUTH.sendLink(em); st.innerHTML = `<div class="note">Check ${esc(em)} — tap the link on this phone.</div>`; }
+    catch (e) { st.innerHTML = `<div class="warn">${esc(e.message)}</div>`; }
+  };
+}
+
 function renderSyncCard(sc) {
   const c = S.cfg;
   if (SYNC.configured()) {
@@ -5836,6 +5970,13 @@ function viewSet(app) {
   const sc = el(`<div class="card"></div>`);
   renderSyncCard(sc);
   app.appendChild(sc);
+
+  const ab = el(`<div></div>`);
+  app.appendChild(ab);
+  /* getSession is async, so paint once now (usually "signed out") and again
+     when the real answer lands, rather than blocking the whole settings screen. */
+  renderAuthCard(ab);
+  if (!AUTH.ready) AUTH.load().then(() => renderAuthCard(ab));
 
   /* The old written-down shopping list, shipped with the app as a seed file.
      It merges — every ticked line becomes history under the shop it was

@@ -83,6 +83,9 @@ them green).
   because every family runs their own project and holds their own key. It
   is a breach the moment one backend serves many households, so any "let
   strangers use it" work starts with Supabase Auth, not with Capacitor.
+  **The replacement is written and unapplied**: `supabase/schema-v2-auth.sql`
+  plus the `ai` and `delete-account` Edge Functions — see
+  `[[15 Auth and Hardening]]` for the order to switch them on.
 - Full chronological history: `[[01 Timeline]]`.
 
 ## Keeping this current
