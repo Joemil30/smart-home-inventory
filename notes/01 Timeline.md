@@ -104,3 +104,15 @@ security changes that must land before strangers arrive — the shipped RLS
 policy is `using (true)`, the AI key must never enter a binary, and accounts
 mean Supabase Auth plus an in-app delete button Apple actually checks for.
 Recommended order: Android first, backend rebuild second, iOS last.
+
+## 2026-08-04 — A design language, from his own references
+The user collected 53 App Store screenshots and said "this is the kind of
+design I was looking for." Written up as `[[13 Design Language]]` — the
+shared skeleton (big left title → search → chip row → sectioned photo
+cards), real photography over illustration, semantic-only colour, floating
+pill nav, and the split `−`/`+` card footer worth stealing outright. Also
+lists the five concrete gaps in Stocked today.
+
+Discovered in the same batch: **"Stocked" is already a shipping App Store
+app** in the same category with the same pitch. The name has to change
+before any store filing — see `[[12 Going Public]]`.

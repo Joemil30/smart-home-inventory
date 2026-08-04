@@ -59,6 +59,11 @@ them green).
 - **`https://github.com/...` and `https://joemil30.github.io/...` are
   different sites.** The user confused these once — github.com is the code
   viewer, github.io is the running app. Always give the `.io` link.
+- **`[[13 Design Language]]` is the visual reference.** Derived from
+  screenshots the user picked out himself, so it's his taste on record, not
+  mine — check new screens against it instead of inventing a look.
+- **"Stocked" is already an App Store app** in this exact category. The
+  name cannot ship as-is; see `[[12 Going Public]]`.
 - **The user is a phone-only, non-technical user.** No local git clone, no
   terminal on their end. Every instruction I give them has to be "open
   Safari, tap this, type this" — not "run this command."
