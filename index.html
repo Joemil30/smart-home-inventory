@@ -441,6 +441,28 @@ label .lbl{font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:up
   box-shadow:0 1px 4px rgba(18,50,30,.2)}
 .loc .lx svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.9}
 
+/* ---- the map ---- */
+.zonewrap{position:relative;border-radius:var(--r);overflow:hidden;border:1px solid var(--rime);
+  background:var(--fog);line-height:0}
+.zonewrap img{width:100%;height:auto;display:block}
+.zonewrap.placing{outline:3px solid var(--cold);outline-offset:-3px;cursor:crosshair}
+.zhint{position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:3;
+  background:var(--cold);color:var(--ink);font-size:12.5px;font-weight:750;padding:7px 13px;
+  border-radius:999px;line-height:1.2;white-space:nowrap;box-shadow:0 2px 10px rgba(0,0,0,.25)}
+/* A pin is a dot plus a label that sits under it. Translated by -50% on x so
+   the dot lands exactly where the finger did, not up-left of it. */
+.pin{position:absolute;transform:translate(-50%,-50%);z-index:2;display:flex;
+  flex-direction:column;align-items:center;gap:3px;padding:0}
+.pin .pd{width:17px;height:17px;border-radius:50%;border:3px solid #fff;
+  box-shadow:0 1px 5px rgba(0,0,0,.4);display:block}
+.pin .pl{font-size:10.5px;font-weight:750;color:#fff;background:rgba(0,0,0,.62);
+  padding:2px 7px;border-radius:999px;white-space:nowrap;max-width:120px;overflow:hidden;
+  text-overflow:ellipsis;backdrop-filter:blur(3px)}
+.pin.have .pd{background:var(--chill)}
+.pin.low  .pd{background:var(--thaw)}
+.pin.out  .pd{background:var(--spoil)}
+.pin:active{transform:translate(-50%,-50%) scale(1.14)}
+
 /* ---- insights ---- */
 .duo{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
 .card{background:var(--shelf);border:1px solid var(--rime);border-radius:var(--r);padding:14px;margin-bottom:14px}
@@ -2270,6 +2292,8 @@ const ICON = {
   plus:    '<path d="M12 5.5v13M5.5 12h13"/>',
   minus:   '<path d="M5.5 12h13"/>',
   chart:   '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  pin:     '<path d="M12 21s7-5.7 7-11a7 7 0 1 0-14 0c0 5.3 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/>',
+  map:     '<path d="M9 3.5 3.5 6v14.5L9 18l6 2.5 5.5-2.5V3.5L15 6z"/><path d="M9 3.5V18M15 6v14.5"/>',
   check:   '<path d="M20 6.5 9.5 17 4.5 12"/>',
   x:       '<path d="M18 6 6 18M6 6l12 12"/>',
   camera:  '<path d="M14.6 4.2H9.4L8 6.6H4.6A1.6 1.6 0 0 0 3 8.2v9.6a1.6 1.6 0 0 0 1.6 1.6h14.8a1.6 1.6 0 0 0 1.6-1.6V8.2a1.6 1.6 0 0 0-1.6-1.6H16z"/><circle cx="12" cy="12.6" r="3.4"/>',
@@ -2949,12 +2973,14 @@ function statTiles(app, rows) {
    see [[13 Design Language]]. The camera button sets the photo; until then
    the card falls back to an emoji on a tinted ground, which still reads.  */
 function locationCards(app, live) {
-  const locs = S.household?.locations || [];
+  const locs = topLocations();
   if (locs.length < 2) return;
-  app.appendChild(el(`<div class="sect"><h3>Where things live</h3><span class="n">${locs.length}</span></div>`));
+  const head = el(`<div class="sect"><h3>Where things live</h3><button class="more" data-a="map">Open the map</button></div>`);
+  head.querySelector('[data-a=map]').onclick = () => { S.view = 'map'; render(); };
+  app.appendChild(head);
   const g = el(`<div class="locs"></div>`);
   locs.forEach(l => {
-    const mine = live.filter(i => i.loc === l.id);
+    const mine = itemsIn(l.id);
     const low  = mine.filter(i => freshness(i).left <= 3).length;
     const c = el(`<div class="loc">
       <div class="lp">${l.photo ? `<img src="${esc(l.photo)}" alt="">` : `<span class="emoji">${LOC_EMOJI[l.kind] || '🗄️'}</span>`}
@@ -3003,13 +3029,18 @@ function viewInv(app) {
     b.onclick = () => { S.loc = id; S.q = ''; render(); };
     return b;
   };
+  /* Only top-level shelves get a chip. Zones (a drawer inside the fridge)
+     belong to the map, not to a filter strip that would grow to fifteen
+     chips the moment someone photographs their kitchen properly. A shelf's
+     count includes everything in its zones. */
   chips.appendChild(mk('all', `All (${live.length})`));
-  S.household.locations.forEach(l =>
-    chips.appendChild(mk(l.id, `${l.name} (${live.filter(i => i.loc === l.id).length})`)));
+  topLocations().forEach(l =>
+    chips.appendChild(mk(l.id, `${l.name} (${itemsIn(l.id).length})`)));
   app.appendChild(chips);
 
   /* Expiration-status filter (Module 2) — counts respect the shelf filter. */
-  const scoped = S.loc === 'all' ? live : live.filter(i => i.loc === S.loc);
+  const fam = S.loc === 'all' ? null : new Set(locFamily(S.loc));
+  const scoped = fam ? live.filter(i => fam.has(i.loc)) : live;
   const st = S.status || 'all';
   const statusChips = el(`<div class="chips"></div>`);
   const stat = (id, label) => {
@@ -3062,7 +3093,7 @@ function viewInv(app) {
 function paintList(box) {
   box.innerHTML = '';
   let live = S.items.filter(i => !i.deleted);
-  if (S.loc !== 'all') live = live.filter(i => i.loc === S.loc);
+  if (S.loc !== 'all') { const fam = new Set(locFamily(S.loc)); live = live.filter(i => fam.has(i.loc)); }
   const st = S.status || 'all';
   if (st !== 'all') live = live.filter(i => { const l = freshness(i).left; return st === 'expired' ? l < 0 : st === 'soon' ? (l >= 0 && l <= 3) : l > 3; });
 
@@ -5731,6 +5762,201 @@ function restockSheet(c) {
 }
 
 /* ================================================================
+   THE MAP — your actual fridge, photographed, with your actual food
+   pinned onto it.
+
+   Zones (a shelf, the crisper drawer, the door) are modelled as ordinary
+   locations carrying a `parent`, NOT as a second hierarchy. That one choice
+   means items keep using `loc`, and every existing shelf dropdown, filter,
+   count and sync path works on zones for free. The only new field on an
+   item is `spot` — {x,y} as fractions of the zone photo.
+
+   And because the pins read live from S.items, the map maintains itself:
+   eat the yoghurt and its pin is gone. A map you have to re-photograph is
+   a map that is wrong by Thursday, which is how this idea usually dies.
+   ================================================================ */
+const topLocations = () => (S.household?.locations || []).filter(l => !l.parent);
+const zonesOf = id => (S.household?.locations || []).filter(l => l.parent === id);
+const locFamily = id => [id, ...zonesOf(id).map(z => z.id)];
+const itemsIn = id => { const fam = new Set(locFamily(id)); return S.items.filter(i => !i.deleted && fam.has(i.loc)); };
+
+function viewMap(app) {
+  const tops = topLocations();
+  if (!tops.length) return app.appendChild(el(`<div class="empty"><div class="big">No shelves yet</div></div>`));
+  if (!S.mapLoc || !(S.household.locations || []).some(l => l.id === S.mapLoc)) S.mapLoc = tops[0].id;
+
+  const chips = el(`<div class="chips"></div>`);
+  tops.forEach(l => {
+    const b = el(`<button class="chip" aria-pressed="${S.mapLoc === l.id}">${esc(l.name)} (${itemsIn(l.id).length})</button>`);
+    b.onclick = () => { S.mapLoc = l.id; S.mapZone = null; render(); };
+    chips.appendChild(b);
+  });
+  app.appendChild(chips);
+
+  const loc = S.household.locations.find(l => l.id === S.mapLoc);
+  const zones = zonesOf(loc.id);
+
+  if (S.mapZone && zones.some(z => z.id === S.mapZone)) return zoneDetail(app, loc, zones.find(z => z.id === S.mapZone));
+
+  /* The overview: every zone in this appliance as a photo card. Items sitting
+     directly on the location rather than in a zone get their own card, so
+     nothing is ever invisible just because it hasn't been filed yet. */
+  app.appendChild(el(`<div class="sect"><h3>Inside your ${esc(loc.name.toLowerCase())}</h3><span class="n">${zones.length} zone${zones.length === 1 ? '' : 's'}</span></div>`));
+
+  if (!zones.length) {
+    app.appendChild(el(`<div class="card note" style="padding:14px">
+      Photograph each shelf and drawer, then drop your food onto the photo. Finding
+      the sour cream stops being a memory test.</div>`));
+  }
+
+  const g = el(`<div class="locs"></div>`);
+  zones.forEach(z => {
+    const mine = S.items.filter(i => !i.deleted && i.loc === z.id);
+    const placed = mine.filter(i => i.spot).length;
+    const c = el(`<div class="loc">
+      <div class="lp">${z.photo ? `<img src="${esc(z.photo)}" alt="">` : `<span class="emoji">${LOC_EMOJI[loc.kind] || '🗄️'}</span>`}
+        <span class="lc">${mine.length}</span></div>
+      <div class="lt"><div class="ln">${esc(z.name)}</div>
+        <div class="lm">${z.photo ? `${placed}/${mine.length} pinned` : 'No photo yet'}</div></div></div>`);
+    c.onclick = () => { S.mapZone = z.id; render(); };
+    g.appendChild(c);
+  });
+  app.appendChild(g);
+
+  const loose = S.items.filter(i => !i.deleted && i.loc === loc.id);
+  const add = el(`<button class="btn ghost left">${icon('plus')}Add a shelf or drawer</button>`);
+  add.onclick = () => addZoneSheet(loc);
+  app.appendChild(add);
+
+  if (loose.length) {
+    app.appendChild(el(`<div class="sect"><h3>Not in a zone yet</h3><span class="n">${loose.length}</span></div>`));
+    const box = el(`<div></div>`);
+    paintRows(box, loose);
+    app.appendChild(box);
+  }
+}
+
+function addZoneSheet(loc) {
+  const dlg = document.getElementById('dlg');
+  dlg.innerHTML = `<div class="eyebrow">${esc(loc.name)}</div>
+    <h1 style="margin:6px 0 12px">Add a shelf or drawer</h1>
+    <label><span class="lbl">What is it called?</span>
+      <input id="zn" placeholder="Crisper drawer" autocomplete="off"></label>
+    <div class="note" style="margin:8px 0 12px">Name it the way you'd say it out loud — "top shelf",
+      "the door", "meat drawer". You'll photograph it next.</div>
+    <button class="btn cold" data-a="ok">${icon('check')}Add it</button>
+    <button class="btn ghost" data-a="c" style="margin-top:8px;border:none;color:var(--vapor)">Cancel</button>`;
+  dlg.querySelector('[data-a=c]').onclick = () => dlg.close();
+  dlg.querySelector('[data-a=ok]').onclick = async () => {
+    const name = dlg.querySelector('#zn').value.trim();
+    if (!name) return;
+    S.household.locations.push({ id: uid(), name, kind: loc.kind, parent: loc.id });
+    await saveHousehold();
+    dlg.close(); render();
+  };
+  dlg.showModal();
+  setTimeout(() => dlg.querySelector('#zn')?.focus(), 60);
+}
+
+/* One zone, full width: the photo, every pinned item on top of it, and the
+   ones still waiting to be placed underneath. */
+function zoneDetail(app, loc, z) {
+  const back = el(`<button class="btn ghost left" style="margin-bottom:12px">${icon('back', 16)}${esc(loc.name)}</button>`);
+  back.onclick = () => { S.mapZone = null; S.placing = null; render(); };
+  app.appendChild(back);
+
+  const mine = S.items.filter(i => !i.deleted && i.loc === z.id);
+  app.appendChild(el(`<div class="sect"><h3>${esc(z.name)}</h3><span class="n">${mine.length} item${mine.length === 1 ? '' : 's'}</span></div>`));
+
+  if (!z.photo) {
+    const b = el(`<button class="btn cold">${icon('camera')}Photograph this ${esc(z.name.toLowerCase())}</button>`);
+    b.onclick = () => pickZonePhoto(z);
+    app.appendChild(el(`<div class="card note" style="padding:14px">Open it, take one photo straight on,
+      and you'll be able to tap your food onto exactly where it sits.</div>`));
+    app.appendChild(b);
+  } else {
+    const placing = S.placing && mine.find(i => i.id === S.placing);
+    const wrap = el(`<div class="zonewrap${placing ? ' placing' : ''}">
+      <img src="${esc(z.photo)}" alt="${esc(z.name)}">
+      ${placing ? `<div class="zhint">Tap where the ${esc(placing.name)} is</div>` : ''}</div>`);
+    mine.filter(i => i.spot).forEach(i => {
+      const f = freshness(i);
+      const cls = f.left < 0 ? 'out' : f.left <= 3 ? 'low' : 'have';
+      const p = el(`<button class="pin ${cls}" style="left:${(i.spot.x * 100).toFixed(1)}%;top:${(i.spot.y * 100).toFixed(1)}%"
+        aria-label="${esc(i.name)}, ${esc(f.label)}"><span class="pd"></span><span class="pl">${esc(i.name)}</span></button>`);
+      p.onclick = e => { e.stopPropagation(); if (!S.placing) itemSheet(i); };
+      wrap.appendChild(p);
+    });
+    /* Placing is a tap on the photo, not a drag: a drag inside a scrolling
+       page on iOS fights the scroll and loses. */
+    wrap.onclick = async e => {
+      if (!placing) return;
+      const r = wrap.getBoundingClientRect();
+      placing.spot = { x: Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)),
+                       y: Math.min(1, Math.max(0, (e.clientY - r.top) / r.height)) };
+      await saveItem(placing);
+      S.placing = null; render();
+      toast(`${placing.name} pinned`);
+    };
+    app.appendChild(wrap);
+
+    const row = el(`<div class="row" style="margin:10px 0 14px">
+      <button class="btn ghost" data-a="rp" style="flex:1">${icon('camera')}Retake photo</button></div>`);
+    row.querySelector('[data-a=rp]').onclick = () => pickZonePhoto(z);
+    app.appendChild(row);
+
+    const unplaced = mine.filter(i => !i.spot);
+    if (unplaced.length) {
+      app.appendChild(el(`<div class="sect"><h3>Not pinned yet</h3><span class="n">${unplaced.length}</span></div>`));
+      const box = el(`<div></div>`);
+      unplaced.forEach(i => {
+        const r = el(`<div class="item"><div class="thumb">${i.image ? photoLayers(i.image) : `<span class="emoji">${foodEmoji(i.name, i.cat) || '🍽️'}</span>`}</div>
+          <div class="body"><div class="nm">${esc(i.name)}</div><div class="meta">${esc(freshness(i).label)}</div></div>
+          <div class="act"><button class="plus" data-a="place" aria-label="Place ${esc(i.name)}">${icon('pin', 17)}</button></div></div>`);
+        r.querySelector('[data-a=place]').onclick = () => { S.placing = i.id; render(); };
+        box.appendChild(r);
+      });
+      app.appendChild(box);
+    }
+    if (S.placing) {
+      const cancel = el(`<button class="btn ghost" style="margin-top:4px">Cancel placing</button>`);
+      cancel.onclick = () => { S.placing = null; render(); };
+      app.appendChild(cancel);
+    }
+  }
+
+  const del = el(`<button class="btn ghost left danger" style="margin-top:14px">${icon('trash')}Remove this zone</button>`);
+  del.onclick = async () => {
+    if (!await confirmed({ title: `Remove ${z.name}?`,
+      body: `Anything in it moves back to ${loc.name}. Nothing is thrown away.`,
+      yes: 'Yes, remove it', danger: true })) return;
+    for (const i of S.items.filter(x => x.loc === z.id)) { i.loc = loc.id; delete i.spot; await saveItem(i); }
+    S.household.locations = S.household.locations.filter(l => l.id !== z.id);
+    await saveHousehold();
+    S.mapZone = null; render();
+  };
+  app.appendChild(del);
+}
+
+function pickZonePhoto(z) {
+  const inp = el(`<input type="file" accept="image/*" style="display:none">`);
+  document.body.appendChild(inp);
+  inp.onchange = async () => {
+    const f = inp.files?.[0]; inp.remove();
+    if (!f) return;
+    try {
+      /* Bigger than a product thumbnail on purpose — you have to be able to
+         recognise a specific jar in it — but still capped, because several
+         shelf photos otherwise dominate the whole sync payload. */
+      z.photo = await downscaleImage(f, 1000);
+      await saveHousehold();
+      render();
+    } catch { toast(`Couldn't read that photo`); }
+  };
+  inp.click();
+}
+
+/* ================================================================
    INSIGHTS — the only screen that argues the app is worth keeping.
    Everything here is computed from tombstoned items, which already carry
    wasted/wastedAt/goneAt/rescued. Nothing new is recorded to build it.
@@ -5930,13 +6156,13 @@ const ICONS = {
 const TABS = [['home','Home'],['shop','Shop'],['pantry','Pantry'],['cook','Cook'],['profile','Profile']];
 const TITLES = { home: 'Stocked', plan: 'Meal plan', shop: 'Shopping list', pantry: 'Pantry', cook: 'Cook',
   profile: 'Profile', inv: 'Pantry', soon: 'Use soon', scan: 'Add food', cat: 'Catalog', set: 'Settings',
-  insights: 'Insights' };
+  insights: 'Insights', map: 'Your kitchen' };
 const VIEWS = { home: viewHome, plan: viewPlan, shop: viewShopping, pantry: viewPantry, cook: viewCook,
   profile: viewProfile, inv: viewInv, soon: viewSoon, scan: viewScan, cat: viewCatalog, set: viewSet,
-  insights: viewInsights };
+  insights: viewInsights, map: viewMap };
 // which tab in the bottom bar should read as active for non-tab sub-views
 const TAB_OF = { inv: 'pantry', soon: 'pantry', scan: 'pantry', cat: 'profile', set: 'profile', plan: 'home',
-  insights: 'profile' };
+  insights: 'profile', map: 'pantry' };
 let welcomed = false;
 
 function render() {
