@@ -26,6 +26,12 @@ const CASES = [
   ['Pepperoni',                 'meat'],       // "pepper" inside pepperoni -> was Produce
   ['Saran wrap',                'household'],  // "wrap" -> was a tortilla
   ['Chickpeas',                 'cans'],       // "peas" inside chickpeas
+  // found by the store map putting these in visibly wrong aisles
+  ['Tortilla chips',            'snacks'],     // "tortilla" -> was Bakery
+  ['Potato chips',              'snacks'],     // "potato" -> was Produce
+  ['Tinned tomatoes',           'cans'],       // "tomato" -> was Produce
+  ['Canned chickpeas',          'cans'],
+  ['Jarred roasted peppers',    'cans'],       // "pepper" -> was Produce
 
   // compounds: the specific phrase must beat its parts
   ['Avocado oil',               'pantry'],

@@ -33,6 +33,7 @@ PLAYWRIGHT_MODULE=playwright CHROME_PATH=/path/to/chrome sh test/run.sh
 | `insights-test` | the eaten/wasted maths, rankings, date windowing, and the spending guard |
 | `map-test` | zones-as-locations, pin placement, and that the map maintains itself |
 | `shop-test` | the missed band, low-stock thresholds, and the running total |
+| `storemap-test` | the aisle map, per-store aisle names, and store colour/badge |
 
 `genlist.js` is not a test — it regenerates `my-list.json` from the shopping
 list in its header, by driving the app's own `addStore`/`addToList`/

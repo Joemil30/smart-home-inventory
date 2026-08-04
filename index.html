@@ -474,6 +474,35 @@ label .lbl{font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:up
   transition:width .25s ease}
 .tag.price{background:var(--fog);color:var(--vapor)}
 
+/* ---- the store map ---- */
+.maphead{display:flex;align-items:center;gap:11px;margin-bottom:12px}
+.maphead .mb{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;
+  color:#fff;font-size:15px;font-weight:800;flex:0 0 auto}
+.maphead .mt{display:flex;flex-direction:column;min-width:0}
+.maphead .mt b{font-size:16px;font-weight:750;letter-spacing:-.015em}
+.maphead .mt i{font-style:normal;font-size:12px;color:var(--vapor);font-weight:600;margin-top:1px}
+.amap{display:flex;flex-direction:column;gap:9px}
+.ab{border-radius:14px;padding:11px 12px 12px;border:1px solid var(--rime)}
+.ab .ah{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:800;
+  color:var(--frost);letter-spacing:-.01em}
+.ab .an{width:21px;height:21px;border-radius:7px;background:var(--scrim);color:var(--frost);
+  font-size:11px;font-weight:800;display:grid;place-items:center;flex:0 0 auto}
+.ab .are{margin-left:auto;color:var(--vapor);width:26px;height:26px;display:grid;place-items:center;
+  border-radius:8px;flex:0 0 auto}
+.ab .are svg{stroke:currentColor;fill:none;stroke-width:1.9}
+.ab .al{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.ab .ai{background:var(--scrim);border-radius:999px;padding:4px 10px;font-size:12px;
+  font-weight:650;color:var(--frost)}
+/* Two-up segmented control — the iOS idiom for "same content, other view". */
+.seg{display:flex;gap:4px;background:var(--fog);border-radius:12px;padding:4px;margin-bottom:12px}
+.seg button{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 0;
+  border-radius:9px;font-size:13.5px;font-weight:700;color:var(--vapor)}
+.seg button svg{stroke:currentColor;fill:none;stroke-width:1.9}
+.seg button[aria-selected="true"]{background:var(--shelf);color:var(--frost);box-shadow:var(--shadow-sm)}
+.swatches{display:grid;grid-template-columns:repeat(8,1fr);gap:8px}
+.sw{aspect-ratio:1;border-radius:50%;border:3px solid transparent}
+.sw.on{border-color:var(--frost);box-shadow:0 0 0 2px var(--shelf) inset}
+
 /* ---- the map ---- */
 .zonewrap{position:relative;border-radius:var(--r);overflow:hidden;border:1px solid var(--rime);
   background:var(--fog);line-height:0}
@@ -935,6 +964,33 @@ const CAT_AISLE = {
   'juice-drink':'drinks','household':'household','leftovers':'other','other':'other',
 };
 const aisleOf = cat => CAT_AISLE[cat] || 'other';
+
+/* A store's own words for its own aisles. Costco calls it "A16 - Bread";
+   the corner shop just calls it bread. The generic name is the fallback, so
+   renaming is always optional and never destroys the default. */
+const aisleLabel = (a, store = '') =>
+  ((S.household?.aisleNames || {})[store || '_'] || {})[a] || AISLE_NAME(a);
+async function saveAisleName(store, a, name) {
+  if (!S.household) return;
+  const all = { ...(S.household.aisleNames || {}) };
+  const mine = { ...(all[store || '_'] || {}) };
+  if (name && name.trim() && name.trim() !== AISLE_NAME(a)) mine[a] = name.trim(); else delete mine[a];
+  all[store || '_'] = mine;
+  S.household.aisleNames = all;
+  await saveHousehold();
+}
+
+/* Each store gets a colour and a one-or-two character badge so Costco and
+   Greens are distinguishable at a glance rather than by reading. Derived
+   from the name until the user overrides it, so it is never blank. */
+const STORE_COLOURS = ['#3D7EA6','#4F7A5B','#8A6A3D','#9B4A4A','#7A5C9E','#3D8B8B','#A65E3D','#5B6B7A'];
+function storeStyle(id) {
+  const s = (S.household?.stores || []).find(x => x.id === id);
+  const name = s?.name || 'General';
+  const hash = [...String(id || 'general')].reduce((n, c) => (n * 31 + c.charCodeAt(0)) >>> 0, 7);
+  return { colour: s?.colour || STORE_COLOURS[hash % STORE_COLOURS.length],
+           badge: s?.badge || name.slice(0, 1).toUpperCase() };
+}
 
 /* A store's own walking order, falling back to the default loop. */
 function aisleOrder(store = '') {
@@ -1416,6 +1472,15 @@ function guessCat(name) {
     [/\bfish\b|salmon|tuna|shrimp|\bcod\b|tilapia|clam|crab|lobster|scallop|mussel|anchov/, 'fish-raw'],
     [/chicken|turkey|\bduck\b/, 'poultry-raw'],
     [/beef|pork|steak|lamb|\bmeat\b|sausage|bacon|bison|veal|chops\b/, 'meat-raw'],
+
+    /* -- preserved and processed forms of fresh things, deliberately ahead of
+       the produce and bakery rules that would otherwise claim the noun buried
+       inside them. "Tinned tomatoes" is a cupboard item, not produce;
+       "tortilla chips" is a snack, not bakery; "potato chips" is a snack, not
+       a root vegetable. Same specific-before-general rule that "cola" inside
+       "chocolate" taught us — see [[03 Categorization guessCat]]. */
+    [/\b(tinned|canned|jarred)\b/, 'canned'],
+    [/(tortilla|potato|corn|pita|veg(gie)?|plantain|banana)\s*chips?\b/, 'snack'],
 
     // -- produce
     [/lettuce|spinach|kale|arugula|romaine|\bgreens\b|\bsalad\b|micro ?green/, 'produce-leafy'],
@@ -2339,6 +2404,7 @@ const ICON = {
   plus:    '<path d="M12 5.5v13M5.5 12h13"/>',
   minus:   '<path d="M5.5 12h13"/>',
   chart:   '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  palette: '<path d="M12 3a9 9 0 1 0 0 18c1 0 1.7-.8 1.7-1.7 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.1 0-.9.8-1.7 1.7-1.7H16A5 5 0 0 0 21 10c0-3.9-4-7-9-7z"/><circle cx="7.5" cy="11" r="1.1"/><circle cx="10.5" cy="7" r="1.1"/><circle cx="15" cy="8" r="1.1"/>',
   pin:     '<path d="M12 21s7-5.7 7-11a7 7 0 1 0-14 0c0 5.3 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/>',
   map:     '<path d="M9 3.5 3.5 6v14.5L9 18l6 2.5 5.5-2.5V3.5L15 6z"/><path d="M9 3.5V18M15 6v14.5"/>',
   check:   '<path d="M20 6.5 9.5 17 4.5 12"/>',
@@ -4908,13 +4974,26 @@ function viewShopping(app) {
   const inp = add.querySelector('#sadd');
   const listBox = el(`<div id="shoplist"></div>`);
 
+  /* List or Map. The map is only offered for a real shop — General has no
+     single walk to lay out, which is the same reason it has no aisle order. */
+  const repaint = () => (S.shopMap && store) ? paintStoreMap(listBox, store) : paintShopping(listBox);
+  if (store) {
+    const seg = el(`<div class="seg" role="tablist">
+      <button role="tab" aria-selected="${!S.shopMap}">${icon('rows',15)}List</button>
+      <button role="tab" aria-selected="${!!S.shopMap}">${icon('map',15)}Map</button></div>`);
+    const [bl, bm] = seg.querySelectorAll('button');
+    bl.onclick = () => { S.shopMap = false; render(); };
+    bm.onclick = () => { S.shopMap = true; render(); };
+    app.appendChild(seg);
+  }
+
   let adding = false;
   const doAdd = async () => {
     const v = inp.value.trim();
     if (!v || adding) return;
     adding = true;
     inp.value = '';                       // clear immediately — feels instant
-    try { const it = await addToList(v, '', store); paintShopping(listBox, it && it.id); }
+    try { const it = await addToList(v, '', store); if (S.shopMap && store) repaint(); else paintShopping(listBox, it && it.id); }
     finally { adding = false; inp.focus(); }
   };
   add.querySelector('[data-a=add]').onclick = doAdd;
@@ -4925,7 +5004,7 @@ function viewShopping(app) {
     app.appendChild(el(`<div class="note" style="margin:0 0 12px">This list is on this phone only. Turn on <b>Profile → Family sync</b> and the whole family shares one list.</div>`));
 
   app.appendChild(listBox);
-  paintShopping(listBox);
+  repaint();
 
   // The history sits under the live list, scoped to the shop you're standing
   // in. Ticking something off at the till lands it here; tapping it here puts
@@ -5008,6 +5087,105 @@ function paintHistory(box, store) {
 /* The compact row — AnyList's shape. Grouped into eight aisles, a photo grid
    with one tile per aisle is a mile of scrolling; this is the density a real
    shop needs. Photos stay a tap away for browsing. */
+/* ---------------- the store map ----------------
+   Your list, drawn as the walk rather than as a column: one block per aisle
+   in the order you actually pass them, sized by how much you're picking up
+   there. Grocery Map's idea, built on the per-store aisle order this app
+   already had — so there is no new data to maintain, and reordering the
+   walk in the existing sheet redraws the map. */
+function paintStoreMap(box, store) {
+  box.innerHTML = '';
+  const mine = S.shopping.filter(s => !s.deleted && (!store || (s.store || '') === store));
+  const todo = mine.filter(s => !s.done);
+  if (!todo.length) {
+    box.appendChild(el(`<div class="empty" style="padding-top:30px">
+      <div class="big">Nothing to walk for</div>
+      <div class="sub">Add things to this list and they'll lay themselves out aisle by aisle.</div></div>`));
+    return;
+  }
+  const groups = new Map();
+  todo.forEach(s => {
+    const a = aisleOf(s.cat || guessCat(s.name));
+    if (!groups.has(a)) groups.set(a, []);
+    groups.get(a).push(s);
+  });
+  const order = aisleOrder(store).filter(a => groups.has(a));
+  const st = storeStyle(store);
+
+  box.appendChild(el(`<div class="maphead">
+    <span class="mb" style="background:${esc(st.colour)}">${esc(st.badge)}</span>
+    <span class="mt"><b>${esc(storeName(store) || 'General')}</b>
+      <i>${todo.length} item${todo.length === 1 ? '' : 's'} · ${order.length} aisle${order.length === 1 ? '' : 's'}</i></span></div>`));
+
+  const grid = el(`<div class="amap"></div>`);
+  order.forEach((a, i) => {
+    const rows = groups.get(a);
+    /* Every aisle is tinted with the store's own colour at an opacity set by
+       how much of the trip is in it, so the busiest stop reads first. */
+    const weight = 0.10 + Math.min(0.30, rows.length / todo.length * 0.5);
+    const blk = el(`<div class="ab" style="background:color-mix(in srgb, ${esc(st.colour)} ${(weight * 100).toFixed(0)}%, var(--shelf))">
+      <div class="ah"><span class="an">${i + 1}</span>${esc(aisleLabel(a, store))}
+        <button class="are" data-a="ren" aria-label="Rename ${esc(aisleLabel(a, store))}">${icon('pencil', 13)}</button></div>
+      <div class="al">${rows.map(s => `<span class="ai">${esc(s.name)}</span>`).join('')}</div></div>`);
+    blk.querySelector('[data-a=ren]').onclick = e => { e.stopPropagation(); renameAisleSheet(a, store, () => paintStoreMap(box, store)); };
+    grid.appendChild(blk);
+  });
+  box.appendChild(grid);
+
+  const row = el(`<div class="row" style="margin-top:12px">
+    <button class="btn ghost" data-a="ord" style="flex:1">${icon('rows')}Reorder the walk</button>
+    <button class="btn ghost" data-a="sty" style="flex:1">${icon('palette')}Store look</button></div>`);
+  row.querySelector('[data-a=ord]').onclick = () => aisleOrderSheet(store, () => paintStoreMap(box, store));
+  row.querySelector('[data-a=sty]').onclick = () => storeStyleSheet(store, () => render());
+  box.appendChild(row);
+}
+
+function renameAisleSheet(a, store, after) {
+  const dlg = document.getElementById('dlg');
+  dlg.innerHTML = `<div class="eyebrow">${esc(storeName(store) || 'General')}</div>
+    <h1 style="margin:6px 0 12px">Rename this aisle</h1>
+    <label><span class="lbl">What does this store call it?</span>
+      <input id="an" value="${esc(aisleLabel(a, store))}" autocomplete="off"></label>
+    <div class="note" style="margin:8px 0 12px">Use the store's own signage — "A16 · Bread", "Back wall".
+      Only changes it here, at ${esc(storeName(store) || 'General')}.</div>
+    <button class="btn cold" data-a="ok">${icon('check')}Save</button>
+    <button class="btn ghost left" data-a="reset" style="margin-top:8px">Reset to "${esc(AISLE_NAME(a))}"</button>
+    <button class="btn ghost" data-a="c" style="margin-top:8px;border:none;color:var(--vapor)">Cancel</button>`;
+  const done = async name => { await saveAisleName(store, a, name); dlg.close(); if (after) after(); };
+  dlg.querySelector('[data-a=ok]').onclick = () => done(dlg.querySelector('#an').value);
+  dlg.querySelector('[data-a=reset]').onclick = () => done('');
+  dlg.querySelector('[data-a=c]').onclick = () => dlg.close();
+  dlg.showModal();
+}
+
+function storeStyleSheet(store, after) {
+  const s = (S.household?.stores || []).find(x => x.id === store);
+  if (!s) return toast(`The General list has no store to style`);
+  const cur = storeStyle(store);
+  const dlg = document.getElementById('dlg');
+  dlg.innerHTML = `<div class="eyebrow">${esc(s.name)}</div>
+    <h1 style="margin:6px 0 12px">Store look</h1>
+    <div class="swatches">${STORE_COLOURS.map(c =>
+      `<button class="sw${c === cur.colour ? ' on' : ''}" data-c="${c}" style="background:${c}" aria-label="Use ${c}"></button>`).join('')}</div>
+    <label style="margin-top:12px"><span class="lbl">Badge — one or two characters</span>
+      <input id="sb" maxlength="2" value="${esc(cur.badge)}" autocomplete="off" style="text-transform:uppercase"></label>
+    <button class="btn cold" data-a="ok" style="margin-top:12px">${icon('check')}Save</button>
+    <button class="btn ghost" data-a="c" style="margin-top:8px;border:none;color:var(--vapor)">Cancel</button>`;
+  let pick = cur.colour;
+  dlg.querySelectorAll('[data-c]').forEach(b => b.onclick = () => {
+    pick = b.dataset.c;
+    dlg.querySelectorAll('.sw').forEach(x => x.classList.toggle('on', x === b));
+  });
+  dlg.querySelector('[data-a=ok]').onclick = async () => {
+    s.colour = pick;
+    s.badge = (dlg.querySelector('#sb').value.trim() || s.name.slice(0, 1)).toUpperCase().slice(0, 2);
+    await saveHousehold();
+    dlg.close(); if (after) after();
+  };
+  dlg.querySelector('[data-a=c]').onclick = () => dlg.close();
+  dlg.showModal();
+}
+
 /* "They didn't have it" used to be the end of the story — the line went to
    Completed and Clear bought swept it away, so the thing you failed to buy
    was the one thing the app forgot. Now it waits here and comes back in one

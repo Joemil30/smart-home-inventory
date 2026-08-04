@@ -10,7 +10,7 @@
 set -u
 cd "$(dirname "$0")"
 
-SUITES="verify aisle-test sheet-test home-test catalog-test backup-test ai-test cat-test import-test sw-test theme-test update-test history-test insights-test map-test shop-test"
+SUITES="verify aisle-test sheet-test home-test catalog-test backup-test ai-test cat-test import-test sw-test theme-test update-test history-test insights-test map-test shop-test storemap-test"
 fail=0
 
 for t in $SUITES; do
