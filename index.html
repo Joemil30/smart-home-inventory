@@ -117,7 +117,9 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0;background:var(--void);color:var(--frost);font-family:var(--sans);
   overscroll-behavior-y:contain;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
-body{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom));min-height:100dvh}
+/* The nav now floats clear of the bottom edge, so content has to clear the
+   pill AND the gap under it, or the last card sits behind the glass. */
+body{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 24px);min-height:100dvh}
 button{font-family:inherit;font-size:inherit;color:inherit;background:none;border:none;cursor:pointer}
 input,select,textarea{font-family:var(--sans);font-size:16px;background:var(--shelf);color:var(--frost);
   border:1.5px solid var(--rime-hi);border-radius:var(--r-sm);padding:12px 13px;width:100%;transition:border-color .15s}
@@ -151,13 +153,30 @@ header #searchBtn:active,header #cartBtn:active,header #setBtn:active{background
 main{padding:var(--pad);max-width:660px;margin:0 auto}
 
 /* ---- bottom nav, with a raised centre Scan button ---- */
-nav{position:fixed;bottom:0;left:0;right:0;z-index:20;height:calc(var(--nav-h) + env(safe-area-inset-bottom));
-  padding-bottom:env(safe-area-inset-bottom);background:var(--glass-nav);backdrop-filter:saturate(1.4) blur(16px);
-  border-top:1px solid var(--rime);display:flex}
+/* A floating pill, not a bar welded to the bottom edge. Every current-looking
+   app in the reference set (Grocery Map, Summo, Cozzo) does this, and the
+   full-width bar is the single clearest "this was built in 2019" tell.
+   The inset also stops the last list row from feeling guillotined. */
+nav{position:fixed;bottom:calc(10px + env(safe-area-inset-bottom));left:12px;right:12px;z-index:20;
+  height:var(--nav-h);border-radius:22px;background:var(--glass-nav);
+  backdrop-filter:saturate(1.4) blur(20px);border:1px solid var(--rime);
+  box-shadow:0 6px 24px rgba(18,50,30,.13);display:flex;padding:0 4px}
+@media (prefers-color-scheme:dark){nav{box-shadow:0 6px 24px rgba(0,0,0,.45)}}
+:root[data-theme="dark"] nav{box-shadow:0 6px 24px rgba(0,0,0,.45)}
 nav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
-  color:var(--vapor-dim);font-size:10px;font-weight:650;letter-spacing:.01em}
+  color:var(--vapor-dim);font-size:10px;font-weight:650;letter-spacing:.01em;
+  border-radius:18px;margin:5px 2px}
 nav button svg{width:23px;height:23px;stroke:currentColor;fill:none;stroke-width:1.7}
-nav button[aria-current="page"]{color:var(--cold)}
+/* Five labels inside an inset pill is tight; a wrapping label pushes the row
+   two lines tall and breaks the whole bar. Never wrap — shrink instead. */
+nav button span{white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+nav button .ni{position:relative;display:block;line-height:0;overflow:visible}
+nav button .nb{position:absolute;top:-4px;right:-9px;min-width:16px;height:16px;padding:0 4px;
+  border-radius:999px;background:var(--thaw);color:#fff;font-size:9.5px;font-weight:800;
+  display:grid;place-items:center;line-height:1;box-shadow:0 0 0 2px var(--glass-nav)}
+/* Active tab is a filled pill, the way the references mark it — colour alone
+   on a 10px label is not a strong enough signal at arm's length. */
+nav button[aria-current="page"]{color:var(--cold);background:var(--cold-soft)}
 nav button.fab svg{width:auto;height:24px;stroke:#fff;stroke-width:1.9;box-sizing:content-box;padding:13px;
   background:var(--cold);border-radius:50%;box-shadow:var(--shadow-fab);
   margin-top:-20px;border:4px solid var(--void)}
@@ -374,6 +393,53 @@ label .lbl{font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:up
   display:grid;place-items:center;color:#fff;font-size:14px;flex:0 0 auto;background:var(--shelf)}
 .tile .tc:active{background:var(--fog)}
 .tile.done{opacity:.6}
+
+/* Split −/+ footer. The best interaction idea in the reference set: the two
+   things you actually do to a thing you own are permanently on screen and
+   thumb-sized, instead of hiding behind a tap-through or a swipe nobody
+   discovers. Red left, green right, quantity between them. */
+.tile .tq{display:flex;align-items:stretch;border-top:1px solid var(--rime);margin-top:auto;
+  background:var(--shelf);width:100%;overflow:hidden}
+.tile .tq button{flex:0 0 42%;display:grid;place-items:center;padding:10px 0;
+  font-size:17px;font-weight:800;line-height:1}
+.tile .tq button svg{width:17px;height:17px;stroke-width:2.4;stroke:currentColor;fill:none}
+.tile .tq .mn{color:var(--spoil);background:var(--spoil-soft)}
+.tile .tq .pl{color:var(--t-have);background:var(--t-have-bg)}
+.tile .tq .mn:active{filter:brightness(.94)}
+.tile .tq .pl:active{filter:brightness(.94)}
+.tile .tq .qn{flex:1;display:grid;place-items:center;font-size:13px;font-weight:800;
+  color:var(--frost);font-variant-numeric:tabular-nums}
+
+/* Stat tiles — icon, big number, tiny caps label, tinted by what it means.
+   Three across, above the content, readable in about a second. */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:14px}
+.stat{border-radius:14px;padding:11px 8px 10px;text-align:center;border:1px solid transparent}
+.stat .sv{font-size:23px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.stat .sl{font-size:9.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+  margin-top:3px;opacity:.8}
+.stat.a{background:var(--t-have-bg);color:var(--t-have)}
+.stat.b{background:var(--t-low-bg);color:var(--t-low)}
+.stat.c{background:var(--t-out-bg);color:var(--t-out)}
+
+/* Location cards. Real photographs of the actual fridge/pantry/freezer — the
+   single choice that makes the reference apps feel tangible rather than
+   generated. Taller than a product tile because it's a place, not a thing. */
+.locs{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px}
+.loc{position:relative;border-radius:var(--r);overflow:hidden;border:1px solid var(--rime);
+  background:var(--shelf);text-align:left;width:100%;display:block}
+.loc .lp{position:relative;aspect-ratio:5/4;background:var(--fog);display:grid;place-items:center;overflow:hidden}
+.loc .lp img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.loc .lp .emoji{font-size:40px;line-height:1;opacity:.55}
+.loc .lt{padding:10px 12px 11px}
+.loc .ln{font-size:15px;font-weight:750;letter-spacing:-.015em}
+.loc .lm{font-size:11.5px;color:var(--vapor);margin-top:3px;font-weight:600}
+.loc .lm .warn{color:var(--thaw)}
+.loc .lc{position:absolute;top:8px;right:8px;font-size:11px;font-weight:800;padding:4px 9px;
+  border-radius:999px;background:var(--scrim);color:var(--frost)}
+.loc .lx{position:absolute;bottom:8px;right:8px;width:30px;height:30px;border-radius:50%;
+  background:var(--scrim);display:grid;place-items:center;color:var(--frost);
+  box-shadow:0 1px 4px rgba(18,50,30,.2)}
+.loc .lx svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.9}
 .tile.done .tn{text-decoration:line-through;color:var(--vapor)}
 .tile.done .tc .box{background:var(--fresh);border-color:var(--fresh)}
 .tile.sel{border-color:var(--cold);box-shadow:0 0 0 3px var(--cold-soft)}
@@ -2012,7 +2078,8 @@ function pickPhoto(rec, after) {
    shopping checklist, the meal picker and the pantry grid without forking. */
 function tileEl({ name, meta = '', image = null, emoji = '🍽️', badge = '', checked = false,
                   checkLabel = '', onCheck = null, onTap = null, stick = false, stickLabel = 'Added ✓',
-                  checkClass = 'done', onCorner = null, cornerIcon = icon('x',16), cornerLabel = 'Remove', sel = false }) {
+                  checkClass = 'done', onCorner = null, cornerIcon = icon('x',16), cornerLabel = 'Remove', sel = false,
+                  qty = null, onMinus = null, onPlus = null }) {
   // "done" crosses it out (bought, finished). "got" just marks it handled —
   // something already ON your list isn't cancelled, and shouldn't read that way.
   const t = el(`<div class="tile${checked ? ' ' + checkClass : ''}${sel ? ' sel' : ''}">
@@ -2023,6 +2090,10 @@ function tileEl({ name, meta = '', image = null, emoji = '🍽️', badge = '', 
       ${badge ? `<span class="tb">${badge}</span>` : ''}
       ${onCorner ? `<button class="tx" data-a="rm" aria-label="${esc(cornerLabel)} ${esc(name)}">${cornerIcon}</button>` : ''}</div>
     ${onCheck ? `<button class="tc" data-a="chk"><span class="box">${checked ? icon('check', 15) : ''}</span><span class="lb">${esc(checkLabel || (checked ? 'Got it' : 'Check off'))}</span></button>` : ''}
+    ${onMinus ? `<div class="tq">
+      <button class="mn" data-a="mn" aria-label="Use one ${esc(name)}">${icon('minus', 17)}</button>
+      <span class="qn">${esc(qty ?? '')}</span>
+      <button class="pl" data-a="pl" aria-label="Add one ${esc(name)}">${icon('plus', 17)}</button></div>` : ''}
   </div>`);
   // A dead photo URL (a stale Open Food Facts link, a sync from a phone whose
   // image never arrived) falls back to the category emoji rather than leaving
@@ -2039,6 +2110,19 @@ function tileEl({ name, meta = '', image = null, emoji = '🍽️', badge = '', 
   }
   const rm = t.querySelector('[data-a=rm]');
   if (rm) rm.onclick = e => { e.stopPropagation(); onCorner(); };
+  /* These sit on the tap, so they carry the confirm — same rule as everywhere
+     else: the data funnels stay dialog-free. See [[11 Confirmations]]. */
+  const mn = t.querySelector('[data-a=mn]'), pl = t.querySelector('[data-a=pl]');
+  if (mn) mn.onclick = async e => {
+    e.stopPropagation();
+    if (t.dataset.busy) return; t.dataset.busy = '1';
+    try { tap(); await onMinus(); } finally { delete t.dataset.busy; }
+  };
+  if (pl) pl.onclick = async e => {
+    e.stopPropagation();
+    if (t.dataset.busy) return; t.dataset.busy = '1';
+    try { tap(); await onPlus(); } finally { delete t.dataset.busy; }
+  };
   const ck = t.querySelector('[data-a=chk]');
   if (ck) ck.onclick = async e => {
     e.stopPropagation();
@@ -2165,6 +2249,7 @@ const firstLetter = n => esc((String(n || '?').trim()[0] || '?'));
 const ICON = {
   cart:    '<circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2.5 3.5h2.2l2.6 11.2a1.6 1.6 0 0 0 1.6 1.3h8.4a1.6 1.6 0 0 0 1.6-1.2L21 7.6H6"/>',
   plus:    '<path d="M12 5.5v13M5.5 12h13"/>',
+  minus:   '<path d="M5.5 12h13"/>',
   check:   '<path d="M20 6.5 9.5 17 4.5 12"/>',
   x:       '<path d="M18 6 6 18M6 6l12 12"/>',
   camera:  '<path d="M14.6 4.2H9.4L8 6.6H4.6A1.6 1.6 0 0 0 3 8.2v9.6a1.6 1.6 0 0 0 1.6 1.6h14.8a1.6 1.6 0 0 0 1.6-1.6V8.2a1.6 1.6 0 0 0-1.6-1.6H16z"/><circle cx="12" cy="12.6" r="3.4"/>',
@@ -2371,9 +2456,14 @@ function itemTile(it) {
     name: it.name,
     meta: `<span class="tag ${cls}">${esc(f.label)}</span>`,
     image: it.image, emoji: foodEmoji(it.name, it.cat) || '🍽️',
-    badge: esc(q) + (it.opened ? ' · opened' : ''),
+    badge: it.opened ? 'opened' : '',          // the count moved into the −/+ footer
     onTap: () => itemSheet(it),
-    checkLabel: 'Used one', onCheck: async () => { await tapDeplete(it); render(); },
+    /* The two things you actually do to food you own, permanently on screen
+       rather than behind a tap-through. Minus goes through tapDeplete so it
+       still asks before finishing something off. */
+    qty: q,
+    onMinus: async () => { await tapDeplete(it); render(); },
+    onPlus:  async () => { await addOne(it); render(); },
     onCorner: () => itemSheet(it), cornerIcon: icon('more',17), cornerLabel: 'Options for',
   });
 }
@@ -2822,6 +2912,68 @@ function restockHints(locId) {
 
 const CAT_LABEL = c => c.replace(/-/g, ' ');
 
+/* Three numbers that answer "how is this shelf doing?" without reading a
+   single row. Tinted by meaning, not decoration. */
+function statTiles(app, rows) {
+  const soon = rows.filter(i => { const l = freshness(i).left; return l >= 0 && l <= 3; }).length;
+  const gone = rows.filter(i => freshness(i).left < 0).length;
+  app.appendChild(el(`<div class="stats">
+    <div class="stat a"><div class="sv">${rows.length}</div><div class="sl">Items</div></div>
+    <div class="stat b"><div class="sv">${soon}</div><div class="sl">Eat soon</div></div>
+    <div class="stat c"><div class="sv">${gone}</div><div class="sl">Past date</div></div></div>`));
+}
+
+/* Storage locations as real photographs of the actual fridge, freezer and
+   pantry. Of everything in the reference set this is the single change that
+   makes an inventory app feel like YOUR kitchen instead of a spreadsheet —
+   see [[13 Design Language]]. The camera button sets the photo; until then
+   the card falls back to an emoji on a tinted ground, which still reads.  */
+function locationCards(app, live) {
+  const locs = S.household?.locations || [];
+  if (locs.length < 2) return;
+  app.appendChild(el(`<div class="sect"><h3>Where things live</h3><span class="n">${locs.length}</span></div>`));
+  const g = el(`<div class="locs"></div>`);
+  locs.forEach(l => {
+    const mine = live.filter(i => i.loc === l.id);
+    const low  = mine.filter(i => freshness(i).left <= 3).length;
+    const c = el(`<div class="loc">
+      <div class="lp">${l.photo ? `<img src="${esc(l.photo)}" alt="">` : `<span class="emoji">${LOC_EMOJI[l.kind] || '🗄️'}</span>`}
+        <span class="lc">${mine.length}</span>
+        <button class="lx" data-a="ph" aria-label="Set a photo for ${esc(l.name)}">${icon('camera',15)}</button></div>
+      <div class="lt"><div class="ln">${esc(l.name)}</div>
+        <div class="lm">${mine.length} item${mine.length === 1 ? '' : 's'}${low ? ` · <span class="warn">${low} to use</span>` : ''}</div></div>
+    </div>`);
+    c.querySelector('.lp').onclick = e => {
+      if (e.target.closest('[data-a=ph]')) return;
+      S.loc = l.id; S.q = ''; render();
+    };
+    c.querySelector('.lt').onclick = () => { S.loc = l.id; S.q = ''; render(); };
+    c.querySelector('[data-a=ph]').onclick = e => { e.stopPropagation(); pickLocationPhoto(l); };
+    g.appendChild(c);
+  });
+  app.appendChild(g);
+}
+
+const LOC_EMOJI = { fridge: '🧊', freezer: '❄️', pantry: '🥫', counter: '🍞', cupboard: '🗄️' };
+
+/* Photos of a shelf are big; downscale hard before storing, or a handful of
+   them bloats IndexedDB and the sync payload with data no one ever zooms into. */
+function pickLocationPhoto(l) {
+  const inp = el(`<input type="file" accept="image/*" style="display:none">`);
+  document.body.appendChild(inp);
+  inp.onchange = async () => {
+    const f = inp.files?.[0]; inp.remove();
+    if (!f) return;
+    try {
+      l.photo = await downscaleImage(f, 640);
+      await saveHousehold();
+      render();
+      toast(`Photo set for ${l.name}`);
+    } catch { toast(`Couldn't read that photo`); }
+  };
+  inp.click();
+}
+
 function viewInv(app) {
   const live = S.items.filter(i => !i.deleted);
 
@@ -2871,6 +3023,14 @@ function viewInv(app) {
     S.cfg.pantryView = grid ? 'list' : 'grid'; await saveCfg(); render();
   };
   app.appendChild(srow);
+
+  /* On a single shelf, three numbers up top; across the whole house, the
+     shelves themselves as photo cards. Neither appears mid-search — when
+     you're looking for one thing, chrome is in the way. */
+  if (!S.q?.trim()) {
+    if (S.loc !== 'all') statTiles(app, scoped);
+    else locationCards(app, live);
+  }
 
   const box = el(`<div id="results"></div>`);
   app.appendChild(box);
@@ -5685,10 +5845,15 @@ function render() {
   const active = TAB_OF[S.view] || S.view;
   nav.innerHTML = '';
   TABS.forEach(([id, label]) => {
+    /* The count rides as a badge on the icon, the way the references do it —
+       folding it into the label ("Pantry · 3") wraps the text and doubles the
+       height of the whole bar. */
     const b = el(`<button ${active === id ? 'aria-current="page"' : ''}>
-      <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">${ICONS[id]}</svg>
-      <span>${label}${id === 'pantry' && soonN ? ` · ${soonN}` : ''}</span></button>`);
-    if (id === 'pantry' && soonN && active !== 'pantry') b.style.color = 'var(--thaw)';
+      <span class="ni">
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">${ICONS[id]}</svg>
+        ${id === 'pantry' && soonN ? `<span class="nb">${soonN > 9 ? '9+' : soonN}</span>` : ''}</span>
+      <span class="nl">${label}</span></button>`);
+    if (id === 'pantry' && soonN) b.setAttribute('aria-label', `${label}, ${soonN} to use soon`);
     b.onclick = () => { S.view = id; render(); };
     nav.appendChild(b);
   });

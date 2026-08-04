@@ -41,7 +41,9 @@ const server = http.createServer((q, r) => {
   await seed();
   const nav = await page.evaluate(() => {
     render();
-    return { tabs: [...document.getElementById('nav').querySelectorAll('button span')].map(s => s.textContent.split(' ·')[0]),
+    // .nl is the label span specifically — the icon wrapper and the count
+    // badge are spans too, so a bare 'button span' counts three per tab.
+    return { tabs: [...document.getElementById('nav').querySelectorAll('button .nl')].map(s => s.textContent.trim()),
       view: S.view, title: document.getElementById('title').textContent,
       greets: /Good (morning|afternoon|evening)/.test(document.getElementById('app').textContent) };
   });
