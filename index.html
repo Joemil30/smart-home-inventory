@@ -449,6 +449,31 @@ label .lbl{font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:up
 .revrow .rq{width:58px;flex:0 0 auto;text-align:center;font-size:14px;padding:7px 4px}
 .hintline{display:block;font-size:11.5px;font-weight:500;color:var(--vapor-dim);margin-top:2px}
 
+/* ---- shopping: missed items and the running total ---- */
+.missed{background:var(--thaw-soft);border-radius:var(--r);padding:11px 12px 12px;margin-bottom:12px}
+.missed .mh{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--thaw);display:flex;align-items:center;gap:6px;margin-bottom:9px}
+.missed .mh svg{stroke:currentColor;fill:none;stroke-width:2}
+.missed .mp{display:flex;flex-wrap:wrap;gap:7px}
+.mpill{background:var(--shelf);border:1px solid var(--rime-hi);border-radius:999px;
+  padding:7px 12px;font-size:13px;font-weight:700;color:var(--frost);display:inline-flex;
+  align-items:center;gap:7px}
+.mpill i{font-style:normal;color:var(--cold);font-weight:800;font-size:15px}
+.mpill .lq{color:var(--vapor-dim);font-weight:600;font-size:11.5px}
+.missed.low{background:var(--cold-soft)}
+.missed.low .mh{color:var(--cold-2)}
+.mpill:active{background:var(--fog)}
+.total{background:var(--shelf);border:1px solid var(--rime);border-radius:var(--r);
+  padding:12px 14px 13px;margin-bottom:12px}
+.total .tl{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;
+  font-weight:650;color:var(--vapor)}
+.total .tl b{font-size:21px;font-weight:800;color:var(--frost);font-variant-numeric:tabular-nums}
+.total .tl.sub{font-size:11.5px;color:var(--vapor-dim);margin-top:7px}
+.total .tbar{height:7px;border-radius:999px;background:var(--fog);overflow:hidden;margin-top:9px}
+.total .tbar i{display:block;height:100%;background:var(--cold);border-radius:999px;
+  transition:width .25s ease}
+.tag.price{background:var(--fog);color:var(--vapor)}
+
 /* ---- the map ---- */
 .zonewrap{position:relative;border-radius:var(--r);overflow:hidden;border:1px solid var(--rime);
   background:var(--fog);line-height:0}
@@ -1434,16 +1459,25 @@ function shoppingToPantry(s, after) {
     <p class="note" style="margin:0 0 14px">Either way it goes into your ${esc(storeName(s.store) || 'general')} history.
       Adding it to the pantry also tracks it — expiry is estimated for you.</p>
     <label><span class="lbl">Shelf</span><select id="cloc">${locOptions()}</select></label>
-    <label><span class="lbl">How many</span><input type="number" id="cqty" value="${q}" min="1"></label>
+    <div class="row">
+      <label style="flex:1"><span class="lbl">How many</span><input type="number" id="cqty" value="${q}" min="1"></label>
+      <label style="flex:1"><span class="lbl">Price each (optional)</span>
+        <input type="number" id="cprice" inputmode="decimal" step="0.01" min="0" placeholder="—"
+          value="${s.price != null ? esc(String(s.price)) : ''}"></label>
+    </div>
     <button class="btn cold" data-a="pantry">${icon('check')}Add to pantry</button>
     <button class="btn ghost left" data-a="just" style="margin-top:8px">${icon('clock')}Just check it off — remember it</button>
     <button class="btn ghost left" data-a="miss" style="margin-top:8px">${icon('ban')}They didn't have it</button>
     <button class="btn ghost" data-a="c" style="margin-top:8px;border:none;color:var(--vapor)">Cancel</button>`;
   dlg.querySelector('#cloc').value = s.lastLoc || catalogFind(s.name)?.lastLoc || defaultLoc(guessCat(s.name));
   dlg.querySelector('[data-a=pantry]').onclick = async () => {
+    const price = parseFloat(dlg.querySelector('#cprice').value);
     await addItem({ name: s.name, cat: s.cat || guessCat(s.name), loc: dlg.querySelector('#cloc').value,
-      qty: parseInt(dlg.querySelector('#cqty').value) || 1, image: s.image || null, store: s.store || '' });
-    s.done = true; s.missing = false; s.doneAt = Date.now(); await saveShopping(s);
+      qty: parseInt(dlg.querySelector('#cqty').value) || 1, image: s.image || null, store: s.store || '',
+      price: Number.isFinite(price) ? price : null });
+    s.done = true; s.missing = false; s.doneAt = Date.now();
+    if (Number.isFinite(price)) s.price = price;      // remembered for the running total
+    await saveShopping(s);
     finish(); toast(`${s.name} added to your pantry`);
   };
   dlg.querySelector('[data-a=just]').onclick = async () => {
@@ -1465,7 +1499,7 @@ function shoppingToPantry(s, after) {
   dlg.showModal();
 }
 
-async function addItem({ name, cat, loc, qty = 1, barcode = null, packSize = null, brand = '', image = null, expires = null, dateConfirmed = false, store = '' }) {
+async function addItem({ name, cat, loc, qty = 1, barcode = null, packSize = null, brand = '', image = null, expires = null, dateConfirmed = false, store = '', price = null, low = null }) {
   const mode = packSize ? 'pack' : unitModeFor(cat);
   const it = {
     id: uid(), name, brand, cat, loc, barcode, image,
@@ -1477,6 +1511,11 @@ async function addItem({ name, cat, loc, qty = 1, barcode = null, packSize = nul
     expires: expires || estimateExpiry(cat, loc, false),
     dateConfirmed: !!expires || dateConfirmed,   // real printed date -> trusted, not a guess
     by: S.who?.name || '?', deleted: false,
+    /* addedAt is what Insights windows on; `added` is a day-granular string
+       used for display, which can't answer "in the last 30 days". */
+    addedAt: Date.now(),
+    price: Number.isFinite(price) ? price : null,
+    low: Number.isFinite(low) ? low : null,      // null = no low-stock warning
   };
   await saveItem(it);
   await logAction('add', name);
@@ -2498,6 +2537,11 @@ function itemRow(it) {
 /* The same item as a big tile: name and freshness above, photo below. The
    compact row above still exists behind a toggle — at 500 items a dense list
    genuinely beats a photo grid, so this is a preference, not a replacement. */
+/* "I'm nearly out" is a different question from "this is about to go off",
+   and the shopping list needs both. Only counted items can answer it — a
+   level item ("half a bottle") has no number to compare against. */
+const runningLow = it => it.mode === 'count' && it.low > 0 && !it.deleted && (it.qty ?? 0) <= it.low;
+
 function itemTile(it) {
   const f = freshness(it);
   const cls = f.left < 0 ? 'out' : f.left <= 3 ? 'low' : 'have';
@@ -2506,7 +2550,7 @@ function itemTile(it) {
     : `×${it.qty}`;
   return tileEl({
     name: it.name,
-    meta: `<span class="tag ${cls}">${esc(f.label)}</span>`,
+    meta: `<span class="tag ${cls}">${esc(f.label)}</span>${runningLow(it) ? `<span class="tag low">Running low</span>` : ''}`,
     image: it.image, emoji: foodEmoji(it.name, it.cat) || '🍽️',
     badge: it.opened ? 'opened' : '',          // the count moved into the −/+ footer
     onTap: () => itemSheet(it),
@@ -2660,6 +2704,11 @@ function itemSheet(it) {
     <button class="btn ghost" data-a="photo" style="margin-bottom:8px">📷 Change photo</button>
     <input type="file" accept="image/*" id="itphoto" class="hide">
     <button class="btn ghost" data-a="tolist" style="margin-bottom:8px">🛒 Add to shopping list</button>
+    ${it.mode === 'count' ? `<label style="margin-bottom:8px"><span class="lbl">Tell me when I'm down to</span>
+      <div class="row"><input type="number" id="itlow" min="0" max="99" style="flex:1"
+        value="${it.low != null ? it.low : ''}" placeholder="off">
+      <button class="btn ghost" data-a="savelow" style="width:auto;padding:0 16px">Save</button></div>
+      <span class="hintline">Leave empty (or 0) for no warning. At or below this, it shows as low and offers itself to your list.</span></label>` : ''}
     <button class="btn ghost" data-a="scandate" style="margin-bottom:8px">📅 Scan the date — live camera (free)</button>
     <input type="file" accept="image/*" capture="environment" id="itdate" class="hide">
     <div class="row" style="margin-bottom:8px">
@@ -2690,6 +2739,13 @@ function itemSheet(it) {
   dlg.querySelector('[data-a=toss]').onclick = () => go(() => tapToss(it));
   dlg.querySelector('[data-a=move]').onclick = () => { dlg.close(); moveSheet(it); };
   dlg.querySelector('[data-a=tolist]').onclick = () => go(() => addToList(it.name));
+  dlg.querySelector('[data-a=savelow]')?.addEventListener('click', async () => {
+    const v = parseInt(dlg.querySelector('#itlow').value, 10);
+    it.low = Number.isFinite(v) && v > 0 ? v : null;    // 0 and empty both mean "don't warn me"
+    await saveItem(it);
+    toast(it.low ? `Warns at ${it.low} or fewer` : `Low-stock warning off`);
+    dlg.close(); render();
+  });
   dlg.querySelector('[data-a=scandate]').onclick = () => { dlg.close(); liveDateScan(it); };
   dlg.querySelector('#itdate').onchange = e => { const f = e.target.files[0]; if (f) { dlg.close(); scanDateForItem(it, f); } };
   dlg.querySelector('[data-a=photo]').onclick = () => dlg.querySelector('#itphoto').click();
@@ -4952,6 +5008,65 @@ function paintHistory(box, store) {
 /* The compact row — AnyList's shape. Grouped into eight aisles, a photo grid
    with one tile per aisle is a mile of scrolling; this is the density a real
    shop needs. Photos stay a tap away for browsing. */
+/* "They didn't have it" used to be the end of the story — the line went to
+   Completed and Clear bought swept it away, so the thing you failed to buy
+   was the one thing the app forgot. Now it waits here and comes back in one
+   tap, which is HopDrop's best idea and costs almost nothing to copy. */
+function missedBand(box, store) {
+  const missed = S.shopping.filter(s => !s.deleted && s.done && s.missing && (!store || (s.store || '') === store));
+  if (!missed.length) return;
+  const wrap = el(`<div class="missed">
+    <div class="mh">${icon('clock', 14)}Didn't get last time</div>
+    <div class="mp"></div></div>`);
+  const pills = wrap.querySelector('.mp');
+  missed.slice(0, 12).forEach(s => {
+    const b = el(`<button class="mpill">${esc(s.name)} <i>+</i></button>`);
+    b.onclick = async () => {
+      /* Reuse the same line rather than making a second one, or the history
+         ends up with a duplicate for every failed trip. */
+      s.done = false; s.missing = false; s.doneAt = null;
+      await saveShopping(s);
+      paintShopping(box);
+      toast(`${s.name} back on the list`);
+    };
+    pills.appendChild(b);
+  });
+  box.appendChild(wrap);
+}
+
+/* Things in the house that are nearly gone and aren't on this list yet. The
+   whole point of setting a threshold is that you never have to remember to
+   act on it, so the offer comes to the list rather than waiting to be found. */
+function lowStockBand(box, todo) {
+  const already = new Set(todo.map(s => norm(s.name)));
+  const low = S.items.filter(i => runningLow(i) && !already.has(norm(i.name)));
+  if (!low.length) return;
+  const wrap = el(`<div class="missed low">
+    <div class="mh">${icon('cart', 14)}Running low at home</div>
+    <div class="mp"></div></div>`);
+  const pills = wrap.querySelector('.mp');
+  low.slice(0, 12).forEach(i => {
+    const b = el(`<button class="mpill">${esc(i.name)} <span class="lq">${i.qty} left</span> <i>+</i></button>`);
+    b.onclick = async () => { await addToList(i.name); paintShopping(box); toast(`${i.name} on the list`); };
+    pills.appendChild(b);
+  });
+  box.appendChild(wrap);
+}
+
+/* Basket vs list, live, while you walk the aisles. Only appears once prices
+   exist — a total that always says $0 teaches people to ignore the bar. */
+function runningTotal(box, todo, done) {
+  const sum = rows => rows.reduce((n, s) => n + (Number(s.price) || 0) * (parseInt(s.qty, 10) || 1), 0);
+  const inCart = sum(done), left = sum(todo);
+  if (!inCart && !left) return;
+  const all = inCart + left;
+  box.appendChild(el(`<div class="total">
+    <div class="tl"><span>In the cart</span><b>$${inCart.toFixed(2)}</b></div>
+    <div class="tbar"><i style="width:${all ? Math.round(inCart / all * 100) : 0}%"></i></div>
+    <div class="tl sub"><span>${done.length} of ${done.length + todo.length} picked up</span>
+      <span>$${all.toFixed(2)} total</span></div></div>`));
+}
+
 function shopRow(s, box, flash = false) {
   const st = s.done
     ? (s.missing ? `<span class="tag out">Didn't have it</span>` : `<span class="tag have">In the cart</span>`)
@@ -4959,7 +5074,7 @@ function shopRow(s, box, flash = false) {
   const row = el(`<div class="item srow${s.done ? ' done' : ''}${flash ? ' added' : ''}">
     <button class="cbx" data-a="chk" aria-label="${s.done ? 'Undo' : 'Got it'}">${s.done ? icon('check', 16) : ''}</button>
     <div class="body"><div class="nm">${esc(s.name)}${s.qty ? ` <span class="qty">×${esc(s.qty)}</span>` : ''}</div>
-      ${st ? `<div class="meta">${st}</div>` : ''}</div>
+      ${st || s.price ? `<div class="meta">${st || ''}${s.price ? `<span class="tag price">$${Number(s.price).toFixed(2)}</span>` : ''}</div>` : ''}</div>
     <div class="act"><button data-a="del" aria-label="Remove ${esc(s.name)}">${icon('x', 16)}</button></div>
   </div>`);
   row.querySelector('[data-a=chk]').onclick = async () => {
@@ -5018,6 +5133,10 @@ function paintShopping(box, flashId = '') {
   const todo = mine.filter(s => !s.done).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
   const done = mine.filter(s => s.done).sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0));
 
+  missedBand(box, store);
+  lowStockBand(box, todo);
+  runningTotal(box, todo, done);
+
   // No "Need to get" heading — the list IS the things to get. A header over
   // the only content on the screen just pushes the content down.
   if (todo.length) {
@@ -5066,12 +5185,17 @@ function paintShopping(box, flashId = '') {
       done.forEach(s => g.appendChild(shopTile(s, box)));
       box.appendChild(g);
     } else done.forEach(s => box.appendChild(shopRow(s, box)));
-    const clr = el(`<button class="btn ghost">Clear bought</button>`);
+    /* Sweep the things you actually bought. Anything the shop DIDN'T have is
+       deliberately left behind, because it's the one line you still need —
+       it stays available in the "Didn't get last time" band above. */
+    const sweep = done.filter(s => !s.missing);
+    const clr = el(`<button class="btn ghost">Clear bought${sweep.length !== done.length ? ' (keeps the ones they didn\'t have)' : ''}</button>`);
     clr.onclick = async () => {
-      if (!await confirmed({ title: `Clear ${done.length} bought item${done.length === 1 ? '' : 's'}?`,
+      if (!sweep.length) return toast(`Nothing to clear — those are all things they didn't have`);
+      if (!await confirmed({ title: `Clear ${sweep.length} bought item${sweep.length === 1 ? '' : 's'}?`,
         body: `They're already saved in this store's history — clearing just tidies the list.`,
         yes: 'Yes, clear them', danger: true })) return;
-      for (const s of done) { s.deleted = true; await saveShopping(s); }
+      for (const s of sweep) { s.deleted = true; await saveShopping(s); }
       paintShopping(box);
     };
     box.appendChild(clr);
