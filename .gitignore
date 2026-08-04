@@ -1,0 +1,10 @@
+# Assembled by build-native.sh from files already in the repo — committing it
+# would double the repo size and guarantee it drifts out of date.
+www/
+
+# Capacitor generates these; they carry machine-specific paths and signing
+# config. Regenerate with `npx cap add ios` / `npx cap add android`.
+ios/
+android/
+node_modules/
+.DS_Store
