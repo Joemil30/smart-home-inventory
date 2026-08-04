@@ -1030,6 +1030,9 @@ const CAT_AISLE = {
   'juice-drink':'drinks','household':'household','leftovers':'other','other':'other',
 };
 const aisleOf = cat => CAT_AISLE[cat] || 'other';
+/* Aisles, the map and per-store learning are supermarket ideas. A packing
+   list has no produce section. */
+const isShop = id => (S.household?.stores || []).find(x => x.id === id)?.kind !== 'list';
 
 /* A store's own words for its own aisles. Costco calls it "A16 - Bread";
    the corner shop just calls it bread. The generic name is the fallback, so
@@ -2676,6 +2679,7 @@ const ICON = {
   chart:   '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
   palette: '<path d="M12 3a9 9 0 1 0 0 18c1 0 1.7-.8 1.7-1.7 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.1 0-.9.8-1.7 1.7-1.7H16A5 5 0 0 0 21 10c0-3.9-4-7-9-7z"/><circle cx="7.5" cy="11" r="1.1"/><circle cx="10.5" cy="7" r="1.1"/><circle cx="15" cy="8" r="1.1"/>',
   download:'<path d="M12 3.5v12M7.5 11l4.5 4.5 4.5-4.5M4 20.5h16"/>',
+  share:   '<path d="M12 3.5v11M8.2 7.3 12 3.5l3.8 3.8"/><path d="M5.5 12.5v7a1.5 1.5 0 0 0 1.5 1.5h10a1.5 1.5 0 0 0 1.5-1.5v-7"/>',
   copy:    '<rect x="9" y="9" width="11.5" height="11.5" rx="2.2"/><path d="M5.5 15H4.6A1.6 1.6 0 0 1 3 13.4V4.6A1.6 1.6 0 0 1 4.6 3h8.8A1.6 1.6 0 0 1 15 4.6v.9"/>',
   link:    '<path d="M10 13.5a4 4 0 0 0 5.7 0l3-3a4 4 0 1 0-5.7-5.7l-1.2 1.2"/><path d="M14 10.5a4 4 0 0 0-5.7 0l-3 3a4 4 0 1 0 5.7 5.7l1.2-1.2"/>',
   sparkle: '<path d="M12 3.2l1.9 5 5 1.9-5 1.9-1.9 5-1.9-5-5-1.9 5-1.9zM18.5 3v3.4M20.2 4.7h-3.4"/>',
@@ -3320,12 +3324,17 @@ function restockList(store = '', max = 12) {
 const storeList = () => (S.household?.stores || []);
 const storeOf = id => storeList().find(s => s.id === id) || null;
 const storeName = id => storeOf(id)?.name || '';
-async function addStore(name, emoji = '🏬') {
+/* kind 'list' is a plain checklist — a packing list, a hardware run, gift
+   ideas. It reuses the whole store machinery (tabs, history, sync) but skips
+   everything that only means something in a supermarket: aisle order, the
+   walking map, per-store learning. That's the difference between broadening
+   the app and diluting it. */
+async function addStore(name, emoji = '🏬', kind = 'store') {
   const n = String(name || '').trim();
   if (!n || !S.household) return null;
   const ex = storeList().find(s => norm(s.name) === norm(n));
   if (ex) return ex;
-  const s = { id: uid(), name: n, emoji };
+  const s = { id: uid(), name: n, emoji, kind };
   S.household.stores = [...storeList(), s];
   await saveHousehold();
   return s;
@@ -3457,6 +3466,12 @@ function viewInv(app) {
   statusChips.appendChild(stat('expired', `🔴 Expired (${cnt(i => freshness(i).left < 0)})`));
   statusChips.appendChild(stat('soon', `🟡 Soon (${cnt(i => { const l = freshness(i).left; return l >= 0 && l <= 3; })})`));
   statusChips.appendChild(stat('fresh', `🟢 Fresh (${cnt(i => freshness(i).left > 3)})`));
+  /* "Nearly out" is a different question from "about to go off", and Food
+     Stock puts both on the same strip for exactly that reason. Only shown
+     once some item actually has a threshold set, so it isn't a permanent
+     chip reading (0). */
+  const lowN = cnt(runningLow);
+  if (lowN || scoped.some(i => i.low > 0)) statusChips.appendChild(stat('low', `🛒 Running low (${lowN})`));
   app.appendChild(statusChips);
 
   /* At 500 items search isn't a nicety, it's the primary way in. The
@@ -3499,7 +3514,8 @@ function paintList(box) {
   let live = S.items.filter(i => !i.deleted);
   if (S.loc !== 'all') { const fam = new Set(locFamily(S.loc)); live = live.filter(i => fam.has(i.loc)); }
   const st = S.status || 'all';
-  if (st !== 'all') live = live.filter(i => { const l = freshness(i).left; return st === 'expired' ? l < 0 : st === 'soon' ? (l >= 0 && l <= 3) : l > 3; });
+  if (st === 'low') live = live.filter(runningLow);
+  else if (st !== 'all') live = live.filter(i => { const l = freshness(i).left; return st === 'expired' ? l < 0 : st === 'soon' ? (l >= 0 && l <= 3) : l > 3; });
 
   /* searching: fuzzy (typo-tolerant), ranked by match quality then expiry, capped */
   if (S.q?.trim()) {
@@ -4057,12 +4073,18 @@ function viewCook(app) {
 
   const madeN = catalogList(CAT_MEAL).length;
 
+  /* AnyList's Ideas / Queue / Calendar, which is a genuinely better shape
+     than Suggested / Saved: ideas are disposable, the queue is what you've
+     decided on, the calendar is what you've committed to a day. "Made" stays
+     because it's the one nobody else has — your own cooking history. */
   const seg = el(`<div class="chips" style="padding-bottom:14px">
-    <button class="chip" data-t="suggested" aria-pressed="${tab === 'suggested'}">Suggested</button>
+    <button class="chip" data-t="suggested" aria-pressed="${tab === 'suggested'}">${icon('sparkle',15)} Ideas</button>
+    <button class="chip" data-t="saved" aria-pressed="${tab === 'saved'}">${icon('star',15)} Queue${savedN ? ` (${savedN})` : ''}</button>
+    <button class="chip" data-a="cal" aria-pressed="false">${icon('calendar',15)} Calendar</button>
     <button class="chip" data-t="made" aria-pressed="${tab === 'made'}">${icon('utensils',15)} Made${madeN ? ` (${madeN})` : ''}</button>
-    <button class="chip" data-t="saved" aria-pressed="${tab === 'saved'}">${icon('star',15)} Saved${savedN ? ` (${savedN})` : ''}</button>
   </div>`);
   seg.querySelectorAll('[data-t]').forEach(b => b.onclick = () => { S.cookTab = b.dataset.t; render(); });
+  seg.querySelector('[data-a=cal]').onclick = () => { S.view = 'plan'; render(); };
   app.appendChild(seg);
 
   /* Every meal this house has ever actually cooked. The suggestion engine
@@ -4137,7 +4159,25 @@ function renderRecipes(out) {
       <div class="sub">Every suggestion is missing at least one thing. Turn Cook Now off to see them and what they need.</div></div>`));
     return;
   }
-  list.forEach(r => out.appendChild(recipeCardEl(r)));
+  /* Shelves, the way the reference apps present ideas: a flat ranked column
+     asks you to read everything, whereas "Quick prep" / "Make it again"
+     answer the question you actually arrived with. Each recipe appears once —
+     first shelf that claims it wins — so the screen never repeats itself. */
+  const claimed = new Set();
+  const shelf = (title, note, pick) => {
+    const rows = list.filter(r => !claimed.has(r) && pick(r));
+    if (!rows.length) return;
+    rows.forEach(r => claimed.add(r));
+    out.appendChild(el(`<div class="sect"><h3>${esc(title)}</h3><span class="n">${esc(note)}</span></div>`));
+    rows.forEach(r => out.appendChild(recipeCardEl(r)));
+  };
+
+  shelf('Uses something dying', 'eat these first', r => (r.rescues || []).length);
+  shelf('Quick prep', 'under 30 minutes', r => r.minutes && r.minutes <= 30 && !(r.missing || []).length);
+  shelf('Make it again', 'you have cooked this before', r => timesCooked(r.name) > 0);
+  shelf('Cook right now', 'nothing missing', r => !(r.missing || []).length);
+  shelf('Worth a shop', 'a couple of things short', r => (r.missing || []).length <= 2);
+  shelf('Everything else', '', () => true);
 }
 
 /* The "Made" tab: your own cooking history, most recent first. */
@@ -5163,6 +5203,12 @@ function storeSheet() {
       <label style="margin-top:10px"><span class="lbl">Add a store</span>
         <input id="snm" placeholder="Costco, Greens Natural Foods…" autocomplete="off"></label>
       <button class="btn cold" data-a="add">Add store</button>
+      <div class="hr"><span>or</span></div>
+      <label><span class="lbl">Add a plain list</span>
+        <input id="lnm" placeholder="Packing list, Gift ideas, Hardware store…" autocomplete="off"></label>
+      <div class="note" style="margin:6px 0 10px">A checklist with no aisles and no map — for the things
+        that aren't a supermarket run.</div>
+      <button class="btn ghost" data-a="addl">${icon('rows')}Add list</button>
       <button class="btn ghost" data-a="c" style="margin-top:8px;border:none;color:var(--vapor)">Done</button>`;
     const go = async () => {
       const v = dlg.querySelector('#snm').value.trim();
@@ -5172,6 +5218,14 @@ function storeSheet() {
     };
     dlg.querySelector('[data-a=add]').onclick = go;
     dlg.querySelector('#snm').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); go(); } };
+    const goList = async () => {
+      const v = dlg.querySelector('#lnm').value.trim();
+      if (!v) return;
+      await addStore(v, '📋', 'list');
+      draw();
+    };
+    dlg.querySelector('[data-a=addl]').onclick = goList;
+    dlg.querySelector('#lnm').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); goList(); } };
     dlg.querySelectorAll('[data-rm]').forEach(b => b.onclick = async () => {
       await removeStore(b.dataset.rm);
       if (S.store === b.dataset.rm) S.store = '';
@@ -5354,8 +5408,8 @@ function viewShopping(app) {
 
   /* List or Map. The map is only offered for a real shop — General has no
      single walk to lay out, which is the same reason it has no aisle order. */
-  const repaint = () => (S.shopMap && store) ? paintStoreMap(listBox, store) : paintShopping(listBox);
-  if (store) {
+  const repaint = () => (S.shopMap && store && isShop(store)) ? paintStoreMap(listBox, store) : paintShopping(listBox);
+  if (store && isShop(store)) {
     const seg = el(`<div class="seg" role="tablist">
       <button role="tab" aria-selected="${!S.shopMap}">${icon('rows',15)}List</button>
       <button role="tab" aria-selected="${!!S.shopMap}">${icon('map',15)}Map</button></div>`);
@@ -5371,7 +5425,7 @@ function viewShopping(app) {
     if (!v || adding) return;
     adding = true;
     inp.value = '';                       // clear immediately — feels instant
-    try { const it = await addToList(v, '', store); if (S.shopMap && store) repaint(); else paintShopping(listBox, it && it.id); }
+    try { const it = await addToList(v, '', store); if (S.shopMap && store && isShop(store)) repaint(); else paintShopping(listBox, it && it.id); }
     finally { adding = false; inp.focus(); }
   };
   add.querySelector('[data-a=add]').onclick = doAdd;
@@ -5552,7 +5606,14 @@ function paintStoreMap(box, store) {
   });
   box.appendChild(grid);
 
-  const row = el(`<div class="row" style="margin-top:12px">
+  /* Sharing belongs here too — the aisle-grouped text is most useful to
+     whoever is actually walking the shop, and the map is the view you're
+     looking at when you realise you can't go yourself. */
+  const sh = el(`<button class="btn ghost" style="margin-top:12px">${icon('share')}Send this list to someone</button>`);
+  sh.onclick = () => shareList(store);
+  box.appendChild(sh);
+
+  const row = el(`<div class="row" style="margin-top:8px">
     <button class="btn ghost" data-a="ord" style="flex:1">${icon('rows')}Reorder the walk</button>
     <button class="btn ghost" data-a="sty" style="flex:1">${icon('palette')}Store look</button></div>`);
   row.querySelector('[data-a=ord]').onclick = () => aisleOrderSheet(store, () => paintStoreMap(box, store));
@@ -5604,6 +5665,44 @@ function storeStyleSheet(store, after) {
   };
   dlg.querySelector('[data-a=c]').onclick = () => dlg.close();
   dlg.showModal();
+}
+
+/* Getting the list OUT of the app — for the person doing the shop who
+   doesn't have it installed, which is most people's actual situation. Uses
+   the system share sheet where it exists (so it reaches Messages, Mail,
+   WhatsApp, anything) and falls back to the clipboard where it doesn't. */
+function listAsText(store) {
+  const mine = S.shopping.filter(s => !s.deleted && !s.done && (!store || (s.store || '') === store));
+  if (!mine.length) return '';
+  const title = storeName(store) || 'Shopping list';
+  if (!store || !isShop(store)) {
+    return `${title}\n${mine.map(s => `• ${shownName(s)}${s.qty ? ` (${s.qty})` : ''}`).join('\n')}`;
+  }
+  /* Grouped by aisle in the store's own walking order, because a flat list
+     handed to someone else is a list they'll walk twice. */
+  const groups = new Map();
+  mine.forEach(s => {
+    const a = aisleOf(s.cat || guessCat(s.name));
+    if (!groups.has(a)) groups.set(a, []);
+    groups.get(a).push(s);
+  });
+  const order = aisleOrder(store).filter(a => groups.has(a));
+  return `${title}\n\n` + order.map(a =>
+    `${aisleLabel(a, store)}\n` + groups.get(a).map(s => `• ${shownName(s)}${s.qty ? ` (${s.qty})` : ''}`).join('\n')
+  ).join('\n\n');
+}
+
+async function shareList(store) {
+  const text = listAsText(store);
+  if (!text) return toast(`Nothing on this list to send`);
+  const title = `${storeName(store) || 'Shopping'} list`;
+  try {
+    if (navigator.share) { await navigator.share({ title, text }); return; }
+  } catch (e) {
+    if (e && e.name === 'AbortError') return;      // user backed out; not an error
+  }
+  try { await navigator.clipboard.writeText(text); toast('List copied — paste it anywhere'); }
+  catch (e) { toast(`Couldn't share on this device`); }
 }
 
 /* "They didn't have it" used to be the end of the story — the line went to
@@ -5755,13 +5854,21 @@ function paintShopping(box, flashId = '') {
   lowStockBand(box, todo);
   runningTotal(box, todo, done);
 
+  /* Sending the list to whoever is actually going. Sits at the top, not
+     buried at the bottom, because you use it before you leave the house. */
+  if (todo.length) {
+    const sh = el(`<button class="btn ghost" style="margin-bottom:12px">${icon('share')}Send this list to someone</button>`);
+    sh.onclick = () => shareList(store);
+    box.appendChild(sh);
+  }
+
   // No "Need to get" heading — the list IS the things to get. A header over
   // the only content on the screen just pushes the content down.
   if (todo.length) {
     // Aisle grouping + reorder is a per-store thing — Costco's walk isn't the
     // corner shop's. The General list has no single store to walk, so it
     // stays what it's actually for: a plain checklist, nothing to reorder.
-    if (store) {
+    if (store && isShop(store)) {
       const groups = new Map();
       todo.forEach(s => {
         const a = aisleOf(s.cat || guessCat(s.name));
@@ -6958,6 +7065,52 @@ function impactCard(app) {
   </div>`));
 }
 
+/* A paragraph interpreting the month, on demand. Deliberately NOT automatic:
+   it costs an AI call, and a summary nobody asked for is the kind of thing
+   that quietly burns a free quota. Cached per window so re-opening the
+   screen is free. */
+async function habitSummary(d, days) {
+  const bits = [
+    `Window: last ${days} days.`,
+    `Finished ${d.total} items — ate ${d.used} (${d.ate}%), binned ${d.binned}.`,
+    d.rescued ? `Rescued ${d.rescued} close to their date.` : '',
+    d.usedBy.length ? `Eaten most: ${d.usedBy.map(r => `${r.name} (${r.n})`).join(', ')}.` : '',
+    d.binnedBy.length ? `Wasted most: ${d.binnedBy.map(r => `${r.name} (${r.n})`).join(', ')}.` : '',
+    d.spend ? `Spent $${d.spend.toFixed(2)}${d.catSpend.length ? `, mostly ${d.catSpend[0].name}` : ''}.` : '',
+  ].filter(Boolean).join('\n');
+  const schema = { type: 'OBJECT', properties: { text: { type: 'STRING' } }, required: ['text'] };
+  const out = await G.gen([{ text:
+    `Here are one household's food figures. Write 2-3 short sentences, second person, plain English.\n` +
+    `Say what the pattern actually is and ONE specific thing to change. Name real items from the data.\n` +
+    `Do not invent numbers, do not moralise, do not congratulate emptily.\n\n${bits}` }], schema);
+  return out.text || '';
+}
+
+function habitCard(app, d, days) {
+  if (d.total < 3) return;                 // nothing to see a pattern in yet
+  const key = `${days}:${d.total}:${d.binned}`;
+  app.appendChild(el(`<div class="sect"><h3>What this says</h3></div>`));
+  const card = el(`<div class="card"></div>`);
+  const paint = () => {
+    if (S.habit?.key === key) {
+      card.innerHTML = `<div class="note" style="margin:0">${esc(S.habit.text)}</div>
+        <button class="btn ghost" data-a="re" style="margin-top:10px">${icon('refresh')}Look again</button>`;
+      card.querySelector('[data-a=re]').onclick = () => { S.habit = null; paint(); };
+      return;
+    }
+    card.innerHTML = `<div class="note" style="margin:0 0 10px">Have the numbers read back to you in a
+      sentence, with one thing worth changing.</div>
+      <button class="btn ghost" data-a="go">${icon('sparkle')}Read my habits</button>`;
+    card.querySelector('[data-a=go]').onclick = async () => {
+      card.innerHTML = `<div class="note" style="margin:0"><span class="spin"></span> Reading…</div>`;
+      try { S.habit = { key, text: await habitSummary(d, days) }; paint(); }
+      catch (e) { card.innerHTML = `<div class="warn">${esc(e.message)}</div>`; }
+    };
+  };
+  paint();
+  app.appendChild(card);
+}
+
 function viewInsights(app) {
   const days = S.insDays || 30;
   const d = insightsData(days);
@@ -7004,6 +7157,7 @@ function viewInsights(app) {
      the kind of small lie that makes people stop trusting the whole screen. */
   const money = n => n >= 100 ? `$${Math.round(n)}` : `$${n.toFixed(2)}`;
   app.appendChild(el(`<div class="sect"><h3>Spending</h3>${d.spend ? `<span class="n">${money(d.spend)}</span>` : ''}</div>`));
+  habitCard(app, d, days);
   impactCard(app);
   app.appendChild(d.catSpend.length
     ? el(`<div class="card">${rankBars(d.catSpend.map(c => ({ name: c.name, n: c.n })), 'var(--cold)')}</div>`)
