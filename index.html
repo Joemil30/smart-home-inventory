@@ -440,6 +440,25 @@ label .lbl{font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:up
   background:var(--scrim);display:grid;place-items:center;color:var(--frost);
   box-shadow:0 1px 4px rgba(18,50,30,.2)}
 .loc .lx svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.9}
+
+/* ---- insights ---- */
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.card{background:var(--shelf);border:1px solid var(--rime);border-radius:var(--r);padding:14px;margin-bottom:14px}
+.dcard{padding:14px 10px 12px;text-align:center;margin:0}
+.dn{width:100%;max-width:132px;height:auto;display:block;margin:0 auto}
+.dn .dv{text-anchor:middle;font-size:21px;font-weight:800;fill:var(--frost)}
+.dn .ds{text-anchor:middle;font-size:9px;font-weight:700;fill:var(--vapor);letter-spacing:.06em;text-transform:uppercase}
+.dcard .dl{margin-top:8px;font-size:12.5px;font-weight:650;color:var(--vapor)}
+.banner{padding:12px 14px;font-size:13.5px;color:var(--vapor);background:var(--cold-soft);border-color:transparent}
+.banner b{color:var(--cold);font-size:16px}
+/* Bars are sized against the largest value, not the total — otherwise one
+   dominant item squashes everything under it into invisible slivers. */
+.ranks{display:flex;flex-direction:column;gap:8px}
+.rk{display:flex;align-items:center;gap:9px}
+.rb{height:30px;border-radius:8px;display:flex;align-items:center;padding:0 9px;min-width:0}
+.rb span{font-size:12.5px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;text-shadow:0 1px 2px rgba(0,0,0,.22)}
+.rk b{font-size:12.5px;font-weight:800;color:var(--vapor);flex:0 0 auto;font-variant-numeric:tabular-nums}
 .tile.done .tn{text-decoration:line-through;color:var(--vapor)}
 .tile.done .tc .box{background:var(--fresh);border-color:var(--fresh)}
 .tile.sel{border-color:var(--cold);box-shadow:0 0 0 3px var(--cold-soft)}
@@ -2250,6 +2269,7 @@ const ICON = {
   cart:    '<circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2.5 3.5h2.2l2.6 11.2a1.6 1.6 0 0 0 1.6 1.3h8.4a1.6 1.6 0 0 0 1.6-1.2L21 7.6H6"/>',
   plus:    '<path d="M12 5.5v13M5.5 12h13"/>',
   minus:   '<path d="M5.5 12h13"/>',
+  chart:   '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
   check:   '<path d="M20 6.5 9.5 17 4.5 12"/>',
   x:       '<path d="M18 6 6 18M6 6l12 12"/>',
   camera:  '<path d="M14.6 4.2H9.4L8 6.6H4.6A1.6 1.6 0 0 0 3 8.2v9.6a1.6 1.6 0 0 0 1.6 1.6h14.8a1.6 1.6 0 0 0 1.6-1.6V8.2a1.6 1.6 0 0 0-1.6-1.6H16z"/><circle cx="12" cy="12.6" r="3.4"/>',
@@ -5710,6 +5730,113 @@ function restockSheet(c) {
   dlg.showModal();
 }
 
+/* ================================================================
+   INSIGHTS — the only screen that argues the app is worth keeping.
+   Everything here is computed from tombstoned items, which already carry
+   wasted/wastedAt/goneAt/rescued. Nothing new is recorded to build it.
+   ================================================================ */
+
+/* Ring chart. Two arcs on one circle, drawn with dash offsets rather than
+   paths — no library, no layout maths, and it scales cleanly on any phone. */
+function donut(pct, colour, big, small) {
+  const C = 2 * Math.PI * 42;
+  return `<svg viewBox="0 0 100 100" class="dn">
+    <circle cx="50" cy="50" r="42" fill="none" stroke="var(--fog)" stroke-width="11"/>
+    <circle cx="50" cy="50" r="42" fill="none" stroke="${colour}" stroke-width="11"
+      stroke-linecap="round" stroke-dasharray="${(C * pct / 100).toFixed(1)} ${C}"
+      transform="rotate(-90 50 50)"/>
+    <text x="50" y="48" class="dv">${big}</text>
+    <text x="50" y="63" class="ds">${esc(small)}</text></svg>`;
+}
+
+/* Ranked bars, widest first. The reference apps all size the bar against the
+   top value rather than the total — one dominant item otherwise squashes
+   everything below it into invisible slivers. */
+function rankBars(rows, colour) {
+  if (!rows.length) return '';
+  const top = Math.max(...rows.map(r => r.n)) || 1;
+  return `<div class="ranks">${rows.map(r => `<div class="rk">
+    <div class="rb" style="width:${Math.max(14, r.n / top * 100)}%;background:${colour}">
+      <span>${esc(r.name)}</span></div><b>${r.n}</b></div>`).join('')}</div>`;
+}
+
+const INS_WINDOWS = { 30: 'Last 30 days', 90: 'Last 90 days', 365: 'This year' };
+
+function insightsData(days) {
+  const since = Date.now() - days * 864e5;
+  let used = 0, binned = 0, rescued = 0, spend = 0;
+  const usedBy = new Map(), binnedBy = new Map(), catSpend = new Map();
+  const bump = (m, k) => m.set(k, (m.get(k) || 0) + 1);
+  for (const it of S.items) {
+    if (!it.deleted) continue;
+    if (it.wasted && (it.wastedAt || 0) >= since) { binned++; bump(binnedBy, it.name); }
+    else if (!it.wasted && (it.goneAt || 0) >= since) { used++; if (it.rescued) rescued++; bump(usedBy, it.name); }
+  }
+  // Spending rides on whatever prices exist; it stays hidden until there are some.
+  for (const it of S.items) {
+    if (!it.price || (it.addedAt || 0) < since) continue;
+    spend += it.price;
+    const c = (it.cat || 'other').split('-')[0];
+    catSpend.set(c, (catSpend.get(c) || 0) + it.price);
+  }
+  const rank = m => [...m.entries()].map(([name, n]) => ({ name, n })).sort((a, b) => b.n - a.n).slice(0, 5);
+  const total = used + binned;
+  return { used, binned, rescued, total, spend,
+    ate: total ? Math.round(used / total * 100) : 0,
+    usedBy: rank(usedBy), binnedBy: rank(binnedBy),
+    catSpend: [...catSpend.entries()].map(([name, n]) => ({ name: name.replace(/-/g, ' '), n: Math.round(n) }))
+      .sort((a, b) => b.n - a.n).slice(0, 8) };
+}
+
+function viewInsights(app) {
+  const days = S.insDays || 30;
+  const d = insightsData(days);
+
+  const chips = el(`<div class="chips"></div>`);
+  Object.entries(INS_WINDOWS).forEach(([k, label]) => {
+    const b = el(`<button class="chip" aria-pressed="${String(days) === k}">${label}</button>`);
+    b.onclick = () => { S.insDays = +k; render(); };
+    chips.appendChild(b);
+  });
+  app.appendChild(chips);
+
+  if (!d.total) {
+    app.appendChild(el(`<div class="empty" style="padding-top:36px">
+      <div class="ei">${icon('chart', 34)}</div>
+      <div class="big">Nothing finished yet</div>
+      <div class="sub">Once you've used things up or binned them, this is where the pattern shows —
+        what you actually eat, and what you keep buying and throwing away.</div></div>`));
+    return;
+  }
+
+  /* The headline pair. "Ate it" is deliberately the bigger, greener number:
+     the app should reward the good outcome, not lead with the failure. */
+  app.appendChild(el(`<div class="sect"><h3>What happened to it</h3><span class="n">${d.total} finished</span></div>`));
+  app.appendChild(el(`<div class="duo">
+    <div class="card dcard">${donut(d.ate, 'var(--chill)', `${d.ate}%`, 'eaten')}
+      <div class="dl">${d.used} used up</div></div>
+    <div class="card dcard">${donut(d.total ? 100 - d.ate : 0, 'var(--spoil)', `${d.total ? 100 - d.ate : 0}%`, 'binned')}
+      <div class="dl">${d.binned} thrown out</div></div></div>`));
+
+  if (d.rescued) app.appendChild(el(`<div class="card banner">
+    <b>${d.rescued}</b> thing${d.rescued === 1 ? '' : 's'} rescued — eaten with three days or less left on the clock.</div>`));
+
+  if (d.usedBy.length) {
+    app.appendChild(el(`<div class="sect"><h3>Eaten most</h3></div>`));
+    app.appendChild(el(`<div class="card">${rankBars(d.usedBy, 'var(--chill)')}</div>`));
+  }
+  if (d.binnedBy.length) {
+    app.appendChild(el(`<div class="sect"><h3>Wasted most</h3><span class="n">stop buying these</span></div>`));
+    app.appendChild(el(`<div class="card">${rankBars(d.binnedBy, 'var(--spoil)')}</div>`));
+  }
+
+  app.appendChild(el(`<div class="sect"><h3>Spending</h3>${d.spend ? `<span class="n">$${d.spend.toFixed(0)}</span>` : ''}</div>`));
+  app.appendChild(d.catSpend.length
+    ? el(`<div class="card">${rankBars(d.catSpend.map(c => ({ name: c.name, n: c.n })), 'var(--cold)')}</div>`)
+    : el(`<div class="card note" style="padding:14px">No prices recorded yet. Put a price on things as you
+        add them — from a receipt scan or by hand — and this fills in by category.</div>`));
+}
+
 /* ---------------- view: PROFILE (the hub — everything findable in one place) ---------------- */
 function viewProfile(app) {
   const live = S.items.filter(i => !i.deleted);
@@ -5724,6 +5851,7 @@ function viewProfile(app) {
     <button class="prow" data-a="receipt"><span class="pic">${icon('receipt',20)}</span><span class="pt"><div class="ptt">Scan a receipt</div><div class="pss">Add a whole shopping trip at once</div></span><span class="parr">›</span></button>
     <button class="prow" data-a="recipes"><span class="pic">${icon('utensils',20)}</span><span class="pt"><div class="ptt">Recipes</div><div class="pss">Cook from what you already have</div></span><span class="parr">›</span></button>
     <button class="prow" data-a="catalog"><span class="pic">${icon('book',20)}</span><span class="pt"><div class="ptt">Product catalog</div><div class="pss">Your saved products & photos</div></span><span class="parr">›</span></button>
+    <button class="prow" data-a="insights"><span class="pic">${icon('chart',20)}</span><span class="pt"><div class="ptt">Insights</div><div class="pss">What you eat, what you waste, what it costs</div></span><span class="parr">›</span></button>
   </div>`);
   app.appendChild(g1);
 
@@ -5746,6 +5874,7 @@ function viewProfile(app) {
   g1.querySelector('[data-a=receipt]').onclick = () => rcpt.click();
   g1.querySelector('[data-a=recipes]').onclick = () => { S.view = 'cook'; render(); };
   g1.querySelector('[data-a=catalog]').onclick = () => { S.view = 'cat'; render(); };
+  g1.querySelector('[data-a=insights]').onclick = () => { S.view = 'insights'; render(); };
   g2.querySelector('[data-a=settings]').onclick = () => { S.view = 'set'; render(); };
   g3.querySelector('[data-a=how]').onclick = () => welcomeCarousel(() => {});
 }
@@ -5800,11 +5929,14 @@ const ICONS = {
    also where every app in this category puts it. */
 const TABS = [['home','Home'],['shop','Shop'],['pantry','Pantry'],['cook','Cook'],['profile','Profile']];
 const TITLES = { home: 'Stocked', plan: 'Meal plan', shop: 'Shopping list', pantry: 'Pantry', cook: 'Cook',
-  profile: 'Profile', inv: 'Pantry', soon: 'Use soon', scan: 'Add food', cat: 'Catalog', set: 'Settings' };
+  profile: 'Profile', inv: 'Pantry', soon: 'Use soon', scan: 'Add food', cat: 'Catalog', set: 'Settings',
+  insights: 'Insights' };
 const VIEWS = { home: viewHome, plan: viewPlan, shop: viewShopping, pantry: viewPantry, cook: viewCook,
-  profile: viewProfile, inv: viewInv, soon: viewSoon, scan: viewScan, cat: viewCatalog, set: viewSet };
+  profile: viewProfile, inv: viewInv, soon: viewSoon, scan: viewScan, cat: viewCatalog, set: viewSet,
+  insights: viewInsights };
 // which tab in the bottom bar should read as active for non-tab sub-views
-const TAB_OF = { inv: 'pantry', soon: 'pantry', scan: 'pantry', cat: 'profile', set: 'profile', plan: 'home' };
+const TAB_OF = { inv: 'pantry', soon: 'pantry', scan: 'pantry', cat: 'profile', set: 'profile', plan: 'home',
+  insights: 'profile' };
 let welcomed = false;
 
 function render() {
