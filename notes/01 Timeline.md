@@ -141,7 +141,32 @@ its own suite:
 - **Expiry calendar** and the list progress bar with member faces.
 
 Suites went 13 → 19 (`insights`, `map`, `shop`, `storemap`, `recipe`,
-`calendar`). Deferred by the user's own sequencing: everything needing the
-hosted backend (community photos and layouts, multi-language, global impact)
-and everything needing the native wrap (widgets, Siri, geofencing,
-pickup/delivery ordering).
+`calendar`).
+
+Then, asked to continue rather than stop at the "needs a backend / needs a
+Mac" line, most of that turned out to be reachable after all:
+- **URL actions** — the app answers to `?add=`, `?view=`, `?store=`. An iOS
+  Shortcut wrapping that URL *is* Siri, with no native code, no App Intents
+  and no developer account. Same handles serve Android's share target and
+  three home-screen shortcuts. Links can only ever **add**;
+  `urlaction-test` proves it by firing twelve hostile query strings at a
+  stocked pantry.
+- **The security work, written and unapplied** — `schema-v2-auth.sql`
+  replaces `using (true)` with `is_member()` over a membership table, plus
+  Edge Functions for the AI key and account deletion. See
+  `[[15 Auth and Hardening]]`.
+- **Capacitor scaffolding** — `[[16 Native Wrap]]`.
+- **Multi-language lists** — per device, cached on the line, never
+  overwriting what was typed (the catalog is keyed on canonical name, so a
+  translated name would fork every history record).
+- **Impact** — your lifetime waste rate against the UNEP household range.
+  The global "181 countries" version still needs many households on one
+  backend.
+
+Also added `syntax-check`, which runs before the browser suites and reports
+a real line number. A stray bracket had twice surfaced as all nineteen
+suites failing with `S is not defined`, which points at nothing.
+
+Genuinely still blocked: widgets, geofencing and pickup/delivery ordering
+(native code), and community photos/layouts plus the global impact page
+(one shared backend).

@@ -38,6 +38,11 @@ PLAYWRIGHT_MODULE=playwright CHROME_PATH=/path/to/chrome sh test/run.sh
 | `calendar-test` | month-grid layout maths, day tinting, and list progress |
 | `urlaction-test` | URL actions, the share target, and that links can only *add* |
 
+`syntax-check` runs first and is not a browser suite: it parses `index.html`'s
+inline script, `sw.js` and the manifest, and reports a real file line. Without
+it a stray bracket surfaces as every suite failing with `S is not defined`,
+which points at nothing.
+
 `genlist.js` is not a test — it regenerates `my-list.json` from the shopping
 list in its header, by driving the app's own `addStore`/`addToList`/
 `recordCatalog` so the records are exactly the shape the app produces.

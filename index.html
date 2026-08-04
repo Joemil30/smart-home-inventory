@@ -494,6 +494,19 @@ label .lbl{font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:up
 .ab .ai{background:var(--scrim);border-radius:999px;padding:4px 10px;font-size:12px;
   font-weight:650;color:var(--frost)}
 /* Two-up segmented control — the iOS idiom for "same content, other view". */
+/* What was actually typed, kept visible under a translation — so the person
+   who wrote "cilantro" can still tell it's their line. */
+.item .orig{font-size:11px;color:var(--vapor-dim);font-weight:500;margin-top:1px}
+
+/* ---- lifetime impact ---- */
+.impact .irow{display:flex;justify-content:space-between;align-items:baseline;
+  font-size:13.5px;font-weight:650;color:var(--vapor);padding:5px 0}
+.impact .irow b{font-size:17px;font-weight:800;color:var(--frost);font-variant-numeric:tabular-nums}
+.impact .irow.sub{font-size:12px;color:var(--vapor-dim)}
+.impact .irow.sub b{font-size:13px;color:var(--vapor)}
+.impact .ibar{height:9px;border-radius:999px;background:var(--spoil-soft);overflow:hidden;margin:9px 0 4px}
+.impact .ibar i{display:block;height:100%;background:var(--chill);border-radius:999px}
+
 /* ---- list progress + who's sharing it ---- */
 .prog{display:flex;align-items:center;gap:11px;margin-bottom:12px}
 .faces{display:flex;flex:0 0 auto}
@@ -5452,6 +5465,48 @@ function paintHistory(box, store) {
 /* The compact row — AnyList's shape. Grouped into eight aisles, a photo grid
    with one tile per aisle is a mile of scrolling; this is the density a real
    shop needs. Photos stay a tap away for browsing. */
+/* ---------------- shared lists, read in your own language ----------------
+   One list, each person reading it in theirs. The translation is per-DEVICE
+   and never replaces what was typed: `name` stays exactly as written, and a
+   translation is cached beside it under `tr[lang]`. That ordering matters —
+   overwriting the name would corrupt the shared row for everyone else, and
+   the catalog is keyed on canonical name, so a translated name would fork
+   every history record.
+
+   Cached on the line, so a list already translated costs nothing to reopen
+   and works offline afterwards. */
+const LANGS = [['', 'As written'], ['en', 'English'], ['es', 'Español'], ['fr', 'Français'],
+  ['pt', 'Português'], ['de', 'Deutsch'], ['it', 'Italiano'], ['pl', 'Polski'],
+  ['zh', '中文'], ['ar', 'العربية'], ['hi', 'हिन्दी'], ['tl', 'Tagalog']];
+
+const listLang = () => S.cfg.listLang || '';
+const shownName = s => {
+  const l = listLang();
+  return (l && s.tr && s.tr[l]) ? s.tr[l] : s.name;
+};
+
+/* One call for everything untranslated on screen, not one per line. */
+async function translateList(store) {
+  const l = listLang();
+  if (!l) return;
+  const rows = S.shopping.filter(s => !s.deleted && (!store || (s.store || '') === store)
+    && !(s.tr && s.tr[l]));
+  if (!rows.length) return;
+  const lang = LANGS.find(x => x[0] === l)?.[1] || l;
+  const schema = { type: 'OBJECT', properties: { out: { type: 'ARRAY', items: { type: 'STRING' } } }, required: ['out'] };
+  const res = await G.gen([{ text:
+    `Translate each grocery item into ${lang}. Return the same number of entries in the same order.\n` +
+    `Use the everyday supermarket word a shopper would look for, not a literal translation.\n` +
+    `If something is a brand name, leave it as-is.\n\n` +
+    rows.map((r, i) => `${i + 1}. ${r.name}`).join('\n') }], schema);
+  const out = res.out || [];
+  for (let i = 0; i < rows.length; i++) {
+    if (!out[i]) continue;
+    rows[i].tr = { ...(rows[i].tr || {}), [l]: String(out[i]).trim() };
+    await saveShopping(rows[i]);
+  }
+}
+
 /* ---------------- the store map ----------------
    Your list, drawn as the walk rather than as a column: one block per aisle
    in the order you actually pass them, sized by how much you're picking up
@@ -5634,7 +5689,8 @@ function shopRow(s, box, flash = false) {
     : stockTag(s.name);
   const row = el(`<div class="item srow${s.done ? ' done' : ''}${flash ? ' added' : ''}">
     <button class="cbx" data-a="chk" aria-label="${s.done ? 'Undo' : 'Got it'}">${s.done ? icon('check', 16) : ''}</button>
-    <div class="body"><div class="nm">${esc(s.name)}${s.qty ? ` <span class="qty">×${esc(s.qty)}</span>` : ''}</div>
+    <div class="body"><div class="nm">${esc(shownName(s))}${s.qty ? ` <span class="qty">×${esc(s.qty)}</span>` : ''}</div>
+      ${shownName(s) !== s.name ? `<div class="orig">${esc(s.name)}</div>` : ''}
       ${st || s.price ? `<div class="meta">${st || ''}${s.price ? `<span class="tag price">$${Number(s.price).toFixed(2)}</span>` : ''}</div>` : ''}</div>
     <div class="act"><button data-a="del" aria-label="Remove ${esc(s.name)}">${icon('x', 16)}</button></div>
   </div>`);
@@ -5970,6 +6026,27 @@ function viewSet(app) {
   const sc = el(`<div class="card"></div>`);
   renderSyncCard(sc);
   app.appendChild(sc);
+
+  /* Per-device, not per-household: the whole point is that two people can
+     read the same list differently at the same moment. */
+  const lc = el(`<div class="card">
+    <div class="eyebrow" style="margin-bottom:6px">Read the list in</div>
+    <select id="llang">${LANGS.map(([v, n]) =>
+      `<option value="${v}"${listLang() === v ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select>
+    <div class="note" style="margin-top:10px">Only changes what <b>this phone</b> shows. What everyone
+      typed is kept underneath, and is what actually syncs — so nobody else's list changes.
+      Uses one AI read per batch of new items, then remembers them.</div>
+    <div id="lstat"></div>
+  </div>`);
+  lc.querySelector('#llang').onchange = async e => {
+    S.cfg.listLang = e.target.value; await saveCfg();
+    const st = lc.querySelector('#lstat');
+    if (!S.cfg.listLang) { st.innerHTML = ''; return toast('Showing what was typed'); }
+    st.innerHTML = `<div class="note" style="margin-top:8px"><span class="spin"></span> Translating your lists…</div>`;
+    try { await translateList(''); st.innerHTML = `<div class="note" style="margin-top:8px">Done.</div>`; }
+    catch (err) { st.innerHTML = `<div class="warn" style="margin-top:8px">${esc(err.message)}</div>`; }
+  };
+  app.appendChild(lc);
 
   const ab = el(`<div></div>`);
   app.appendChild(ab);
@@ -6844,6 +6921,43 @@ function insightsData(days) {
       .sort((a, b) => b.n - a.n).slice(0, 8) };
 }
 
+/* Your impact, over the whole history rather than a window.
+   The reference version of this screen (KitchenPal) shows global totals —
+   "people in 181 countries saved 440,960 items" — which needs many
+   households on one backend and is therefore Phase 2. What is honest today
+   is your own number set against the published global average, which is the
+   comparison that actually motivates anyone. */
+const GLOBAL_WASTE_LOW = 20, GLOBAL_WASTE_HIGH = 36;   // UNEP Food Waste Index, household share
+
+function lifetimeImpact() {
+  let used = 0, binned = 0, saved = 0;
+  for (const it of S.items) {
+    if (!it.deleted) continue;
+    if (it.wasted) binned++;
+    else if (it.goneAt) { used++; if (it.rescued) saved++; }
+  }
+  const total = used + binned;
+  return { used, binned, saved, total, rate: total ? Math.round(binned / total * 100) : null };
+}
+
+function impactCard(app) {
+  const im = lifetimeImpact();
+  if (!im.total) return;
+  const better = im.rate !== null && im.rate < GLOBAL_WASTE_LOW;
+  app.appendChild(el(`<div class="sect"><h3>Your impact</h3><span class="n">all time</span></div>`));
+  app.appendChild(el(`<div class="card impact">
+    <div class="irow"><span>Food you finished</span><b>${im.used}</b></div>
+    <div class="irow"><span>Rescued near its date</span><b>${im.saved}</b></div>
+    <div class="irow"><span>Thrown away</span><b>${im.binned}</b></div>
+    <div class="ibar"><i style="width:${100 - (im.rate ?? 0)}%"></i></div>
+    <div class="irow sub"><span>Your waste rate</span><b>${im.rate}%</b></div>
+    <div class="irow sub"><span>Typical household</span><b>${GLOBAL_WASTE_LOW}–${GLOBAL_WASTE_HIGH}%</b></div>
+    <div class="note" style="margin:10px 0 0">${better
+      ? `You're wasting less than a typical household. That's the number worth quoting.`
+      : `Most households land between ${GLOBAL_WASTE_LOW}% and ${GLOBAL_WASTE_HIGH}%. The "wasted most" list above is where to start.`}</div>
+  </div>`));
+}
+
 function viewInsights(app) {
   const days = S.insDays || 30;
   const d = insightsData(days);
@@ -6890,6 +7004,7 @@ function viewInsights(app) {
      the kind of small lie that makes people stop trusting the whole screen. */
   const money = n => n >= 100 ? `$${Math.round(n)}` : `$${n.toFixed(2)}`;
   app.appendChild(el(`<div class="sect"><h3>Spending</h3>${d.spend ? `<span class="n">${money(d.spend)}</span>` : ''}</div>`));
+  impactCard(app);
   app.appendChild(d.catSpend.length
     ? el(`<div class="card">${rankBars(d.catSpend.map(c => ({ name: c.name, n: c.n })), 'var(--cold)')}</div>`)
     : el(`<div class="card note" style="padding:14px">No prices recorded yet. Put a price on things as you
