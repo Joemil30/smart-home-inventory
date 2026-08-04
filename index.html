@@ -2591,6 +2591,7 @@ const ICON = {
   chart:   '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
   palette: '<path d="M12 3a9 9 0 1 0 0 18c1 0 1.7-.8 1.7-1.7 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.1 0-.9.8-1.7 1.7-1.7H16A5 5 0 0 0 21 10c0-3.9-4-7-9-7z"/><circle cx="7.5" cy="11" r="1.1"/><circle cx="10.5" cy="7" r="1.1"/><circle cx="15" cy="8" r="1.1"/>',
   download:'<path d="M12 3.5v12M7.5 11l4.5 4.5 4.5-4.5M4 20.5h16"/>',
+  copy:    '<rect x="9" y="9" width="11.5" height="11.5" rx="2.2"/><path d="M5.5 15H4.6A1.6 1.6 0 0 1 3 13.4V4.6A1.6 1.6 0 0 1 4.6 3h8.8A1.6 1.6 0 0 1 15 4.6v.9"/>',
   link:    '<path d="M10 13.5a4 4 0 0 0 5.7 0l3-3a4 4 0 1 0-5.7-5.7l-1.2 1.2"/><path d="M14 10.5a4 4 0 0 0-5.7 0l-3 3a4 4 0 1 0 5.7 5.7l1.2-1.2"/>',
   sparkle: '<path d="M12 3.2l1.9 5 5 1.9-5 1.9-1.9 5-1.9-5-5-1.9 5-1.9zM18.5 3v3.4M20.2 4.7h-3.4"/>',
   pin:     '<path d="M12 21s7-5.7 7-11a7 7 0 1 0-14 0c0 5.3 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/>',
@@ -5702,6 +5703,36 @@ function viewSet(app) {
   };
   app.appendChild(card);
 
+  /* Siri without a native app. The app answers to its own URL, and iOS
+     Shortcuts can open a URL — so "Hey Siri, add milk" becomes an Open URL
+     action. No App Intents, no developer account, works today. */
+  app.appendChild(el(`<h2 style="margin:22px 0 10px">Voice &amp; shortcuts</h2>`));
+  const siri = el(`<div class="card">
+    <div class="note" style="margin:0 0 12px">You can talk to this app through Siri without it being on
+      the App Store. It takes about two minutes to set up, once.</div>
+    <ol class="note" style="padding-left:18px;margin:0 0 12px">
+      <li style="margin-bottom:6px">Open the <b>Shortcuts</b> app → <b>+</b> → <b>Add Action</b>.</li>
+      <li style="margin-bottom:6px">Search <b>Text</b>, add it, and leave it empty.</li>
+      <li style="margin-bottom:6px">Add <b>Open URLs</b> underneath it.</li>
+      <li style="margin-bottom:6px">For the URL, paste the link below, then drag the <b>Text</b> block onto the
+        very end of it.</li>
+      <li style="margin-bottom:6px">Name it <b>Add to my shopping list</b>. Then say
+        “Hey Siri, add to my shopping list”.</li>
+    </ol>
+    <div class="row"><input id="silink" readonly value="${esc(location.origin + location.pathname + '?add=')}"
+      style="flex:1;font-family:var(--mono);font-size:11px"></div>
+    <button class="btn ghost" data-a="cp" style="margin-top:8px">${icon('copy')}Copy the link</button>
+    <div class="note" style="margin-top:12px">The same trick makes home-screen shortcuts:
+      <code>?view=list</code>, <code>?view=soon</code>, <code>?view=map</code>. Adding
+      <code>&amp;store=Costco</code> puts it on that shop's list. Links can only <b>add</b> things —
+      nothing you can put in a URL is able to use up or delete anything.</div>
+  </div>`);
+  siri.querySelector('[data-a=cp]').onclick = () => {
+    navigator.clipboard?.writeText(siri.querySelector('#silink').value);
+    toast('Link copied');
+  };
+  app.appendChild(siri);
+
   app.appendChild(el(`<h2 style="margin:22px 0 10px">Taps &amp; confirmations</h2>`));
   const ask = asksFirst();
   const ac = el(`<div class="card">
@@ -6974,6 +7005,68 @@ const swHadController = 'serviceWorker' in navigator && !!navigator.serviceWorke
   dlgEl.prepend(back);
 })();
 
+/* ---------------- URL actions ----------------
+   The app answers to its own URL, which is what turns a web app into
+   something Siri can drive. An iOS Shortcut that opens
+
+     https://…/?add=milk&store=Costco
+
+   is, from the user's side, "Hey Siri, add milk to my shopping list" — with
+   no native app, no App Intents and no developer account. The same handles
+   cover Android's share target and any home-screen shortcut.
+
+   Rules that keep this safe to expose on a URL:
+     - Only ADDITIVE actions. A link can put something on a list or open a
+       screen; nothing here can delete, consume or overwrite. A URL is
+       clickable from anywhere, so anything destructive would be a trap.
+     - Every action is idempotent-ish: addToList already refuses duplicates.
+     - The query string is scrubbed afterwards so a reload doesn't re-fire it. */
+const URL_VIEWS = { list: 'shop', shop: 'shop', pantry: 'pantry', cook: 'cook',
+  soon: 'soon', map: 'map', calendar: 'calendar', insights: 'insights', scan: 'scan' };
+
+async function runUrlAction(params) {
+  let acted = false;
+
+  /* ?store=Costco — name, not id, because a human writes this by hand in a
+     Shortcut. Matched loosely so "costco" works. */
+  const wanted = (params.get('store') || '').trim();
+  if (wanted) {
+    const hit = (S.household?.stores || []).find(s => norm(s.name) === norm(wanted));
+    if (hit) { S.store = hit.id; acted = true; }
+  }
+
+  /* ?add=milk  or  ?add=milk,bread,eggs */
+  const add = (params.get('add') || '').trim();
+  if (add) {
+    const names = add.split(/[,;\n]/).map(s => s.trim()).filter(Boolean).slice(0, 20);
+    let n = 0;
+    for (const name of names) { await addToList(name, '', S.store || ''); n++; }
+    if (n) { S.view = 'shop'; acted = true; toast(n === 1 ? `${names[0]} on the list` : `${n} things on the list`); }
+  }
+
+  /* ?recipe=<url|text> — Android share target lands here. */
+  const rec = (params.get('recipe') || params.get('text') || params.get('url') || '').trim();
+  if (rec && !add) {
+    S.view = 'cook'; S.cookTab = 'saved'; acted = true;
+    render();
+    importRecipeSheet(() => render());
+    const box = document.getElementById(/^https?:\/\//i.test(rec) ? 'rurl' : 'rtext');
+    if (box) box.value = rec;
+    return true;
+  }
+
+  const v = (params.get('view') || params.get('go') || '').trim().toLowerCase();
+  if (URL_VIEWS[v]) { S.view = URL_VIEWS[v]; acted = true; }
+
+  return acted;
+}
+
+/* Strip the action out of the address bar so a pull-to-refresh doesn't add
+   the same thing again, without adding a history entry to back through. */
+function scrubUrl() {
+  try { history.replaceState(null, '', location.pathname); } catch (e) {}
+}
+
 (async function boot() {
   await DB.init();
   // Ask the browser NOT to evict our data. On installed PWAs (esp. iOS) this
@@ -6989,6 +7082,14 @@ const swHadController = 'serviceWorker' in navigator && !!navigator.serviceWorke
   if (S.household) S.who = S.household.members.find(m => m.name === S.cfg.who) || S.household.members[0];
   document.getElementById('searchBtn').onclick = () => { S.view = 'pantry'; S.loc = 'all'; S.focusSearch = true; render(); };
   render();
+  /* After the first render, so the app is already usable if an action throws,
+     and only once a household exists — there's nowhere to put things before
+     setup is done. */
+  const q = new URLSearchParams(location.search);
+  if (S.household && [...q.keys()].length) {
+    try { if (await runUrlAction(q)) render(); } catch (e) {}
+    scrubUrl();
+  }
   registerSW();
   applyTheme();
   loadSnapshotSeed();   // opened one of the .html backups? bring its data in

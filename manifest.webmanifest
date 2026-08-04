@@ -9,6 +9,16 @@
   "background_color": "#F7F9F7",
   "theme_color": "#12A150",
   "categories": ["food", "lifestyle", "utilities"],
+  "share_target": {
+    "action": "./",
+    "method": "GET",
+    "params": { "title": "title", "text": "text", "url": "url" }
+  },
+  "shortcuts": [
+    { "name": "Shopping list", "short_name": "List", "url": "./?view=list" },
+    { "name": "What's dying", "short_name": "Use soon", "url": "./?view=soon" },
+    { "name": "Your kitchen map", "short_name": "Map", "url": "./?view=map" }
+  ],
   "icons": [
     {
       "src": "icon.svg",
