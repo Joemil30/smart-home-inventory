@@ -2010,10 +2010,59 @@ const G = {
     try { const id = await G.pickWorking(await G.models()); if (id) await G.setModel(id); } catch (e) {}
   },
 
+  /* Errors that mean "this MODEL won't serve you", as opposed to "this
+     REQUEST was bad". Only the former is worth trying a different model for
+     — retrying a malformed request down the whole list just burns every
+     model you had left. */
+  _modelExhausted: msg => {
+    const m = String(msg || '');
+    return G._zeroQuota(m)
+      || /quota|rate.?limit|resource_?exhausted|429|overloaded|unavailable|capacity|not found for api version|is not supported/i.test(m);
+  },
+
+  /* The ranked shortlist, remembered so a mid-scan fallback doesn't need a
+     network round-trip to /models before it can recover. Refreshed whenever
+     Settings fetches models. */
+  cached: () => (S.cfg.aiCandidates || []).filter(Boolean),
+
+  async _nextModel() {
+    let list = G.cached();
+    if (!list.length) {
+      try { list = G.candidates(await G.models()); S.cfg.aiCandidates = list.slice(0, 6); await saveCfg(); }
+      catch (e) { return null; }                      // offline, or the key itself is dead
+    }
+    const i = list.indexOf(G.model());
+    return list[(i < 0 ? 0 : i + 1)] || null;
+  },
+
+  /* Free tiers run out mid-task, and "come back tomorrow" is a poor answer
+     when three other models on the same key would have worked. On a
+     model-level failure this steps down the shortlist and retries once per
+     model, capped at two switches so a systemic outage fails fast rather
+     than walking the entire list.
+
+     It says so out loud: a silent model swap changes the quality of what
+     comes back, and someone comparing two receipt scans deserves to know
+     why they differ. */
   async gen(parts, jsonSchema) {
     if (!G.key()) throw new Error(`No API key. Setup → paste your ${G.provider() === 'openai' ? 'OpenRouter' : 'Gemini'} key.`);
     if (!G.model()) throw new Error('No model chosen. Setup → Fetch models, pick one.');
-    return G.provider() === 'openai' ? G._openai(parts, jsonSchema) : G._gemini(parts, jsonSchema);
+    const run = () => G.provider() === 'openai' ? G._openai(parts, jsonSchema) : G._gemini(parts, jsonSchema);
+
+    let lastErr;
+    for (let hop = 0; hop <= 2; hop++) {
+      try { return await run(); }
+      catch (e) {
+        lastErr = e;
+        if (!G._modelExhausted(e.message)) throw e;    // a bad request stays a bad request
+        const next = await G._nextModel();
+        if (!next || next === G.model()) break;
+        const from = G.model();
+        await G.setModel(next);
+        try { toast(`${from} is out — switched to ${next}`); } catch (x) {}
+      }
+    }
+    throw lastErr;
   },
 
   async _fetchRetry(call, tries = 2) {
@@ -6091,6 +6140,11 @@ function viewSet(app) {
     box.innerHTML = `<span class="spin"></span> <span class="note">Checking your key&hellip;</span>`;
     try {
       const ms = await G.models();
+      /* Remember the ranked shortlist while we have it. When a model runs
+         out mid-receipt, gen() steps down this list without needing a
+         /models round-trip first — which is exactly the moment the network
+         is least likely to cooperate. */
+      S.cfg.aiCandidates = G.candidates(ms).slice(0, 6); await saveCfg();
       // Don't just take the first plausible name — spend one tiny call per
       // candidate until something actually answers, so the first real scan
       // can't be the moment you discover the model was dead.
@@ -6392,7 +6446,10 @@ function dl(blob, name) {
 const BACKUP_STORES = ['items', 'catalog', 'shopping', 'plan', 'saved', 'log'];
 /* Keys stay OUT of the file, so it's safe to email to yourself or leave in a
    shared drive. Re-pasting a key is a minor annoyance; leaking one isn't. */
-const CFG_SECRETS = ['geminiKey', 'openaiKey', 'supaKey', 'supaUrl', 'vapidPublic', '_syncq'];
+/* aiCandidates is a cache of model names, not user data — and a stale one
+   restored on another phone months later would point the fallback at models
+   that no longer exist. It rebuilds itself on the next key check. */
+const CFG_SECRETS = ['geminiKey', 'openaiKey', 'supaKey', 'supaUrl', 'vapidPublic', '_syncq', 'aiCandidates'];
 
 async function backupData() {
   const rows = await Promise.all(BACKUP_STORES.map(s => DB.all(s)));

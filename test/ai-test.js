@@ -122,6 +122,62 @@ const server = http.createServer((q, r) => {
   ok('limit-0 error says nothing was used up', /used up/i.test(errText));
   ok('limit-0 error does NOT tell you to wait', !/wait/i.test(errText), errText.slice(0, 120));
 
+  /* ---- 7. falling back to another model instead of giving up ----------
+     Free tiers run out mid-task. "Come back tomorrow" is a poor answer when
+     three other models on the same key would have worked — but stepping
+     down the list for a MALFORMED request would burn every model you had
+     left, so the distinction is the whole feature. */
+  const fb = await page.evaluate(async () => {
+    const out = {};
+    const realFetch = window.fetch;
+
+    // (a) the first model is out of quota; the second answers.
+    S.cfg = { aiProvider: 'gemini', geminiKey: 'k', geminiModel: 'model-a',
+              aiCandidates: ['model-a', 'model-b', 'model-c'] };
+    let calls = [];
+    window.fetch = async (u) => {
+      const s = String(u);
+      const m = s.match(/models\/([^:]+):generateContent/);
+      if (m) {
+        calls.push(m[1]);
+        if (m[1] === 'model-a') return new Response(JSON.stringify({ error: { message: 'Resource exhausted: quota' } }), { status: 429 });
+        return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: 'ok' }] } }] }), { status: 200 });
+      }
+      return new Response('{}', { status: 200 });
+    };
+    out.result = await G.gen([{ text: 'x' }]);
+    out.tried = [...calls];
+    out.switchedTo = S.cfg.geminiModel;
+
+    // (b) a bad request must NOT walk the list.
+    S.cfg.geminiModel = 'model-a'; calls = [];
+    window.fetch = async (u) => String(u).includes('generateContent')
+      ? (calls.push('x'), new Response(JSON.stringify({ error: { message: 'Invalid JSON payload received' } }), { status: 400 }))
+      : new Response('{}', { status: 200 });
+    try { await G.gen([{ text: 'x' }]); } catch (e) { out.badReqMsg = e.message; }
+    out.badReqCalls = calls.length;
+    out.badReqModel = S.cfg.geminiModel;
+
+    // (c) everything is out — fail with the real reason, don't loop forever.
+    S.cfg.geminiModel = 'model-a'; calls = [];
+    window.fetch = async (u) => String(u).includes('generateContent')
+      ? (calls.push('x'), new Response(JSON.stringify({ error: { message: 'Resource exhausted: quota' } }), { status: 429 }))
+      : new Response('{}', { status: 200 });
+    try { await G.gen([{ text: 'x' }]); } catch (e) { out.allOutMsg = e.message; }
+    out.allOutCalls = calls.length;
+
+    window.fetch = realFetch;
+    return out;
+  });
+  ok('quota failure falls through to the next model', fb.result === 'ok', String(fb.result));
+  ok('...trying them in shortlist order', fb.tried.join() === 'model-a,model-b', fb.tried.join());
+  ok('...and remembers the working one', fb.switchedTo === 'model-b', fb.switchedTo);
+  ok('a bad request is NOT retried on other models', fb.badReqCalls === 1, `calls=${fb.badReqCalls}`);
+  ok('...and does not silently change your model', fb.badReqModel === 'model-a', fb.badReqModel);
+  ok('...and surfaces the real reason', /Invalid JSON/i.test(fb.badReqMsg || ''), fb.badReqMsg);
+  ok('when every model is out it stops rather than looping', fb.allOutCalls <= 3, `calls=${fb.allOutCalls}`);
+  ok('...and still reports a quota problem', /quota|exhausted/i.test(fb.allOutMsg || ''), fb.allOutMsg);
+
   await browser.close(); server.close();
   console.log(pass ? '\nALL AI CHECKS PASS' : '\nFAILURES ABOVE');
   process.exit(pass ? 0 : 1);
