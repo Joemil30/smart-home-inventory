@@ -193,13 +193,18 @@ const NAME = (fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8').match(/CACHE\s*=
     res.sheetAddBack = !!dlg.querySelector('[data-a=plus]');
     if (dlg.open) dlg.close();
 
-    // header search button shows on the pantry and focuses its search
+    /* The magnifier used to jump to the pantry filter, and only appeared on
+       two screens. It now opens the everything-search — items, list, history,
+       recipes, meals — so it has to be reachable from ANYWHERE. */
     const sb = document.getElementById('searchBtn');
-    S.view = 'pantry'; render();
-    res.searchExists = !!sb && !sb.classList.contains('hide');
-    S.view = 'soon';
+    res.searchOnPantry = (S.view = 'pantry', render(), !sb.classList.contains('hide'));
+    res.searchOnCook   = (S.view = 'cook',   render(), !sb.classList.contains('hide'));
+    res.searchOnShop   = (S.view = 'shop',   render(), !sb.classList.contains('hide'));
+    // ...except on the screen it leads to, and while the camera is live.
+    res.searchHiddenOnSearch = (S.view = 'search', render(), sb.classList.contains('hide'));
+    S.view = 'soon'; render();
     sb.onclick();                                   // wired in boot()
-    res.searchGoesToPantry = S.view === 'pantry';
+    res.searchOpensSearch = S.view === 'search';
     return res;
   });
   ok('thumb: image renders <img>, no-image renders food emoji', ui.imgTag === true && ui.emoji === true, JSON.stringify(ui));
@@ -207,7 +212,10 @@ const NAME = (fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8').match(/CACHE\s*=
   ok('addOne: inverse of deplete', ui.depThenAdd === true);
   ok('addOne: revives a fully-gone item', ui.reviveGone === true);
   ok('sheet: prominent Move + Add-one-back present', ui.sheetMove === true && ui.sheetAddBack === true);
-  ok('header: search shows on Pantry and focuses its search', ui.searchExists === true && ui.searchGoesToPantry === true);
+  ok('header: search is reachable from every screen', ui.searchOnPantry === true && ui.searchOnCook === true && ui.searchOnShop === true,
+    JSON.stringify({ pantry: ui.searchOnPantry, cook: ui.searchOnCook, shop: ui.searchOnShop }));
+  ok('header: search hides on the search screen itself', ui.searchHiddenOnSearch === true);
+  ok('header: search opens the everything-search', ui.searchOpensSearch === true);
 
   // ---- G. catalog view: browsable scan memory with thumbnails ----
   const catr = await page.evaluate(async () => {

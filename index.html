@@ -823,7 +823,7 @@ dialog::backdrop{background:var(--shelf)}
 
 <header>
   <h1 id="title">Stocked</h1>
-  <button id="searchBtn" class="hide" aria-label="Search your pantry">🔎</button>
+  <button id="searchBtn" class="hide" aria-label="Search everything">🔎</button>
 </header>
 
 <main id="app"></main>
@@ -7015,6 +7015,120 @@ function pickZonePhoto(z) {
   inp.click();
 }
 
+/* ---------------- one search box for everything ----------------
+   The pantry search only ever answered "is it in the house right now?",
+   which is the wrong question about half the time. "Where's the sour cream"
+   and "have I ever bought tahini" and "what did I do with that chilli
+   recipe" are all the same gesture from the user's side, and they were three
+   different screens.
+
+   Every source is searched with the same typo-tolerant matcher, then results
+   are grouped by what you can DO with them rather than by which table they
+   came from — which is the difference between a search screen and a database
+   browser. */
+function searchEverything(q) {
+  const hit = (text, floor = 0.45) => fuzzyScore(q, text || '');
+  const rank = rows => rows.filter(r => r.s >= 0.45).sort((a, b) => b.s - a.s);
+
+  const items = rank(S.items.filter(i => !i.deleted).map(i =>
+    ({ s: Math.max(hit(i.name), hit(i.brand) * 0.9), i })));
+
+  const onList = rank(S.shopping.filter(s => !s.deleted && !s.done).map(s =>
+    ({ s: hit(s.name), row: s })));
+
+  const here = new Set(items.map(x => canon(x.i.name)));
+  const past = rank(catalogList(CAT_PRODUCT).map(c => ({ s: hit(c.name), c })))
+    .filter(x => !here.has(canon(x.c.name)));
+
+  const meals = rank(catalogList(CAT_MEAL).map(c => ({ s: hit(c.name), c })));
+
+  /* Recipes match on their ingredients too — "what can I do with the
+     aubergine" is the question, and the answer is never in the title. */
+  const recipes = rank(S.saved.filter(r => !r.deleted).map(r => ({
+    s: Math.max(hit(r.name), ...(r.uses || []).map(u => hit(u) * 0.75), 0), r })));
+
+  return { items, onList, past, meals, recipes,
+    total: items.length + onList.length + past.length + meals.length + recipes.length };
+}
+
+function viewSearch(app) {
+  const row = el(`<div class="row" style="margin-bottom:14px">
+    <input id="gq" placeholder="Search everything you own, buy or cook…"
+      value="${esc(S.gq || '')}" autocomplete="off" enterkeyhint="search" style="flex:1"></div>`);
+  app.appendChild(row);
+  const box = el(`<div id="gres"></div>`);
+  app.appendChild(box);
+
+  const paint = () => {
+    box.innerHTML = '';
+    const q = (S.gq || '').trim();
+    if (q.length < 2) {
+      box.appendChild(el(`<div class="empty" style="padding-top:30px">
+        <div class="ei">${icon('search', 34)}</div>
+        <div class="big">Everything, in one place</div>
+        <div class="sub">What's in the house, what you've bought before, what's on a list,
+          recipes — including by ingredient — and meals you've made.</div></div>`));
+      return;
+    }
+    const r = searchEverything(q);
+    if (!r.total) {
+      box.appendChild(el(`<div class="empty" style="padding-top:30px">
+        <div class="big">Nothing anywhere for "${esc(q)}"</div>
+        <div class="sub">Not in the house, not in your history, not on a list, not in a recipe.</div></div>`));
+      const add = el(`<button class="btn cold" style="max-width:320px;margin:14px auto 0">${icon('plus')}Put "${esc(q)}" on the list</button>`);
+      add.onclick = async () => { await addToList(q, '', S.store || ''); toast(`${q} on the list`); };
+      box.appendChild(add);
+      return;
+    }
+
+    const sect = (title, note, n) => box.appendChild(
+      el(`<div class="sect"><h3>${esc(title)}</h3><span class="n">${esc(note || String(n))}</span></div>`));
+
+    if (r.items.length) {
+      sect('In the house', '', r.items.length);
+      const g = el(`<div></div>`);
+      paintRows(g, r.items.slice(0, 12).map(x => x.i));
+      box.appendChild(g);
+    }
+    if (r.onList.length) {
+      sect('Already on a list', '', r.onList.length);
+      r.onList.slice(0, 8).forEach(({ row: s }) => {
+        const b = el(`<div class="item"><div class="body"><div class="nm">${esc(shownName(s))}</div>
+          <div class="meta">${esc(storeName(s.store) || 'General')} list</div></div></div>`);
+        b.onclick = () => { S.view = 'shop'; S.store = s.store || ''; render(); };
+        box.appendChild(b);
+      });
+    }
+    if (r.past.length) {
+      sect('Bought before', 'not in the house now', r.past.length);
+      paintTileList(box, r.past.slice(0, 8).map(({ c }) => ({
+        name: c.name, meta: statusPills(c.name) || `${c.count || 0}× · ${esc(storeLabel(c))}`,
+        image: c.image, emoji: foodEmoji(c.name, c.cat) || '🛒',
+        checkLabel: 'Add to list', stick: true,
+        onCheck: async () => { await addToList(c.name, '', S.store || ''); toast(`${c.name} on the list`); },
+        onTap: () => restockSheet(c),
+      })));
+    }
+    if (r.recipes.length) {
+      sect('Recipes', 'including by ingredient', r.recipes.length);
+      r.recipes.slice(0, 5).forEach(({ r: rec }) => box.appendChild(recipeCardEl(recomputeMissing(rec))));
+    }
+    if (r.meals.length) {
+      sect('Meals you have made', '', r.meals.length);
+      paintTileList(box, r.meals.slice(0, 6).map(({ c }) => ({
+        name: c.name, meta: `${c.count || 0}× made`, image: c.image,
+        emoji: foodEmoji(c.name, '') || '🍽️',
+        onTap: () => historySheet(c, () => render()),
+      })));
+    }
+  };
+
+  const inp = row.querySelector('#gq');
+  inp.oninput = e => { S.gq = e.target.value; paint(); };
+  paint();
+  setTimeout(() => { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }, 40);
+}
+
 /* ---------------- the expiry calendar ----------------
    The same dates the Use-soon rail already knows, laid out as a month so
    you can see a bad week coming instead of meeting it one item at a time.
@@ -7382,13 +7496,13 @@ const ICONS = {
 const TABS = [['home','Home'],['shop','Shop'],['pantry','Pantry'],['cook','Cook'],['profile','Profile']];
 const TITLES = { home: 'Stocked', plan: 'Meal plan', shop: 'Shopping list', pantry: 'Pantry', cook: 'Cook',
   profile: 'Profile', inv: 'Pantry', soon: 'Use soon', scan: 'Add food', cat: 'Catalog', set: 'Settings',
-  insights: 'Insights', map: 'Your kitchen', calendar: 'Expiry calendar' };
+  insights: 'Insights', map: 'Your kitchen', calendar: 'Expiry calendar', search: 'Search' };
 const VIEWS = { home: viewHome, plan: viewPlan, shop: viewShopping, pantry: viewPantry, cook: viewCook,
   profile: viewProfile, inv: viewInv, soon: viewSoon, scan: viewScan, cat: viewCatalog, set: viewSet,
-  insights: viewInsights, map: viewMap, calendar: viewCalendar };
+  insights: viewInsights, map: viewMap, calendar: viewCalendar, search: viewSearch };
 // which tab in the bottom bar should read as active for non-tab sub-views
 const TAB_OF = { inv: 'pantry', soon: 'pantry', scan: 'pantry', cat: 'profile', set: 'profile', plan: 'home',
-  insights: 'profile', map: 'pantry', calendar: 'pantry' };
+  insights: 'profile', map: 'pantry', calendar: 'pantry', search: 'pantry' };
 let welcomed = false;
 
 function render() {
@@ -7408,7 +7522,8 @@ function render() {
   }
   nav.classList.remove('hide');
   // header search only makes sense on the pantry
-  search.classList.toggle('hide', !(S.view === 'pantry' || S.view === 'inv'));
+  // Searchable from anywhere now that it spans every source, not just the pantry.
+  search.classList.toggle('hide', S.view === 'search' || S.view === 'scan');
 
   const soonN = S.items.filter(i => !i.deleted && freshness(i).left <= 3).length;
   // The list you land on is the general one; a store tab renames the screen
@@ -7555,7 +7670,7 @@ const swHadController = 'serviceWorker' in navigator && !!navigator.serviceWorke
        clickable from anywhere, so anything destructive would be a trap.
      - Every action is idempotent-ish: addToList already refuses duplicates.
      - The query string is scrubbed afterwards so a reload doesn't re-fire it. */
-const URL_VIEWS = { list: 'shop', shop: 'shop', pantry: 'pantry', cook: 'cook',
+const URL_VIEWS = { list: 'shop', shop: 'shop', pantry: 'pantry', cook: 'cook', search: 'search',
   soon: 'soon', map: 'map', calendar: 'calendar', insights: 'insights', scan: 'scan' };
 
 async function runUrlAction(params) {
@@ -7614,7 +7729,7 @@ function scrubUrl() {
   ]);
   S.items = items; S.catalog = catalog; S.shopping = shopping; S.plan = plan; S.saved = saved; S.household = household || null; S.cfg = cfg || {};
   if (S.household) S.who = S.household.members.find(m => m.name === S.cfg.who) || S.household.members[0];
-  document.getElementById('searchBtn').onclick = () => { S.view = 'pantry'; S.loc = 'all'; S.focusSearch = true; render(); };
+  document.getElementById('searchBtn').onclick = () => { S.view = 'search'; render(); };
   render();
   /* After the first render, so the app is already usable if an action throws,
      and only once a household exists — there's nowhere to put things before

@@ -37,6 +37,7 @@ PLAYWRIGHT_MODULE=playwright CHROME_PATH=/path/to/chrome sh test/run.sh
 | `recipe-test` | JSON-LD import, the CORS fallback, ratings and times-cooked |
 | `calendar-test` | month-grid layout maths, day tinting, and list progress |
 | `urlaction-test` | URL actions, the share target, and that links can only *add* |
+| `latest-test` | buying rhythm, unified search, plain lists, sharing, low-stock chip, impact, translation |
 
 `syntax-check` runs first and is not a browser suite: it parses `index.html`'s
 inline script, `sw.js` and the manifest, and reports a real file line. Without
