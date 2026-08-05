@@ -2984,7 +2984,7 @@ function searchHistory(box, q, shown = []) {
     })));
   }
   if (meals.length) {
-    box.appendChild(el(`<div class="sect"><h3>Meals you've made with this</h3></div>`));
+    box.appendChild(el(`<div class="sect"><h3>Meals you've made with this</h3><span class="n">${meals.length}</span></div>`));
     paintTileList(box, meals.map(c => ({
       name: c.name, meta: `${c.count || 0}× made`,
       image: c.image, emoji: foodEmoji(c.name, '') || '🍽️',
@@ -7440,7 +7440,7 @@ function viewInsights(app) {
     <b>${d.rescued}</b> thing${d.rescued === 1 ? '' : 's'} rescued — eaten with three days or less left on the clock.</div>`));
 
   if (d.usedBy.length) {
-    app.appendChild(el(`<div class="sect"><h3>Eaten most</h3></div>`));
+    app.appendChild(el(`<div class="sect"><h3>Eaten most</h3><span class="n">${d.used} finished</span></div>`));
     app.appendChild(el(`<div class="card">${rankBars(d.usedBy, 'var(--chill)')}</div>`));
   }
   if (d.binnedBy.length) {
