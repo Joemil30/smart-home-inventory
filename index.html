@@ -462,6 +462,8 @@ label .lbl{font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:up
 .mpill .lq{color:var(--vapor-dim);font-weight:600;font-size:11.5px}
 .missed.low{background:var(--cold-soft)}
 .missed.low .mh{color:var(--cold-2)}
+.missed.due{background:var(--fog)}
+.missed.due .mh{color:var(--vapor)}
 .mpill:active{background:var(--fog)}
 .total{background:var(--shelf);border:1px solid var(--rime);border-radius:var(--r);
   padding:12px 14px 13px;margin-bottom:12px}
@@ -3245,6 +3247,67 @@ const catId = (name, barcode, kind = CAT_PRODUCT) =>
    went to — both remembered so the next buy can pre-fill them. Pass
    bump:false to enrich a record (a photo, a category) without claiming
    it was bought again. */
+/* ---------------- buying rhythm ----------------
+   Everything here comes from purchases the app already recorded. No new
+   input, no AI call, works offline.
+
+   MEDIAN, not mean. Household shopping is full of outliers — a stock-up
+   before a holiday, a fortnight away, buying three at once because they were
+   on offer. One of those drags a mean far enough to make every prediction
+   wrong, and a prediction that's wrong is worse than no prediction because
+   people stop trusting the whole screen.
+
+   Deliberately conservative: four purchases before it will say anything, and
+   it stays quiet when the intervals are too scattered to mean anything. */
+const MIN_BUYS = 4;
+
+function buyRhythm(c) {
+  const t = [...(c?.buys || [])].sort((a, b) => a - b);
+  if (t.length < MIN_BUYS) return null;
+  const gaps = [];
+  for (let i = 1; i < t.length; i++) gaps.push((t[i] - t[i - 1]) / 864e5);
+  const usable = gaps.filter(g => g >= 0.5 && g <= 180);   // ignore same-trip and year-long gaps
+  if (usable.length < MIN_BUYS - 1) return null;
+
+  const sorted = [...usable].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  const median = sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  if (!(median > 0)) return null;
+
+  /* Spread relative to the median. A household that buys milk every 6-8 days
+     is predictable; one that buys coffee anywhere from 3 to 60 days apart is
+     not, and pretending otherwise produces nagging. */
+  const spread = sorted.reduce((n, g) => n + Math.abs(g - median), 0) / sorted.length / median;
+  if (spread > 0.85) return null;
+
+  const since = (Date.now() - t[t.length - 1]) / 864e5;
+  return {
+    everyDays: Math.round(median),
+    sinceDays: Math.round(since),
+    dueIn: Math.round(median - since),
+    /* More history and tighter spread = more confident. Only used to decide
+       whether to speak up at all. */
+    confidence: Math.min(1, (usable.length / 8)) * (1 - Math.min(spread, 0.85) / 0.85),
+  };
+}
+
+/* "You usually get this by now" — the thing a shopping list can know that a
+   piece of paper can't. Only for things not already on the list and not
+   currently in the house. */
+function dueForRestock(store = '') {
+  const onList = new Set(S.shopping.filter(s => !s.deleted && !s.done).map(s => norm(s.name)));
+  const out = [];
+  for (const c of catalogList(CAT_PRODUCT, { store })) {
+    if (onList.has(norm(c.name))) continue;
+    if (stockState(c.name).state !== 'out') continue;     // you still have some
+    const r = buyRhythm(c);
+    if (!r || r.confidence < 0.35) continue;
+    if (r.dueIn > 2) continue;                            // not yet
+    out.push({ c, r });
+  }
+  return out.sort((a, b) => a.r.dueIn - b.r.dueIn).slice(0, 8);
+}
+
 async function recordCatalog(p, opt = {}) {
   const { store = '', loc = '', at = Date.now(), bump = true } = opt;
   if (!p || !p.name) return null;
@@ -3263,6 +3326,14 @@ async function recordCatalog(p, opt = {}) {
     count: (prev.count || 0) + (bump ? 1 : 0),
     first: prev.first || at,
     last: bump ? at : (prev.last || at),
+    /* Actual purchase timestamps, not just first/last/count. With only the
+       endpoints you can compute a mean interval, and a mean is wrecked by a
+       single holiday or a stock-up — the median needs the real dates. Capped
+       at 16, which is a year of weekly shopping and keeps the sync row small.
+       Same-day repeats are ignored: three yoghurts in one trip is one buy. */
+    buys: bump
+      ? [...(prev.buys || []).filter(t => at - t > 12 * 3600e3), at].slice(-16)
+      : (prev.buys || []),
     learned: prev.learned || at,
     deleted: false,
     updatedAt: Date.now(),
@@ -4279,6 +4350,18 @@ function historySheet(c, after) {
     <h1 style="margin:6px 0 4px">${esc(c.name)}</h1>
     <p class="note" style="margin:0 0 16px">${meal ? 'Made' : 'Bought'} <b>${c.count || 0}×</b>${
       c.last ? ` · last ${esc(agoLabel(c.last))}` : ''}. Everything here is editable.</p>
+    ${(() => {
+      const r = buyRhythm(c);
+      if (!r) return '';
+      const late = r.dueIn < 0;
+      return `<div class="card" style="padding:11px 13px;margin-bottom:14px;background:var(--fog);border:none">
+        <div style="font-size:12.5px;font-weight:700;color:var(--frost)">Roughly every ${r.everyDays} days</div>
+        <div class="note" style="margin:3px 0 0">Last one ${r.sinceDays} days ago —
+          ${late ? `about ${Math.abs(r.dueIn)} day${Math.abs(r.dueIn) === 1 ? '' : 's'} over` :
+            r.dueIn === 0 ? `due about now` : `due in about ${r.dueIn} days`}.
+          Learned from ${(c.buys || []).length} purchases; it stays quiet until the pattern is steady.</div>
+      </div>`;
+    })()}
     <label><span class="lbl">Name</span><input id="hn" value="${esc(c.name)}" autocomplete="off"></label>
     ${meal ? '' : `<label><span class="lbl">Aisle</span><select id="hc">
       ${CATS.map(k => `<option value="${esc(k)}" ${((c.cat || '') === k) ? 'selected' : ''}>${esc(CAT_LABEL(k))}</option>`).join('')}
@@ -5731,6 +5814,29 @@ function missedBand(box, store) {
   box.appendChild(wrap);
 }
 
+/* Things you're simply due for, learned from how often you actually buy
+   them. This is the one suggestion in the app that isn't reacting to
+   something — it's the difference between a list that records decisions and
+   one that anticipates them. Phrased as an observation ("usually every 6
+   days") rather than an instruction, because the app is guessing and should
+   sound like it. */
+function dueBand(box, store) {
+  const due = dueForRestock(store);
+  if (!due.length) return;
+  const wrap = el(`<div class="missed due">
+    <div class="mh">${icon('refresh', 14)}You're usually due for these</div>
+    <div class="mp"></div></div>`);
+  const pills = wrap.querySelector('.mp');
+  due.forEach(({ c, r }) => {
+    const label = r.dueIn < 0 ? `${Math.abs(r.dueIn)}d over` : r.dueIn === 0 ? 'about now' : `in ${r.dueIn}d`;
+    const b = el(`<button class="mpill">${esc(c.name)}
+      <span class="lq" title="every ${r.everyDays} days">${esc(label)}</span> <i>+</i></button>`);
+    b.onclick = async () => { await addToList(c.name, '', store); paintShopping(box); toast(`${c.name} on the list`); };
+    pills.appendChild(b);
+  });
+  box.appendChild(wrap);
+}
+
 /* Things in the house that are nearly gone and aren't on this list yet. The
    whole point of setting a threshold is that you never have to remember to
    act on it, so the offer comes to the list rather than waiting to be found. */
@@ -5851,6 +5957,7 @@ function paintShopping(box, flashId = '') {
 
   listProgress(box, todo, done);
   missedBand(box, store);
+  dueBand(box, store);
   lowStockBand(box, todo);
   runningTotal(box, todo, done);
 
@@ -6003,6 +6110,23 @@ function viewSet(app) {
   /* Siri without a native app. The app answers to its own URL, and iOS
      Shortcuts can open a URL — so "Hey Siri, add milk" becomes an Open URL
      action. No App Intents, no developer account, works today. */
+  /* Open Food Facts is ODbL; its photos are CC-BY-SA. Attribution is a
+     licence condition, not a courtesy, and shipping without it is a real
+     problem at App Store review as well as legally. It has to be visible in
+     the app, not only in a policy page. */
+  app.appendChild(el(`<h2 style="margin:22px 0 10px">Where the data comes from</h2>`));
+  app.appendChild(el(`<div class="card">
+    <div class="note" style="margin:0 0 10px">Product names, barcodes and photos come from
+      <b>Open Food Facts</b>, a free collaborative database. Its data is licensed
+      <a href="https://opendatacommons.org/licenses/odbl/1-0/" target="_blank" rel="noopener">ODbL 1.0</a>
+      and its photos <a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank" rel="noopener">CC BY-SA 3.0</a>.</div>
+    <div class="note" style="margin:0 0 10px">Recipe photos and suggestions come from
+      <b>TheMealDB</b>. Recipes you import keep a link back to where they came from.</div>
+    <div class="note" style="margin:0">Expiry estimates are this app's own, from category and
+      shelf, adjusted by what your household actually does. Waste percentages are compared against
+      the <b>UNEP Food Waste Index</b> household range.</div>
+  </div>`));
+
   app.appendChild(el(`<h2 style="margin:22px 0 10px">Voice &amp; shortcuts</h2>`));
   const siri = el(`<div class="card">
     <div class="note" style="margin:0 0 12px">You can talk to this app through Siri without it being on

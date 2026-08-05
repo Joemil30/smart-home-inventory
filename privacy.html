@@ -3,135 +3,141 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Stocked — Privacy Policy</title>
+  <title>Privacy Policy</title>
   <style>
+    :root { color-scheme: light dark; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      line-height: 1.6;
-      color: #333;
-      background: #f7f9f7;
-      padding: 20px;
-      max-width: 800px;
-      margin: 0 auto;
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+           line-height: 1.62; color: #1a1a1a; background: #fff; padding: 24px 20px 64px;
+           max-width: 760px; margin: 0 auto; }
+    h1 { font-size: 28px; margin: 0 0 6px; letter-spacing: -.02em; }
+    h2 { font-size: 19px; margin: 30px 0 8px; letter-spacing: -.01em; }
+    h3 { font-size: 15px; margin: 18px 0 4px; }
+    p, li { margin: 8px 0; }
+    ul { margin-left: 20px; }
+    a { color: #0C7D3C; }
+    code { background: #f0f2f0; padding: 1px 5px; border-radius: 4px; font-size: .9em; }
+    .sub { color: #5a655c; font-size: 14px; margin-bottom: 4px; }
+    table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 14px; }
+    th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #e5ece5; vertical-align: top; }
+    th { font-weight: 700; }
+    .box { background: #f3f7f4; border-left: 3px solid #12A150; padding: 12px 14px; margin: 14px 0;
+           border-radius: 0 8px 8px 0; }
+    @media (prefers-color-scheme: dark) {
+      body { background: #0E1512; color: #E7EFE9; }
+      a { color: #3CC974; } code { background: #1A241E; }
+      .sub { color: #9AA89F; } th, td { border-bottom-color: #243029; }
+      .box { background: #15291D; }
     }
-    h1, h2 { margin: 20px 0 10px; color: #12A150; }
-    h1 { font-size: 28px; }
-    h2 { font-size: 20px; }
-    p { margin: 10px 0; }
-    a { color: #12A150; }
-    code { background: #f0f0f0; padding: 2px 6px; border-radius: 3px; }
-    .note { background: #f0f8f5; padding: 12px; border-radius: 6px; margin: 10px 0; border-left: 4px solid #12A150; }
   </style>
 </head>
 <body>
-  <h1>Stocked — Privacy Policy</h1>
-  <p><strong>Effective: July 28, 2026</strong></p>
 
-  <h2>Overview</h2>
-  <p>Stocked is designed with privacy as the default. Your inventory data lives on your device and syncs only to services you control.</p>
+<h1>Privacy Policy</h1>
+<p class="sub">Last updated 4 August 2026</p>
 
-  <h2>Data Storage</h2>
+<div class="box">
+  <strong>The short version.</strong> Everything lives on your own phone. Nothing is sent
+  anywhere unless you switch on a feature that needs to, and each of those is off until
+  you turn it on. There is no analytics, no advertising, no tracking, and nothing is ever
+  sold or shared with anyone.
+</div>
 
-  <h3>On Your Device (IndexedDB)</h3>
-  <p>All core app data (items, shopping list, recipes, household settings) lives in your browser's <code>IndexedDB</code> database on the device itself. The app works fully offline. No server ever sees this data unless you opt into sync.</p>
-  <ul style="margin-left: 20px; margin-top: 10px;">
-    <li>Items and expiry dates</li>
-    <li>Shopping list and stores</li>
-    <li>Meal plan and saved recipes</li>
-    <li>Household members and settings</li>
-    <li>Usage history and waste log</li>
-  </ul>
+<h2>1. What is stored, and where</h2>
 
-  <div class="note">
-    <strong>Backup & export:</strong> You can export your entire app as a JSON file or an HTML snapshot (Settings → Backup). This file lives on your computer; we never access it.
-  </div>
+<h3>On your device, always</h3>
+<p>All of it is held in your browser's local database (<code>IndexedDB</code>) on the device
+itself. The app works fully offline. None of this reaches a server unless you turn on
+Family sync.</p>
+<ul>
+  <li>Food items: names, categories, quantities, prices you enter, expiry dates, which shelf
+      or drawer they're on, and their position on a shelf photo</li>
+  <li>Photos you take — of products, meals, and of your own shelves and drawers</li>
+  <li>Shopping lists, stores, aisle layouts and per-store names you set</li>
+  <li>Purchase history: what you bought, where, when, and how often</li>
+  <li>Recipes you save or import, your ratings, and how many times you've cooked each</li>
+  <li>Meal plans, settings, and a log of actions used for the Insights screen</li>
+</ul>
 
-  <h3>Optional Supabase Cloud Sync</h3>
-  <p>If you enable family sync (Settings → Family sync), your household data is synced to a <strong>Supabase project that you own and control</strong>. This is optional; the app works perfectly without it.</p>
-  <ul style="margin-left: 20px; margin-top: 10px;">
-    <li><strong>You choose:</strong> You create the free Supabase project; we don't operate any servers</li>
-    <li><strong>You control access:</strong> Only people with your project URL + key + household code can see your data</li>
-    <li><strong>You own the keys:</strong> Your Supabase keys stay on your devices; we never store them</li>
-    <li><strong>Read Supabase's privacy policy:</strong> Supabase is a PostgreSQL hosting service. Data is encrypted at rest and in transit</li>
-  </ul>
+<h3>Only if you turn on Family sync</h3>
+<p>Family sync is off by default. When you enable it, the data above is copied to
+<strong>a Supabase project that you create and control</strong> — not to us. We operate no
+server and hold no copy of your data. If you later add sign-in, your email address is stored
+by Supabase to identify your account.</p>
 
-  <h2>AI Services (Optional)</h2>
+<h3>Only if you turn on notifications</h3>
+<p>A push subscription token is stored in your own Supabase project so reminders can reach
+your phone.</p>
 
-  <h3>Gemini or OpenAI</h3>
-  <p>Label reading, receipt scanning, and recipe suggestions require an AI model. These are optional features; barcodes work without them. You choose which provider:</p>
-  <ul style="margin-left: 20px; margin-top: 10px;">
-    <li><strong>Gemini (Google):</strong> You bring your own free API key. Google's privacy policy applies to what you send</li>
-    <li><strong>OpenAI (via OpenRouter):</strong> You bring your own free API key. OpenRouter's privacy policy applies</li>
-  </ul>
-  <p><strong>What gets sent:</strong> Only the images/text you ask the app to analyze (a receipt photo, a shelf photo for recognition). No inventory data is sent unless you explicitly ask.</p>
+<h2>2. Features that send data out</h2>
+<p>Every one of these is optional, and each is listed with exactly what leaves the device.</p>
 
-  <div class="note">
-    <strong>On Gemini free tier:</strong> Google may use images you send to improve their models (same privacy terms as Google Photos with analysis off). If that concerns you, enable billing on your Google Cloud project—it opts you out and costs roughly $0.01 per month at household volume.
-  </div>
+<table>
+  <tr><th>Feature</th><th>What is sent</th><th>Where</th></tr>
+  <tr><td>Receipt scanning, shelf photos, AI meal ideas, habit summary, list translation</td>
+      <td>The photo or text you chose, plus the item names involved</td>
+      <td>Google Gemini, or OpenRouter if you pick it — using <em>your own</em> API key</td></tr>
+  <tr><td>Barcode lookup and product photos</td><td>The barcode or product name</td>
+      <td>Open Food Facts</td></tr>
+  <tr><td>Recipe photos and suggestions</td><td>A dish or ingredient name</td><td>TheMealDB</td></tr>
+  <tr><td>Recipe import</td><td>A request to the recipe page you pasted</td><td>That website</td></tr>
+  <tr><td>Family sync and notifications</td><td>Your inventory and lists</td>
+      <td>Your own Supabase project</td></tr>
+</table>
 
-  <h3>Open Food Facts (Barcode Lookup)</h3>
-  <p>Barcode scans are sent to Open Food Facts (free, non-profit) to look up product info. Read their privacy policy at <code>openfoodfacts.org/privacy</code>.</p>
+<p>On-device date scanning uses Tesseract, which runs entirely on your phone — no photo of a
+printed date is ever uploaded.</p>
 
-  <h3>TheMealDB (Recipe Photos)</h3>
-  <p>Recipe suggestions fetch photos from TheMealDB. No personal data is sent; only recipe queries. Read their policy at <code>themealdb.com</code>.</p>
+<p>When you use one of these, that provider's own privacy policy applies to the request:
+<a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google</a>,
+<a href="https://openrouter.ai/privacy" target="_blank" rel="noopener">OpenRouter</a>,
+<a href="https://world.openfoodfacts.org/privacy" target="_blank" rel="noopener">Open Food Facts</a>,
+<a href="https://supabase.com/privacy" target="_blank" rel="noopener">Supabase</a>.</p>
 
-  <h2>On-Device Features (Zero Internet)</h2>
-  <p>These features work entirely offline and send no data anywhere:</p>
-  <ul style="margin-left: 20px; margin-top: 10px;">
-    <li><strong>Barcode scanning:</strong> Uses your device's camera via the ZXing decoder (vendored locally)</li>
-    <li><strong>Date OCR:</strong> Reads printed expiry dates via Tesseract (vendored locally), never sent to any server</li>
-    <li><strong>Voice recognition:</strong> Web Speech API (device-local on Android; iOS uses Apple's Siri)</li>
-    <li><strong>Search:</strong> Typo-tolerant search runs entirely in IndexedDB</li>
-    <li><strong>Expiry estimation:</strong> Calculated from category and shelf type, stored on your device</li>
-  </ul>
+<h2>3. What we never do</h2>
+<ul>
+  <li>No analytics or telemetry of any kind</li>
+  <li>No advertising, and no advertising identifiers</li>
+  <li>No tracking across apps or websites</li>
+  <li>No selling, renting or sharing of personal data</li>
+  <li>No account required to use the app</li>
+</ul>
 
-  <h2>Push Notifications (Optional)</h2>
-  <p>If you enable push notifications (Settings → Notifications):</p>
-  <ul style="margin-left: 20px; margin-top: 10px;">
-    <li>Your subscription endpoint is stored in your Supabase project</li>
-    <li>Only users with access to your Supabase project can send you notifications</li>
-    <li>Notifications are triggered by a Supabase Edge Function running in your project</li>
-  </ul>
+<h2>4. Your data, your control</h2>
+<ul>
+  <li><strong>Export</strong> — Settings → Backup writes a complete copy you can keep or move
+      elsewhere.</li>
+  <li><strong>Delete</strong> — remove any item at any time. Deleting the app, or clearing its
+      site data, erases everything on the device.</li>
+  <li><strong>Delete your account</strong> — if you created one for sync, Settings has a delete
+      button that removes your sign-in and leaves every household. If you were the last member,
+      that household's synced copy is deleted too.</li>
+  <li><strong>Stop syncing</strong> — disconnect at any time; the data stays on your phone.</li>
+</ul>
+<p>These cover the rights the UK/EU GDPR and the CCPA give you over access, portability and
+erasure. Because we hold no copy of your data, you exercise them directly in the app rather
+than by asking us.</p>
 
-  <h2>What We Don't Collect</h2>
-  <p>Stocked has no analytics, telemetry, or tracking. We don't:</p>
-  <ul style="margin-left: 20px; margin-top: 10px;">
-    <li>Track which recipes you view</li>
-    <li>Track how often you use the app</li>
-    <li>Track your location</li>
-    <li>Collect ads or third-party advertising data</li>
-    <li>Sell or share your data with anyone</li>
-  </ul>
+<h2>5. Children</h2>
+<p>This app is not directed at children under 13, and we do not knowingly collect anything
+from them.</p>
 
-  <h2>App Store Data Practices</h2>
-  <p>For iOS App Store and Google Play Store privacy labels:</p>
-  <ul style="margin-left: 20px; margin-top: 10px;">
-    <li><strong>Data not collected:</strong> The app itself collects no data; all storage is device-local</li>
-    <li><strong>Linked to your identity:</strong> Only if you create a Supabase account (optional)</li>
-    <li><strong>Not used for tracking:</strong> No third parties receive your data</li>
-  </ul>
+<h2>6. Data sources and credits</h2>
+<p>Product names, barcodes and photos come from
+<a href="https://world.openfoodfacts.org" target="_blank" rel="noopener">Open Food Facts</a>,
+used under the <a href="https://opendatacommons.org/licenses/odbl/1-0/" target="_blank" rel="noopener">ODbL 1.0</a>,
+with photos under <a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank" rel="noopener">CC BY-SA 3.0</a>.
+Recipe photos and suggestions come from
+<a href="https://www.themealdb.com" target="_blank" rel="noopener">TheMealDB</a>.
+Waste comparisons use the UNEP Food Waste Index household range.</p>
 
-  <h2>Your Rights</h2>
-  <p>You have full control over your data:</p>
-  <ul style="margin-left: 20px; margin-top: 10px;">
-    <li><strong>Access:</strong> Export your data as JSON from Settings → Backup</li>
-    <li><strong>Delete:</strong> Delete items within the app; use soft-delete (6-second undo)</li>
-    <li><strong>Disconnect:</strong> Disable sync at any time (Settings → Family sync → Disconnect)</li>
-    <li><strong>Move:</strong> Your Supabase data is yours; you can migrate to a different host</li>
-  </ul>
+<h2>7. Changes</h2>
+<p>If this policy changes in a way that affects what leaves your device, the date above changes
+and the app will say so before the new behaviour starts.</p>
 
-  <h2>Changes to This Policy</h2>
-  <p>We'll update this policy if the app's data practices change. The "Effective" date at the top will be updated.</p>
+<h2>8. Contact</h2>
+<p>Questions about this policy, or about your data:
+<a href="mailto:josephmiller30@icloud.com">josephmiller30@icloud.com</a>.</p>
 
-  <h2>Questions?</h2>
-  <p>
-    Contact us at <strong>josephmiller30@icloud.com</strong> with privacy questions or concerns.
-  </p>
-
-  <hr style="margin: 40px 0; border: none; border-top: 1px solid #ccc;">
-  <p style="font-size: 12px; color: #666; margin-top: 20px;">
-    Stocked is open-source. The code is at <code>github.com/joemil30/smart-home-inventory</code>.
-  </p>
 </body>
 </html>
