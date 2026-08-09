@@ -20,6 +20,33 @@ what you actually need to buy.
 - A frozen copy of the 29 July build is served at `/old/` for side-by-side
   comparison, with its own isolated database.
 
+## Why it exists
+
+It was built because his family kept buying food they already had and
+throwing out food they'd forgotten. It answers one question — *what's in the
+house, what's dying, and what do I actually need* — fast enough to be used
+while standing in a shop.
+
+Three constraints were fixed from the start, and they are the reason the app
+deserves to exist rather than a feature list: **it works with the network
+off**, **it is free with no subscription**, and **the data stays his**. Every
+competitor studied fails at least one. Any decision that trades one of these
+away for a feature is the wrong trade — check new work against them.
+
+The ambition since grew: from a family tool to something strangers would
+choose, good enough for the App Store, designed well enough not to look
+homemade, and substantial enough to point at as real work on a college
+application. Not a project that demos well — one with a number behind it:
+*this many households, this much less waste*. That is why Insights and the
+lifetime-impact figure exist at all.
+
+**The interactive kitchen map was his own idea**, not taken from any of the
+53 competitor apps he studied. It is the one thing in the app nobody else
+has, and it should be protected as such.
+
+**One line:** *Stop wasting food by making what you already own impossible to
+forget — offline, free, and private by default.*
+
 ## Who you're working for
 
 **A phone-only, non-technical user.** No local git clone, no terminal. Every
