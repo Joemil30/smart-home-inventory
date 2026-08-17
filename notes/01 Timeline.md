@@ -170,3 +170,34 @@ suites failing with `S is not defined`, which points at nothing.
 Genuinely still blocked: widgets, geofencing and pickup/delivery ordering
 (native code), and community photos/layouts plus the global impact page
 (one shared backend).
+
+## 2026-08-04 (later) — The rest of the reference list, and the memory layer
+Re-reading the 53 screenshots against what existed turned up six features
+picked from the list that were never built, plus three that had never made
+it into the inventory at all — a running-low filter chip, list sharing, and
+plain named lists. All built. Also Ideas/Queue/Calendar/Made, suggestion
+shelves, and the AI habit summary. Quick-start list sizes were deliberately
+skipped: they seed a *new* list per trip, and this app keeps one persistent
+list per shop.
+
+Then the four areas he named — datasets, memory, search, AI:
+- **Buying rhythm** — `recordCatalog` now keeps real purchase timestamps, and
+  predicts what you're due for from the **median** gap. `[7,7,7,300,7]` is
+  the case that matters: a mean says every 66 days, the median says 7. Four
+  purchases minimum, same-trip repeats collapsed, silent when the spread is
+  too wide. See `[[18 Buying Rhythm and Search]]`.
+- **One search box** across house, list, history, recipes and meals; recipes
+  match on their ingredients. The magnifier now opens it from every screen.
+- **AI model fallback** — quota out mid-receipt steps down the shortlist
+  `candidates()` had always computed and `gen()` never used. A 400 is never
+  retried down the list; capped at two hops.
+- **Attribution** — Open Food Facts is ODbL, its photos CC BY-SA. That is a
+  licence condition and the app had been shipping without it. `privacy.html`
+  was rewritten from scratch; the old one named a dead app and its data
+  table was simply false.
+
+Also: the 29 July build now ships alongside at `/old/` for comparison — see
+`[[19 Side by Side Builds]]`, which is mostly about the two ways that could
+have damaged the live app. Suites 19 → 22 (`shop` was already there;
+`urlaction`, `latest`, plus `syntax-check`), 629 assertions.
+`HANDOFF.md` records the project's intent, not just its architecture.

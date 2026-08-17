@@ -28,10 +28,13 @@ dropdowns all render through `locOptions()`. `sw.js` is the offline service work
 updates). `DB` (index.html) is a tiny IndexedDB wrapper with an in-memory
 fallback for contexts where IndexedDB is unavailable (see
 `[[08 iOS Safari Quirks]]`). `manifest.webmanifest` + `icon.svg` +
-`apple-touch-icon.png` are the installable-app identity. `test/` is 19
+`apple-touch-icon.png` are the installable-app identity. `test/` is 22
 Playwright-driven suites that boot the real `index.html` and call the app's
 own functions — nothing is mocked (`sh test/run.sh` runs all of them; keep
-them green).
+them green). `syntax-check` runs first and names the real line, because a
+stray bracket otherwise surfaces as every suite failing with `S is not
+defined`. The 29 July build ships alongside at `/old/` —
+`[[19 Side by Side Builds]]`.
 
 ## Non-obvious rules that must not get re-broken
 
