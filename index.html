@@ -147,9 +147,10 @@ header #title{font-size:20px;font-weight:800;letter-spacing:-.03em}
 header .who{display:flex;align-items:center;gap:6px;font-size:18px;
   background:var(--shelf);border:1px solid var(--rime-hi);border-radius:999px;padding:4px 10px}
 header #searchBtn{margin-left:auto}
-header #searchBtn,header #cartBtn,header #setBtn{font-size:16px;background:var(--shelf);border:1px solid var(--rime);
+header #searchBtn,header #profileBtn,header #cartBtn,header #setBtn{font-size:16px;background:var(--shelf);border:1px solid var(--rime);
   border-radius:999px;width:39px;height:39px;display:grid;place-items:center;box-shadow:var(--shadow-sm)}
-header #searchBtn:active,header #cartBtn:active,header #setBtn:active{background:var(--fog)}
+header #searchBtn svg,header #profileBtn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.9}
+header #searchBtn:active,header #profileBtn:active,header #cartBtn:active,header #setBtn:active{background:var(--fog)}
 main{padding:var(--pad);max-width:660px;margin:0 auto}
 
 /* ---- bottom nav, with a raised centre Scan button ---- */
@@ -315,28 +316,114 @@ label .lbl{font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:up
 .qa .qi{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;background:var(--cold-soft);font-size:20px}
 .qa .ql{font-size:11px;font-weight:650;color:var(--frost);letter-spacing:-.01em}
 
+.home-decision{border-radius:22px;overflow:hidden;background:var(--shelf);border:1px solid var(--rime);
+  margin-bottom:24px;box-shadow:var(--shadow-sm)}
+.home-decision-media{height:215px;display:grid;place-items:center;font-size:72px;background-size:cover;background-position:center;
+  background-color:var(--recipe-accent,#315d43);position:relative}
+.home-decision-media::after{content:"";position:absolute;inset:auto 0 0;height:42%;background:linear-gradient(transparent,rgba(7,15,10,.35))}
+.home-decision-media.photo .recipe-fallback{opacity:0}
+.home-decision-copy{padding:17px 18px 18px}.home-kicker{font-size:11px;text-transform:uppercase;letter-spacing:.08em;
+  font-weight:800;color:var(--cold);margin-bottom:5px}
+.home-decision-copy h1{font-size:25px;margin:0 0 5px}.home-decision-copy p{font-size:12.5px;color:var(--vapor);margin:0;line-height:1.45}
+.home-decision-actions{display:grid;grid-template-columns:1.2fr 1fr;gap:8px;margin-top:15px}.home-decision-actions .btn{padding:12px 10px}
+.btn.hero-ghost{background:var(--fog);color:var(--frost);border:1px solid var(--rime-hi)}
+.home-recipe-row{display:flex;gap:10px;overflow-x:auto;margin:0 calc(var(--pad)*-1);padding:2px var(--pad) 7px;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch}.home-recipe-row::-webkit-scrollbar{display:none}
+.home-recipe-mini{flex:0 0 184px;background:var(--shelf);border:1px solid var(--rime);border-radius:16px;overflow:hidden;text-align:left}
+.mini-media{height:105px;display:grid;place-items:center;font-size:44px;background-size:cover;background-position:center;
+  background-color:var(--recipe-accent,#315d43)}.mini-media.photo span{opacity:0}
+.mini-copy{padding:10px 11px 12px;display:flex;flex-direction:column;gap:4px}.mini-copy b{font-size:13.5px;line-height:1.25}
+.mini-copy span{font-size:11px;color:var(--vapor);font-weight:650}
+.low-row{display:flex;gap:7px;flex-wrap:wrap}.low-row button{border:1px solid var(--rime-hi);background:var(--shelf);border-radius:999px;
+  padding:8px 11px;font-size:12px;font-weight:700;display:flex;align-items:center;gap:5px}.low-row button i{font-style:normal;color:var(--thaw)}
+.low-row button.added{border-color:var(--cold);color:var(--cold);background:var(--cold-soft)}
+.home-quick{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:6px 0 4px}
+.home-quick button{min-height:48px;border:1px solid var(--rime-hi);border-radius:13px;background:var(--shelf);
+  display:flex;align-items:center;justify-content:center;gap:7px;font-size:12px;font-weight:750;color:var(--vapor)}
+.home-quick button svg{color:var(--cold)}
+
 /* ---- pills (missing / uses) ---- */
 .pill{display:inline-block;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:999px;margin:0 5px 5px 0;
   background:var(--fog);color:var(--vapor)}
 .pill.miss{background:var(--thaw-soft);color:var(--thaw)}
 .pill.ok{background:var(--cold-soft);color:var(--cold)}
 
-/* ---- recipe cards ---- */
-.recipe-card{background:var(--shelf);border:1px solid var(--rime);border-radius:var(--r);overflow:hidden;margin-bottom:12px}
-.recipe-card .banner{height:120px;display:flex;align-items:center;justify-content:center;font-size:46px;
-  background:linear-gradient(150deg,var(--cold-soft),var(--shelf));position:relative}
-.recipe-card .banner.photo{background-size:cover;background-position:center;background-repeat:no-repeat}
-.recipe-card .banner .badge{position:absolute;top:10px;right:10px;font-size:11px;font-weight:700;padding:5px 10px;border-radius:999px;background:var(--scrim);box-shadow:var(--shadow-sm)}
-.recipe-card .banner .badge.ok{color:var(--cold-2)}
-.recipe-card .banner .badge.miss{color:var(--t-low)}
-/* the have/total ratio, bottom-left of the photo where it can't fight the badge */
-.recipe-card .banner .ratio{position:absolute;bottom:10px;left:10px;font-size:12px;font-weight:800;
-  padding:4px 9px;border-radius:999px;background:rgba(20,33,26,.82);color:#fff;
-  font-variant-numeric:tabular-nums;letter-spacing:.01em}
-.recipe-card .rc-body{padding:14px 15px 15px}
-.recipe-card .rc-body h3{margin-bottom:4px}
-.recipe-card .rc-meta{font-size:11.5px;font-weight:650;color:var(--vapor-dim);letter-spacing:0;margin-bottom:10px}
-.recipe-card .rc-act{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+/* ---- recipe discovery ---- */
+.recipe-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--fog);padding:4px;
+  border-radius:14px;margin-bottom:18px}
+.recipe-tabs button{min-height:40px;border-radius:11px;color:var(--vapor);font-size:13px;font-weight:750}
+.recipe-tabs button[aria-selected="true"]{background:var(--shelf);color:var(--frost);box-shadow:var(--shadow-sm)}
+.recipe-intro{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin:4px 0 18px}
+.recipe-intro h1{font-size:27px;margin:4px 0 4px}
+.recipe-intro p{font-size:13px;color:var(--vapor);line-height:1.45;margin:0;max-width:34ch}
+.recipe-intro button{flex:0 0 auto;border:1px solid var(--rime-hi);border-radius:12px;padding:10px 12px;
+  display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--vapor)}
+.recipe-search{display:flex;align-items:center;gap:8px;background:var(--shelf);border:1.5px solid var(--rime-hi);
+  border-radius:14px;padding:0 12px;margin-bottom:10px;color:var(--vapor)}
+.recipe-search input{border:0;background:transparent;padding:13px 0;min-width:0}
+.recipe-search input:focus{border:0}.recipe-search svg{stroke:currentColor;fill:none;stroke-width:2}
+.recipe-filters{display:flex;gap:7px;overflow-x:auto;margin:0 calc(var(--pad)*-1) 18px;padding:2px var(--pad) 7px;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.recipe-filters::-webkit-scrollbar{display:none}
+.recipe-filters button{flex:0 0 auto;padding:8px 13px;border-radius:999px;background:var(--shelf);
+  border:1px solid var(--rime-hi);font-size:12px;font-weight:700;color:var(--vapor);white-space:nowrap}
+.recipe-filters button[aria-pressed="true"]{background:var(--frost);border-color:var(--frost);color:var(--void)}
+.recipe-shelf-head{margin:24px 0 10px}.recipe-shelf-head h2{font-size:18px}.recipe-shelf-head p{margin:3px 0 0;
+  color:var(--vapor);font-size:12px}
+.recipe-grid{display:grid;grid-template-columns:1fr;gap:14px}
+.recipe-card{background:var(--shelf);border:1px solid var(--rime);border-radius:20px;overflow:hidden;margin:0}
+.recipe-cover{position:relative;width:100%;height:178px;display:grid;place-items:center;overflow:hidden;text-align:left;
+  background:radial-gradient(circle at 72% 22%,color-mix(in srgb,var(--recipe-accent,#315d43) 74%,white),transparent 32%),
+    linear-gradient(145deg,var(--recipe-accent,#315d43),#172b20)}
+.recipe-cover.photo{background-size:cover;background-position:center;background-repeat:no-repeat}
+.recipe-cover.photo .recipe-fallback{opacity:0}
+.recipe-fallback{font-size:64px;filter:drop-shadow(0 8px 14px rgba(0,0,0,.18))}
+.recipe-cover .badge,.recipe-cover .ratio,.recipe-cover .rescue{position:absolute;border-radius:999px;
+  background:rgba(11,21,15,.78);backdrop-filter:blur(8px);color:#fff;font-size:11px;font-weight:800}
+.recipe-cover .badge{top:12px;right:12px;padding:6px 10px}.recipe-cover .badge.ok{background:rgba(10,101,51,.88)}
+.recipe-cover .ratio{left:12px;bottom:12px;padding:6px 10px;font-variant-numeric:tabular-nums}
+.recipe-cover .rescue{left:12px;top:12px;padding:6px 10px;background:rgba(181,99,23,.9);max-width:58%;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.recipe-card .rc-body{padding:15px 16px 16px}.recipe-card .rc-body h3{font-size:18px;margin-bottom:5px}
+.recipe-card .rc-meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:9px;color:var(--vapor);font-size:11.5px}
+.recipe-card .rc-meta b{color:var(--frost)}.recipe-card .rc-meta span{padding:3px 7px;border-radius:999px;background:var(--fog)}
+.recipe-readiness{font-size:12.5px;color:var(--vapor);line-height:1.45}.recipe-readiness b{color:var(--cold)}
+.recipe-card .rc-act{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:13px}
+.recipe-card .rc-act .btn{width:100%}
+.recipe-tools{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:24px 0 6px}
+.recipe-tools:has(button:only-child){grid-template-columns:1fr}
+.recipe-empty{padding:34px 20px}
+.recipe-detail-hero{height:230px;margin:-24px -20px 0;display:grid;place-items:center;font-size:72px;
+  background:radial-gradient(circle at 70% 20%,color-mix(in srgb,var(--recipe-accent,#315d43) 72%,white),transparent 32%),
+    linear-gradient(145deg,var(--recipe-accent,#315d43),#172b20);background-size:cover;background-position:center;overflow:hidden}
+.recipe-detail-hero.photo span{opacity:0}
+.ingredient-groups{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
+.ingredient-groups section{min-width:0}.ingredient-row{display:flex;align-items:flex-start;gap:8px;padding:8px 0;
+  border-bottom:1px solid var(--rime);font-size:12.5px;line-height:1.35}
+.ingredient-row svg{flex:0 0 auto;margin-top:1px;stroke:currentColor;fill:none}.ingredient-row.have{color:var(--vapor)}
+.ingredient-row.have svg{color:var(--cold)}.ingredient-row.need{color:var(--frost)}.ingredient-row.need svg{color:var(--thaw)}
+.recipe-steps{list-style:none;counter-reset:steps;padding:0;margin:8px 0 18px}.recipe-steps li{counter-increment:steps;
+  display:grid;grid-template-columns:30px 1fr;gap:10px;padding:10px 0;border-bottom:1px solid var(--rime);
+  font-size:13.5px;line-height:1.5;color:var(--vapor)}
+.recipe-steps li::before{content:counter(steps);width:28px;height:28px;border-radius:50%;display:grid;place-items:center;
+  background:var(--cold-soft);color:var(--cold);font-size:12px;font-weight:800}
+.detail-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:14px}.detail-actions .btn{padding:11px 7px;font-size:12px}
+@media (min-width:560px){.recipe-grid{grid-template-columns:repeat(2,1fr)}.recipe-card .rc-act{grid-template-columns:1fr}.recipe-cover{height:160px}}
+@media (max-width:360px){
+  :root{--pad:14px}
+  main{padding-left:var(--pad);padding-right:var(--pad)}
+  nav{left:8px;right:8px}
+  nav button{font-size:9.5px;margin-left:1px;margin-right:1px}
+  .home-decision-media{height:184px}
+  .home-decision-copy{padding:15px}
+  .home-decision-actions{grid-template-columns:1fr}
+  .recipe-intro{flex-direction:column}
+  .recipe-intro button{width:100%}
+  .ingredient-groups,.detail-actions{grid-template-columns:1fr}
+  .recipe-tabs{gap:3px;padding:3px}
+  .recipe-tabs button{padding:9px 5px;font-size:11px}
+  .fab-add{right:12px;bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 24px)}
+}
 
 /* ---- tiles: the app's main visual unit ----
    Name on TOP, big photo underneath. A 48px thumbnail beside a line of text
@@ -823,7 +910,8 @@ dialog::backdrop{background:var(--shelf)}
 
 <header>
   <h1 id="title">Stocked</h1>
-  <button id="searchBtn" class="hide" aria-label="Search everything">🔎</button>
+  <button id="searchBtn" class="hide" aria-label="Search everything"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m20 20-4.4-4.4"/></svg></button>
+  <button id="profileBtn" class="hide" aria-label="Profile and settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c0-3.9 3.4-6 7.5-6s7.5 2.1 7.5 6"/></svg></button>
 </header>
 
 <main id="app"></main>
@@ -1123,9 +1211,15 @@ const isHighRisk = cat => HIGH_RISK.has(cat);
    only trust it if it lands in a sane window — guards against misreads. */
 function parseExpiry(s) {
   if (!s) return null;
-  const t = Date.parse(String(s).trim());
-  if (isNaN(t)) return null;
-  const d = new Date(t); d.setHours(0, 0, 0, 0);
+  const raw = String(s).trim();
+  /* Date-only ISO strings are UTC in JavaScript. In the Americas that turns
+     2026-08-15 into the evening of Aug 14 before setHours() ever runs. Food
+     dates are calendar dates, not instants, so construct them in local time. */
+  const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const d = iso ? new Date(+iso[1], +iso[2] - 1, +iso[3]) : new Date(raw);
+  if (isNaN(d.getTime())) return null;
+  d.setHours(0, 0, 0, 0);
+  if (iso && (d.getFullYear() !== +iso[1] || d.getMonth() !== +iso[2] - 1 || d.getDate() !== +iso[3])) return null;
   const now = today();
   if (d.getTime() < now - 7 * DAY || d.getTime() > now + 1095 * DAY) return null;
   return d.getTime();
@@ -1521,7 +1615,7 @@ function importRecipeSheet(after) {
   const finish = async r => {
     if (!r.uses.length && !r.steps.length) return fail(`Found the page, but no recipe on it.`);
     const rec = { id: uid(), name: r.name, minutes: r.minutes || 0, servings: r.servings || null,
-      uses: r.uses, missing: [], rescues: [], steps: r.steps, image: r.image || null,
+      ingredients: r.uses, uses: r.uses, missing: [], inventoryMatch: true, rescues: [], steps: r.steps, image: r.image || null,
       source: r.source || '', rating: 0, deleted: false };
     await saveRec(rec);
     dlg.close();
@@ -1534,7 +1628,8 @@ function importRecipeSheet(after) {
     if (!url) return;
     busy('Reading the page…');
     try {
-      const res = await fetch(url, { redirect: 'follow' });
+      const res = await fetch(url, { redirect: 'follow', signal: AbortSignal.timeout(10000) });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const html = await res.text();
       const ld = jsonLdRecipe(html);
       if (ld) return finish(recipeFromLd(ld, url));
@@ -1544,6 +1639,9 @@ function importRecipeSheet(after) {
         .replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
       return finish(await parseRecipeText(txt, url));
     } catch (e) {
+      if (e?.name === 'TimeoutError') {
+        return fail(`That recipe took too long to respond. Copy the recipe text and paste it below instead.`);
+      }
       /* Nearly always CORS. Say what actually happened rather than "failed",
          because the user can act on the real reason. */
       fail(`That site won't let an app read it directly. Open the page, copy the recipe, and paste it below — that always works.`);
@@ -1569,19 +1667,155 @@ async function toggleSaveRecipe(r) {
     toast('Removed from saved');
     return false;
   }
-  const rec = { id: uid(), name: r.name, minutes: r.minutes || 0, uses: r.uses || [], missing: r.missing || [],
-    rescues: r.rescues || [], steps: r.steps || [], image: r.image || null, deleted: false };
+  const all = recipeIngredientObjects(r).map(i => i.raw);
+  const rec = { id: uid(), name: r.name, minutes: r.minutes || 0, ingredients: all,
+    uses: all, missing: [], inventoryMatch: true, rescues: r.rescues || [],
+    steps: r.steps || [], image: r.image || null, deleted: false };
   await saveRec(rec);
   toast(`Saved “${r.name}”`);
   return true;
 }
-/* Recompute what's missing for a saved recipe against the CURRENT pantry, so
-   the library reflects today's stock, not what you had when you saved it. */
+/* ---------------- dependable local recipe foundation ----------------
+   Recipe text is for people ("2 cups flour"). Matching and shopping need the
+   ingredient itself ("flour"). All recipe sources pass through this one
+   contract so imported and generated recipes cannot disagree about what
+   `uses` means or double-count the missing subset. */
+const ING_UNITS = 'cups?|tablespoons?|tbsp|teaspoons?|tsp|pounds?|lbs?|ounces?|oz|grams?|g|kilograms?|kg|millilit(?:er|re)s?|ml|lit(?:er|re)s?|l|cloves?|cans?|tins?|packages?|packs?|handfuls?|slices?|pieces?|sprigs?|bunch(?:es)?';
+const ING_PREP = /\b(?:fresh|frozen|canned|tinned|boneless|skinless|large|small|medium|ripe|optional|roughly|finely|thinly|chopped|diced|minced|sliced|shredded|grated|drained|rinsed|cooked|uncooked|divided|to taste|for serving|plus more)\b/gi;
+const ING_ALIASES = [
+  [/\b(?:chicken breasts?|chicken thighs?|rotisserie chicken)\b/g, 'chicken'],
+  [/\b(?:penne|spaghetti|linguine|fettuccine|macaroni|rigatoni|noodles?)\b/g, 'pasta'],
+  [/\b(?:baby spinach|spinach leaves)\b/g, 'spinach'],
+  [/\b(?:chopped tomatoes|diced tomatoes|tomato sauce)\b/g, 'tomato'],
+  [/\b(?:brown rice|white rice|jasmine rice|basmati rice)\b/g, 'rice'],
+  [/\b(?:black beans?|kidney beans?)\b/g, 'beans'],
+  [/\b(?:bell peppers?|sweet peppers?)\b/g, 'bell pepper'],
+  [/\b(?:scallions?|spring onions?|green onions?)\b/g, 'green onion'],
+  [/\b(?:extra virgin olive oil|vegetable oil|canola oil)\b/g, 'oil'],
+];
+
+function ingredientName(raw) {
+  let s = String(raw || '').toLowerCase().replace(/[¼]/g, ' 1/4 ').replace(/[½]/g, ' 1/2 ')
+    .replace(/[¾]/g, ' 3/4 ').replace(/\([^)]*\)/g, ' ');
+  const lead = new RegExp(`^\\s*(?:(?:\\d+(?:\\s+\\d+\\/\\d+|[./]\\d+)?|\\d+\\/\\d+|one|two|three|four|five|six|seven|eight|nine|ten|a|an)\\s*)+(?:(?:${ING_UNITS})\\b\\s*)?(?:of\\s+)?`, 'i');
+  s = s.replace(lead, '');
+  s = s.split(',')[0].replace(ING_PREP, ' ');
+  return norm(s) || norm(raw);
+}
+
+function ingredientKey(raw) {
+  let s = ingredientName(raw);
+  ING_ALIASES.forEach(([re, to]) => { s = s.replace(re, to); });
+  return canon(s);
+}
+
+function recipeIngredientObjects(r) {
+  const raw = r.ingredients?.length
+    ? r.ingredients.map(i => typeof i === 'string' ? i : i.raw || i.name)
+    : [...(r.uses || []), ...(r.missing || [])];
+  const seen = new Set();
+  return raw.map(x => ({ raw: String(x || '').trim(), name: ingredientName(x), key: ingredientKey(x) }))
+    .filter(i => {
+      if (!i.raw || !i.key || seen.has(i.key)) return false;
+      seen.add(i.key);
+      return true;
+    });
+}
+
+function ingredientMatch(a, b) {
+  const x = ingredientKey(a), y = ingredientKey(b);
+  return !!x && !!y && (x === y || (` ${x} `).includes(` ${y} `) || (` ${y} `).includes(` ${x} `));
+}
+
+function recipeAvailability(r) {
+  const all = recipeIngredientObjects(r);
+  /* Generated suggestions already tell us which ingredient lines are in the
+     kitchen and which are missing. Preserve that declared split. Built-in,
+     imported and saved recipes opt into live inventory matching instead. */
+  if (r.inventoryMatch !== true && !r.builtin && !r.ingredients?.length && Array.isArray(r.missing)) {
+    const missingKeys = new Set(r.missing.map(ingredientKey));
+    const missing = all.filter(i => missingKeys.has(i.key));
+    const have = all.filter(i => !missingKeys.has(i.key));
+    return { all, have, missing, haveCount: have.length, totalCount: all.length };
+  }
+  const pantry = S.items.filter(i => !i.deleted).map(i => i.name);
+  const staples = S.household?.staples || [];
+  const have = [], missing = [];
+  all.forEach(i => (pantry.some(p => ingredientMatch(i.name, p)) || staples.some(p => ingredientMatch(i.name, p)) ? have : missing).push(i));
+  return { all, have, missing, haveCount: have.length, totalCount: all.length };
+}
+
+function recipeAllowed(r) {
+  const blocked = [...(S.household?.allergies || []), ...(S.household?.dislikes || [])];
+  return !blocked.some(x => recipeIngredientObjects(r).some(i => ingredientMatch(i.name, x)));
+}
+
 function recomputeMissing(r) {
-  const live = S.items.filter(i => !i.deleted).map(i => norm(i.name));
-  const staples = (S.household?.staples || []).map(norm);
-  const have = name => { const q = norm(name); return live.some(x => x.includes(q) || q.includes(x)) || staples.some(x => x.includes(q) || q.includes(x)); };
-  return { ...r, missing: (r.uses || []).filter(u => !have(u)) };
+  const a = recipeAvailability(r);
+  const urgent = S.items.filter(i => !i.deleted && freshness(i).left <= 3 && freshness(i).left >= -1);
+  const rescues = urgent.filter(i => a.all.some(x => ingredientMatch(x.name, i.name))).map(i => i.name);
+  return { ...r, ingredients: a.all, uses: a.all.map(i => i.raw), missing: a.missing.map(i => i.raw),
+    availability: a, rescues: [...new Set(rescues)] };
+}
+
+/* A deliberately small, consistent V1 library. These recipes work with no
+   account, key or network. Real photos hydrate best-effort from TheMealDB;
+   the gradients remain designed fallbacks rather than blank cards. */
+const STOCKED_RECIPES = [
+  { id:'stocked:chicken-spinach-pasta', builtin:true, name:'Chicken Spinach Pasta', minutes:28, tags:['high protein','under 30'], accent:'#315d43', image:'assets/recipes/chicken-spinach-pasta.webp',
+    uses:['8 oz pasta','2 chicken breasts','3 cups spinach','2 cloves garlic','1/2 cup parmesan','1 tbsp olive oil'],
+    steps:['Boil the pasta until just tender; save a splash of cooking water.','Sauté sliced chicken in olive oil until golden and cooked through.','Add garlic and spinach, then fold through pasta, parmesan and enough cooking water to gloss the sauce.'] },
+  { id:'stocked:burrito-bowls', builtin:true, name:'Chicken Burrito Bowls', minutes:25, tags:['high protein','under 30'], accent:'#9b5636',
+    uses:['2 chicken breasts','2 cups cooked rice','1 can black beans','1 bell pepper','1 lime','1 avocado','1 tsp cumin'],
+    steps:['Season and sear the chicken, then rest and slice it.','Warm the rice and beans; sauté the pepper until tender-crisp.','Build bowls with chicken, rice, beans and pepper. Finish with avocado and lime.'] },
+  { id:'stocked:honey-garlic-chicken', builtin:true, name:'Honey Garlic Chicken & Broccoli', minutes:24, tags:['high protein','under 30'], accent:'#8a6a26',
+    uses:['2 chicken breasts','3 cups broccoli','3 tbsp honey','3 tbsp soy sauce','3 cloves garlic','2 cups cooked rice'],
+    steps:['Whisk honey, soy sauce, garlic and a splash of water.','Brown bite-size chicken, add broccoli and cover for 3 minutes.','Pour in the sauce and simmer until glossy. Serve over rice.'] },
+  { id:'stocked:egg-fried-rice', builtin:true, name:'Fast Egg Fried Rice', minutes:15, tags:['under 30','vegetarian'], accent:'#9a7330',
+    uses:['3 cups cooked rice','3 eggs','1 cup frozen peas','2 green onions','2 tbsp soy sauce','1 tsp sesame oil'],
+    steps:['Scramble the eggs in a hot skillet and set aside.','Stir-fry rice and peas until hot and lightly crisp.','Fold in eggs, green onion, soy sauce and sesame oil.'] },
+  { id:'stocked:creamy-tomato-pasta', builtin:true, name:'Creamy Tomato Pasta', minutes:22, tags:['under 30','vegetarian'], accent:'#9f4337',
+    uses:['10 oz pasta','1 can chopped tomatoes','1/2 cup heavy cream','2 cloves garlic','1/2 cup parmesan','1 tbsp olive oil'],
+    steps:['Boil pasta until al dente.','Cook garlic in olive oil, add tomatoes and simmer for 8 minutes.','Stir in cream and parmesan, then toss with pasta.'] },
+  { id:'stocked:chickpea-curry', builtin:true, name:'Coconut Chickpea Curry', minutes:26, tags:['under 30','vegetarian'], accent:'#a35e2f',
+    uses:['2 cans chickpeas','1 can coconut milk','1 can chopped tomatoes','1 onion','2 cups spinach','2 tbsp curry powder','2 cups cooked rice'],
+    steps:['Soften the onion with curry powder.','Add chickpeas, tomatoes and coconut milk; simmer for 15 minutes.','Fold in spinach and serve over rice.'] },
+  { id:'stocked:black-bean-tacos', builtin:true, name:'Crispy Black Bean Tacos', minutes:20, tags:['under 30','vegetarian'], accent:'#754b32',
+    uses:['1 can black beans','8 tortillas','1 cup cheddar cheese','1 lime','1 avocado','1 tsp cumin'],
+    steps:['Mash beans with cumin and a squeeze of lime.','Fill tortillas with beans and cheese; fold and toast until crisp.','Serve with avocado and more lime.'] },
+  { id:'stocked:salmon-rice-bowls', builtin:true, name:'Honey Soy Salmon Bowls', minutes:25, tags:['high protein','under 30'], accent:'#b85f4d',
+    uses:['2 salmon fillets','2 cups cooked rice','2 tbsp honey','2 tbsp soy sauce','1 cucumber','1 avocado'],
+    steps:['Brush salmon with honey and soy, then roast or pan-sear until just cooked.','Slice cucumber and avocado while the rice warms.','Build bowls and spoon over the remaining glaze.'] },
+  { id:'stocked:veggie-omelet', builtin:true, name:'Spinach & Pepper Omelet', minutes:12, tags:['high protein','under 30','vegetarian'], accent:'#7c7732',
+    uses:['3 eggs','1 cup spinach','1/2 bell pepper','1/3 cup cheddar cheese','1 tsp butter'],
+    steps:['Sauté pepper and spinach in butter.','Pour in beaten eggs and cook gently until nearly set.','Add cheese, fold and rest for one minute.'] },
+  { id:'stocked:sheet-pan-chicken', builtin:true, name:'Sheet Pan Chicken & Vegetables', minutes:35, tags:['high protein','healthy'], accent:'#59673c',
+    uses:['2 chicken breasts','2 cups broccoli','2 potatoes','2 carrots','2 tbsp olive oil','1 tsp garlic powder'],
+    steps:['Heat the oven to 425°F and cut everything into even pieces.','Toss vegetables with oil and seasoning; add chicken to the pan.','Roast until vegetables brown and chicken is cooked through, about 25 minutes.'] },
+  { id:'stocked:banana-pancakes', builtin:true, name:'Banana Oat Pancakes', minutes:15, tags:['under 30','vegetarian'], accent:'#9c7c3e',
+    uses:['2 ripe bananas','2 eggs','1 cup oats','1/2 tsp cinnamon','1 tsp butter'],
+    steps:['Blend or mash bananas with eggs, oats and cinnamon.','Cook small pancakes in a buttered skillet until bubbles form.','Flip, brown the second side and serve warm.'] },
+  { id:'stocked:tuna-pasta-salad', builtin:true, name:'Lemony Tuna Pasta Salad', minutes:18, tags:['high protein','under 30'], accent:'#456f73',
+    uses:['8 oz pasta','1 can tuna','1 cucumber','1 cup cherry tomatoes','1 lemon','2 tbsp olive oil'],
+    steps:['Cook pasta, drain and cool briefly.','Whisk lemon with olive oil and a pinch of salt.','Toss pasta with tuna, cucumber, tomatoes and dressing.'] },
+  { id:'stocked:loaded-potatoes', builtin:true, name:'Broccoli Cheddar Baked Potatoes', minutes:35, tags:['vegetarian'], accent:'#76553a',
+    uses:['2 potatoes','2 cups broccoli','1 cup cheddar cheese','1/2 cup greek yogurt','2 green onions'],
+    steps:['Microwave or bake potatoes until tender.','Steam broccoli and split the potatoes.','Fill with broccoli, cheese and yogurt; finish with green onion.'] },
+  { id:'stocked:vegetable-stir-fry', builtin:true, name:'Everyday Vegetable Stir-Fry', minutes:20, tags:['under 30','healthy','vegetarian'], accent:'#3e6f52',
+    uses:['2 cups broccoli','1 bell pepper','2 carrots','2 tbsp soy sauce','2 cloves garlic','2 cups cooked rice'],
+    steps:['Cut vegetables into bite-size pieces.','Stir-fry carrots, pepper and broccoli over high heat until crisp-tender.','Add garlic and soy sauce; serve over rice.'] },
+];
+
+function localRecipeFeed() {
+  return STOCKED_RECIPES.filter(recipeAllowed).map(r => recomputeMissing({ ...r, inventoryMatch: true }))
+    .sort((a, b) => recipeScore(b) - recipeScore(a));
+}
+
+function recipeScore(r) {
+  const a = r.availability || recipeAvailability(r);
+  const rescue = (r.rescues || []).length;
+  const coverage = a.totalCount ? a.haveCount / a.totalCount : 0;
+  return rescue * 40 + coverage * 20 - a.missing.length * 7 - (r.minutes || 30) / 10;
 }
 
 /* how many of this (by fuzzy name) are actually in the house right now —
@@ -1601,9 +1835,16 @@ function itemInStock(name) {
    a recipe's missing ingredients) used to dump into General — which, now
    that General is the last tab rather than the default one, means the thing
    you just added is on a list you aren't looking at. */
-async function addToList(name, qty, store = S.store || '') {
+async function addToList(name, qty, store = S.store || '', meta = {}) {
   const ex = S.shopping.find(s => !s.deleted && !s.done && (s.store || '') === store && norm(s.name) === norm(name));
-  if (ex) { toast(`${name} is already on the list`); return ex; }
+  if (ex) {
+    if (meta.sourceId) {
+      ex.sourceIds = [...new Set([...(ex.sourceIds || []), meta.sourceId])];
+      ex.recipeLine = ex.recipeLine || meta.recipeLine || '';
+      await saveShopping(ex);
+    }
+    toast(`${name} is already on the list`); return ex;
+  }
   // Already on a DIFFERENT list? Adding is still allowed — two shops really
   // can be two errands — but say so, because silently duplicating across
   // lists is exactly how you come home with two of everything.
@@ -1613,7 +1854,9 @@ async function addToList(name, qty, store = S.store || '') {
   // before — that category is what files it into the right aisle.
   const it = { id: uid(), name: String(name).trim(), qty: qty || '', store,
     image: known?.image || null, cat: known?.cat || guessCat(name),
-    by: S.who?.name || '', done: false, missing: false, deleted: false };
+    by: S.who?.name || '', done: false, missing: false, deleted: false,
+    sourceType: meta.sourceType || '', sourceIds: meta.sourceId ? [meta.sourceId] : [],
+    sourceName: meta.sourceName || '', recipeLine: meta.recipeLine || '' };
   await saveShopping(it);
   if (other) toast(`Added — also on your ${storeName(other.store) || 'general'} list`);
   return it;
@@ -1768,6 +2011,13 @@ function shoppingToPantry(s, after) {
 }
 
 async function addItem({ name, cat, loc, qty = 1, barcode = null, packSize = null, brand = '', image = null, expires = null, dateConfirmed = false, store = '', price = null, low = null }) {
+  name = String(name || '').trim();
+  if (!name) throw new Error('Food needs a name');
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(String(cat || ''))) cat = guessCat(name);
+  if (!(S.household?.locations || []).some(l => l.id === loc)) loc = defaultLoc(cat);
+  qty = Math.max(1, Number.isFinite(+qty) ? Math.floor(+qty) : 1);
+  packSize = Number.isFinite(+packSize) && +packSize > 0 ? Math.floor(+packSize) : null;
+  if (expires != null && !Number.isFinite(+expires)) { expires = null; dateConfirmed = false; }
   const mode = packSize ? 'pack' : unitModeFor(cat);
   const it = {
     id: uid(), name, brand, cat, loc, barcode, image,
@@ -2230,8 +2480,15 @@ const SYNC = {
   },
   async flush() {
     if (!SYNC.on() || !(S.cfg._syncq || []).length) return;
-    const q = S.cfg._syncq; S.cfg._syncq = []; await saveCfg();
-    for (const row of q) { try { await SYNC.client().from('sync').upsert(row, { onConflict: 'household,store,id' }); } catch (e) { SYNC.queue(row); } }
+    const q = [...S.cfg._syncq], failed = [];
+    for (const row of q) {
+      try {
+        const { error } = await SYNC.client().from('sync').upsert(row, { onConflict: 'household,store,id' });
+        if (error) throw error;
+      } catch (e) { failed.push(row); }
+    }
+    S.cfg._syncq = failed;
+    await saveCfg();
   },
   /* apply a remote row locally, last-write-wins. Never calls saveItem/push
      (no echo loop) — writes straight to DB + S. */
@@ -2288,7 +2545,10 @@ const SYNC = {
   async start() {
     if (!SYNC.configured()) return;
     try { await loadSupabase(); } catch (e) { return; }
-    await SYNC.flush(); await SYNC.pull(); SYNC.subscribe();
+    /* Pull first so a reconnecting device sees newer household state before
+       retrying its own queued writes. The queue is only cleared after the
+       database explicitly reports success. */
+    await SYNC.pull(); await SYNC.flush(); SYNC.subscribe();
   },
   /* push everything local up when first joining/creating a household */
   async pushAll() {
@@ -2466,12 +2726,12 @@ const PHOTO = {
   },
 };
 
-/* Quietly give real photos to pantry items that don't have one yet. Opt-out
-   via Settings (it does send item names to Open Food Facts). Runs a few at a
+/* Quietly give real photos to pantry items that don't have one yet. Opt-in
+   via Settings (it sends item names to Open Food Facts). Runs a few at a
    time, remembers what it tried, and never re-fetches. */
 let _enriching = false;
 async function enrichItemPhotos() {
-  if (_enriching || S.cfg.autoPhotos === false || !navigator.onLine) return;
+  if (_enriching || S.cfg.autoPhotos !== true || !navigator.onLine) return;
   const todo = S.items.filter(i => !i.deleted && !i.image && !i.photoTried).slice(0, 6);
   if (!todo.length) return;
   _enriching = true;
@@ -2492,7 +2752,7 @@ async function enrichItemPhotos() {
    you can't recognise at a glance is just a list of words. */
 let _catEnriching = false;
 async function enrichCatalogPhotos() {
-  if (_catEnriching || S.cfg.autoPhotos === false || !navigator.onLine) return;
+  if (_catEnriching || S.cfg.autoPhotos !== true || !navigator.onLine) return;
   const todo = S.catalog.filter(c => !c.deleted && c.name && !c.image && !c.photoTried).slice(0, 6);
   if (!todo.length) return;
   _catEnriching = true;
@@ -3159,9 +3419,12 @@ function moveSheet(it) {
   dlg.querySelectorAll('[data-l]').forEach(b => b.onclick = async () => {
     const before = JSON.parse(JSON.stringify(it));
     it.loc = b.dataset.l;
-    it.expires = estimateExpiry(it.cat, it.loc, it.opened);
+    /* A printed date belongs to the package, not the shelf. Only estimates
+       change when food moves; otherwise a trusted date became a new guess
+       while still wearing the "confirmed" flag. */
+    if (!it.dateConfirmed) it.expires = estimateExpiry(it.cat, it.loc, it.opened);
     await saveItem(it); dlg.close(); render();
-    toast(`Moved to ${locName(it.loc)} · ${fmtDate(it.expires).replace('EXP ','')}`, async () => { await saveItem(before); });
+    toast(`Moved to ${locName(it.loc)} · ${it.dateConfirmed ? 'date kept' : fmtDate(it.expires).replace('EXP ','')}`, async () => { await saveItem(before); });
   });
   dlg.querySelector('[data-a=close]').onclick = () => dlg.close();
   dlg.showModal();
@@ -3487,7 +3750,20 @@ function restockHints(locId) {
   return out;
 }
 
-const CAT_LABEL = c => c.replace(/-/g, ' ');
+const CAT_LABELS = {
+  'dairy-milk':'Milk & cream','dairy-cheese-hard':'Hard cheese','dairy-cheese-soft':'Soft cheese',
+  'dairy-yogurt':'Yogurt','dairy-butter':'Butter & spreads','eggs':'Eggs','meat-raw':'Meat',
+  'poultry-raw':'Chicken & poultry','fish-raw':'Fish & seafood','deli-meat':'Deli meat','leftovers':'Leftovers',
+  'produce-leafy':'Leafy greens','produce-berry':'Berries','produce-hardy':'Fruit & vegetables',
+  'produce-root':'Root vegetables','produce-citrus':'Citrus','produce-banana':'Bananas',
+  'produce-avocado':'Avocados','herbs-fresh':'Fresh herbs','bread':'Bread & bakery','tortilla':'Tortillas & wraps',
+  'frozen-meal':'Frozen meals','frozen-veg':'Frozen fruit & vegetables','ice-cream':'Ice cream',
+  'canned':'Canned food','jarred-sauce':'Sauces & jars','condiment':'Condiments',
+  'dry-pasta-rice':'Pasta, rice & noodles','dry-grain-flour':'Grains & flour','snack':'Snacks',
+  'cereal':'Cereal & oats','baking':'Baking','oil-vinegar':'Oil & vinegar','coffee-tea':'Coffee & tea',
+  'juice-drink':'Drinks','nuts-seeds':'Nuts & seeds','spice':'Spices','household':'Household','other':'Other',
+};
+const CAT_LABEL = c => CAT_LABELS[c] || String(c || 'Other').replace(/-/g, ' ').replace(/\b\w/g, x => x.toUpperCase());
 
 /* Three numbers that answer "how is this shelf doing?" without reading a
    single row. Tinted by meaning, not decoration. */
@@ -3614,17 +3890,17 @@ function viewInv(app) {
   };
   app.appendChild(srow);
 
-  /* On a single shelf, three numbers up top; across the whole house, the
-     shelves themselves as photo cards. Neither appears mid-search — when
-     you're looking for one thing, chrome is in the way. */
+  /* On a single shelf, three numbers add context. The all-inventory view
+     leads with the food itself; location photography is useful secondary
+     navigation, not a six-card wall between the user and their groceries. */
   if (!S.q?.trim()) {
     if (S.loc !== 'all') statTiles(app, scoped);
-    else locationCards(app, live);
   }
 
   const box = el(`<div id="results"></div>`);
   app.appendChild(box);
   paintList(box);
+  if (!S.q?.trim() && S.loc === 'all') locationCards(app, live);
   if (S.q || S.focusSearch) { sb.focus(); sb.setSelectionRange(sb.value.length, sb.value.length); }
   S.focusSearch = false;
 }
@@ -3691,7 +3967,7 @@ function paintList(box) {
           padding:11px 12px;background:var(--shelf);border:1px solid var(--rime);border-radius:var(--r)">
           <span style="width:4px;height:17px;border-radius:2px;background:${urgent ? worst.rail : 'var(--rime-hi)'}"></span>
           <span class="code" style="font-size:12px;flex:1">${esc(label(k))}</span>
-          ${urgent ? `<span class="code" style="font-size:10px;color:${worst.rail}">${urgent} DYING</span>` : ''}
+          ${urgent ? `<span class="code" style="font-size:10px;color:${worst.rail}">${urgent} USE SOON</span>` : ''}
           <span class="code" style="font-size:11px;color:var(--vapor-dim)">${list.length}</span>
         </summary>
         <div class="grp" style="padding-top:6px"></div></details>`);
@@ -3835,77 +4111,6 @@ const weekLabel = w => {
     ? `${f(a, { month: 'long' })} ${a.getDate()} – ${b.getDate()}`
     : `${f(a, { month: 'short', day: 'numeric' })} – ${f(b, { month: 'short', day: 'numeric' })}`;
 };
-
-function viewHome(app) {
-  const live = S.items.filter(i => !i.deleted);
-  const soon = live.filter(i => freshness(i).left <= 3).sort((a, b) => a.expires - b.expires);
-  const rescued = S.items.filter(i => i.deleted && !i.wasted).length;
-  const wastedN = S.items.filter(i => i.wasted).length;
-  const rescuedPct = (rescued + wastedN) ? Math.round(rescued / (rescued + wastedN) * 100) : null;
-  const first = S.who?.name ? ', ' + S.who.name.split(' ')[0] : '';
-  const dt = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
-
-  app.appendChild(el(`<div class="greet"><div class="hi">${greetWord()}${esc(first)}</div><div class="dt">${esc(dt)}</div></div>`));
-
-  app.appendChild(el(`<div class="stats">
-    <div class="stat"><div class="num">${live.length}</div><div class="lbl">In the house</div></div>
-    <div class="stat"><div class="num" style="color:${soon.length ? 'var(--thaw)' : 'var(--frost)'}">${soon.length}</div><div class="lbl">Expiring</div></div>
-    <div class="stat"><div class="num" style="color:var(--cold)">${rescuedPct != null ? rescuedPct + '%' : '—'}</div><div class="lbl">Rescued</div></div>
-  </div>`));
-
-  // Eat me first — horizontal cards
-  const sec1 = el(`<div class="section"><div class="section-head"><h2>Eat me first</h2>${soon.length ? '<button class="more" data-a="allsoon">See all</button>' : ''}</div></div>`);
-  if (soon.length) {
-    const sc = el(`<div class="hscroll"></div>`);
-    soon.slice(0, 10).forEach(it => {
-      const d = freshness(it).left;
-      const col = d <= 0 ? 'var(--spoil)' : d <= 2 ? 'var(--thaw)' : 'var(--fresh)';
-      const c = el(`<div class="foodcard"><div class="top">${it.image ? photoLayers(it.image) : (foodEmoji(it.name, it.cat) || '🍽️')}</div>
-        <div class="lo"><div class="fn">${esc(it.name)}</div><div class="fd" style="color:${col}">${daysLabel(d)}</div></div></div>`);
-      c.onclick = () => itemSheet(it);
-      sc.appendChild(c);
-    });
-    sec1.appendChild(sc);
-    sec1.querySelector('[data-a=allsoon]').onclick = () => { S.view = 'soon'; render(); };
-  } else {
-    sec1.appendChild(el(`<div class="card"><div class="note">Nothing's dying in the next few days. Nice — enjoy it while it's good.</div></div>`));
-  }
-  app.appendChild(sec1);
-
-  // Cook now
-  const sec2 = el(`<div class="section"><div class="section-head"><h2>Cook now</h2><button class="more" data-a="allcook">All recipes</button></div></div>`);
-  const box = el(`<div></div>`);
-  if (recipeCache?.length) {
-    [...recipeCache].sort((a, b) => a.missing.length - b.missing.length).slice(0, 2).forEach(r => box.appendChild(recipeCardEl(r)));
-  } else if (live.length) {
-    const b = el(`<button class="btn cold" data-a="gen">✨ Suggest meals from what I have</button>`);
-    b.onclick = async () => {
-      b.disabled = true; b.innerHTML = `<span class="spin"></span> Reading your shelves…`;
-      try { recipeCache = await suggestRecipes(); render(); }
-      catch (e) { b.disabled = false; b.textContent = 'Try again'; box.appendChild(el(`<div class="card"><div class="warn">${esc(e.message)}</div></div>`)); }
-    };
-    box.appendChild(b);
-  } else {
-    box.appendChild(el(`<div class="card"><div class="note">Scan a few things in and I'll suggest meals you can make right now.</div></div>`));
-  }
-  sec2.appendChild(box);
-  sec2.querySelector('[data-a=allcook]').onclick = () => { S.view = 'cook'; render(); };
-  app.appendChild(sec2);
-
-  // Quick actions
-  const qa = el(`<div class="section"><div class="section-head"><h2>Quick actions</h2></div>
-    <div class="qa">
-      <button data-q="scan"><div class="qi">📷</div><div class="ql">Scan</div></button>
-      <button data-q="add"><div class="qi">✏️</div><div class="ql">Add</div></button>
-      <button data-q="shop"><div class="qi">🛒</div><div class="ql">List</div></button>
-      <button data-q="cat"><div class="qi">📚</div><div class="ql">Catalog</div></button>
-    </div></div>`);
-  qa.querySelector('[data-q=scan]').onclick = () => { S.view = 'scan'; render(); };
-  qa.querySelector('[data-q=add]').onclick = () => manualSheet();
-  qa.querySelector('[data-q=shop]').onclick = () => { S.view = 'shop'; render(); };
-  qa.querySelector('[data-q=cat]').onclick = () => { S.view = 'cat'; render(); };
-  app.appendChild(qa);
-}
 
 /* ---------------- meal planner ---------------- */
 function viewPlan(app) {
@@ -4087,10 +4292,32 @@ let recipeCache = null;
 /* have / total, printed on the tile. Cooklist's best idea: it answers "is
    tonight possible" before you tap anything, and it costs one subtraction. */
 const matchRatio = r => {
-  const missing = (r.missing || []).length;
-  const total = (r.uses || []).length + missing;
-  return { have: total - missing, total, missing };
+  const a = r.availability || recipeAvailability(r);
+  return { have: a.haveCount, total: a.totalCount, missing: a.missing.length };
 };
+
+function paintRecipeImage(node, r) {
+  if (!node) return;
+  const accent = /^#[0-9a-f]{6}$/i.test(r.accent || '') ? r.accent : '#315d43';
+  node.style.setProperty('--recipe-accent', accent);
+  if (r.image && /^(?:https?:\/\/|\.?\/?assets\/recipes\/[\w.-]+)$/i.test(r.image)) {
+    node.classList.add('photo');
+    node.style.backgroundImage = `linear-gradient(180deg,rgba(8,18,12,.04),rgba(8,18,12,.68)),url("${String(r.image).replace(/["\\]/g, '')}")`;
+  }
+}
+
+async function addRecipeMissing(r) {
+  const rec = recomputeMissing(r);
+  const missing = rec.availability.missing;
+  if (!missing.length) return toast('You already have everything');
+  let added = 0;
+  for (const i of missing) {
+    const before = S.shopping.length;
+    await addToList(i.name, '', S.store || '', { sourceType:'recipe', sourceId:r.id || canon(r.name), sourceName:r.name, recipeLine:i.raw });
+    if (S.shopping.length > before) added++;
+  }
+  toast(added ? `${added} missing item${added === 1 ? '' : 's'} added` : 'Those ingredients are already on your list');
+}
 
 /* Where it came from, how you rated it, how often you've actually made it.
    Times-cooked reads from the meal catalog rather than a counter on the
@@ -4115,42 +4342,57 @@ function recipeCred(r) {
 }
 
 function recipeCardEl(r) {
-  const n = (r.missing || []).length;
+  r = recomputeMissing(r);
+  const a = r.availability;
+  const n = a.missing.length;
   const mr = matchRatio(r);
   const emoji = foodEmoji(r.name, '') || '🍳';
-  const bannerStyle = r.image ? ` class="banner photo" style="background-image:url('${esc(r.image)}')"` : ' class="banner"';
-  const card = el(`<div class="recipe-card">
-    <div${bannerStyle}>${r.image ? '' : emoji}
-      ${mr.total ? `<span class="ratio">${mr.have} / ${mr.total}</span>` : ''}
-      <span class="badge ${n === 0 ? 'ok' : 'miss'}">${n === 0 ? 'Ready to cook' : 'Need ' + n}</span></div>
+  const status = n === 0 ? 'Ready to cook' : n <= 2 ? 'Almost ready' : `Need ${n}`;
+  const tags = (r.tags || []).slice(0, 2);
+  const card = el(`<article class="recipe-card">
+    <button class="recipe-cover" data-a="how" aria-label="Open ${esc(r.name)}">
+      <span class="recipe-fallback">${emoji}</span>
+      <span class="ratio">${mr.have} / ${mr.total} ingredients</span>
+      <span class="badge ${n === 0 ? 'ok' : 'miss'}">${status}</span>
+      ${r.rescues?.length ? `<span class="rescue">Use soon · ${esc(r.rescues.slice(0,2).join(' + '))}</span>` : ''}
+    </button>
     <div class="rc-body">
       <h3>${esc(r.name)}</h3>
-      <div class="rc-meta">${r.minutes} min${mr.total ? ` · ${mr.have} of ${mr.total} ingredients` : ''}${r.rescues?.length ? ' · uses up ' + esc(r.rescues.join(', ')) : ''}</div>
+      <div class="rc-meta"><b>${r.minutes} min</b>${tags.map(t => `<span>${esc(t)}</span>`).join('')}</div>
       ${recipeCred(r)}
-      <div>${n ? r.missing.map(m => `<span class="pill miss">${esc(m)}</span>`).join('') : `<span class="pill ok">Nothing missing — you have it all</span>`}</div>
+      <div class="recipe-readiness">${n ? `You have <b>${mr.have} of ${mr.total}</b> · missing ${a.missing.slice(0,2).map(i => esc(i.name)).join(', ')}${n > 2 ? ` +${n-2}` : ''}` : `<b>Everything is in your kitchen</b>`}</div>
       <div class="rc-act">
-        <button class="btn cold sm" data-a="how">View recipe</button>
-        ${n ? `<button class="btn ghost sm" data-a="add">${icon('plus',15)}Add missing</button>` : ''}
-        <button class="btn ghost sm" data-a="plan">📅 Plan</button>
-        <button class="btn ghost sm${isSaved(r) ? ' on' : ''}" data-a="save">${icon('star', 15)}${isSaved(r) ? 'Saved' : 'Save'}</button>
-        <button class="btn ghost sm" data-a="cook">I made this</button>
+        <button class="btn cold sm" data-a="open">View recipe</button>
+        ${n ? `<button class="btn ghost sm" data-a="add">${icon('plus',15)}Add ${n} missing</button>` : `<button class="btn ghost sm" data-a="cook">I made this</button>`}
       </div>
-    </div></div>`);
-  card.querySelector('[data-a=save]').onclick = async () => { await toggleSaveRecipe(r); render(); };
-  card.querySelector('[data-a=how]').onclick = () => {
+    </div></article>`);
+  paintRecipeImage(card.querySelector('.recipe-cover'), r);
+  const openRecipe = () => {
     const dlg = document.getElementById('dlg');
-    dlg.innerHTML = `<div class="banner recipe-card" style="border:none;box-shadow:none;margin:0 0 10px"><div class="banner" style="border-radius:14px">${emoji}</div></div>
-      <div class="eyebrow">${r.minutes} min</div><h1 style="margin:6px 0 6px">${esc(r.name)}</h1>
+    dlg.innerHTML = `<div class="recipe-detail-hero"><span>${emoji}</span></div>
+      <div class="eyebrow" style="margin-top:14px">${r.minutes} min · ${status}</div><h1 style="margin:6px 0 6px">${esc(r.name)}</h1>
       ${recipeCred(r)}
-      <div style="margin-bottom:12px">${n ? r.missing.map(m => `<span class="pill miss">${esc(m)}</span>`).join('') : `<span class="pill ok">Nothing missing</span>`}</div>
-      ${(r.uses || []).length ? `<div class="lbl">Ingredients</div>
-        <ul class="note" style="padding-left:18px;margin:0 0 14px">${r.uses.map(u => `<li style="margin-bottom:5px">${esc(u)}</li>`).join('')}</ul>` : ''}
+      <div class="ingredient-groups">
+        <section><div class="lbl">You have · ${a.have.length}</div>${a.have.length ? a.have.map(i => `<div class="ingredient-row have">${icon('check',14)}<span>${esc(i.raw)}</span></div>`).join('') : '<div class="note">Nothing matched yet.</div>'}</section>
+        <section><div class="lbl">You need · ${a.missing.length}</div>${a.missing.length ? a.missing.map(i => `<div class="ingredient-row need">${icon('plus',14)}<span>${esc(i.raw)}</span></div>`).join('') : '<div class="ingredient-row have">'+icon('check',14)+'<span>Nothing missing</span></div>'}</section>
+      </div>
+      ${n ? `<button class="btn cold" data-a="add" style="margin:4px 0 16px">${icon('plus',16)}Add missing ingredients</button>` : ''}
       ${(r.steps || []).length ? `<div class="lbl">Method</div>
-        <ol class="note" style="padding-left:18px;margin:0 0 14px">${r.steps.map(s => `<li style="margin-bottom:7px">${esc(s)}</li>`).join('')}</ol>` : ''}
+        <ol class="recipe-steps">${r.steps.map(s => `<li><span>${esc(s)}</span></li>`).join('')}</ol>` : ''}
+      <div class="detail-actions">
+        <button class="btn ghost" data-a="plan">${icon('calendar',16)}Plan it</button>
+        <button class="btn ghost" data-a="save">${icon('star',16)}${isSaved(r) ? 'Saved' : 'Save recipe'}</button>
+        <button class="btn ghost" data-a="cook">${icon('utensils',16)}I made this</button>
+      </div>
       ${isSaved(r) ? `<div class="lbl">Your rating</div>
         <div class="rate">${[1,2,3,4,5].map(i => `<button data-r="${i}" class="${(r.rating || 0) >= i ? 'on' : ''}" aria-label="${i} star${i > 1 ? 's' : ''}">★</button>`).join('')}</div>` : ''}
       ${r.source ? `<a class="btn ghost left" style="margin-top:12px" href="${esc(r.source)}" target="_blank" rel="noopener">${icon('link')}Open ${esc(sourceHost(r.source))}</a>` : ''}
       <button class="btn ghost" data-a="c" style="margin-top:10px">Close</button>`;
+    paintRecipeImage(dlg.querySelector('.recipe-detail-hero'), r);
+    dlg.querySelector('[data-a=add]')?.addEventListener('click', async () => { await addRecipeMissing(r); dlg.close(); });
+    dlg.querySelector('[data-a=plan]').onclick = () => { dlg.close(); pickDayForRecipe(r); };
+    dlg.querySelector('[data-a=save]').onclick = async () => { await toggleSaveRecipe(r); dlg.close(); render(); };
+    dlg.querySelector('[data-a=cook]').onclick = () => { dlg.close(); cookDeduct(r); };
     /* Rating only means something for a recipe you've kept — rating a
        throwaway suggestion would have nowhere to be stored. */
     dlg.querySelectorAll('[data-r]').forEach(b => b.onclick = async () => {
@@ -4163,11 +4405,17 @@ function recipeCardEl(r) {
     dlg.querySelector('[data-a=c]').onclick = () => dlg.close();
     dlg.showModal();
   };
+  card.querySelector('[data-a=how]').onclick = openRecipe;
+  card.querySelector('[data-a=open]').onclick = openRecipe;
   const addBtn = card.querySelector('[data-a=add]');
-  if (addBtn) addBtn.onclick = async () => { for (const m of r.missing) await addToList(m); toast(`Added ${r.missing.length} to your list`); };
-  card.querySelector('[data-a=plan]').onclick = () => pickDayForRecipe(r);
-  card.querySelector('[data-a=cook]').onclick = () => cookDeduct(r);
+  if (addBtn) addBtn.onclick = () => addRecipeMissing(r);
+  card.querySelector('[data-a=cook]')?.addEventListener('click', () => cookDeduct(r));
   return card;
+}
+
+function openRecipeSheet(r) {
+  const card = recipeCardEl(r);
+  card.querySelector('[data-a=open]').click();
 }
 
 function pickDayForRecipe(r, after) {
@@ -4186,30 +4434,54 @@ function pickDayForRecipe(r, after) {
   dlg.querySelector('[data-a=c]').onclick = () => dlg.close();
   dlg.showModal();
 }
+let recipePhotosLoading = false;
+async function hydrateLocalRecipePhotos() {
+  if (recipePhotosLoading || navigator.onLine === false) return;
+  const todo = STOCKED_RECIPES.filter(r => !r.image && !r._photoTried);
+  if (!todo.length) return;
+  recipePhotosLoading = true;
+  let changed = false;
+  try {
+    await Promise.all(todo.map(async r => {
+      r._photoTried = true;
+      try { const src = await PHOTO.dish(r.name, ingredientName(r.uses[0])); if (src) { r.image = src; changed = true; } } catch (e) {}
+    }));
+  } finally {
+    recipePhotosLoading = false;
+    if (changed && (S.view === 'home' || S.view === 'cook')) render();
+  }
+}
+
+function filteredRecipeFeed() {
+  const extra = (recipeCache || []).filter(recipeAllowed).map(recomputeMissing);
+  const byName = new Map(localRecipeFeed().map(r => [canon(r.name), r]));
+  extra.forEach(r => byName.set(canon(r.name), r));
+  let list = [...byName.values()];
+  const q = (S.recipeQ || '').trim();
+  if (q) list = list.filter(r => fuzzyHit(q, `${r.name} ${(r.tags || []).join(' ')} ${(r.uses || []).join(' ')}`, .42));
+  const f = S.recipeFilter || 'all';
+  if (f === 'soon') list = list.filter(r => r.rescues?.length);
+  if (f === 'ready') list = list.filter(r => !r.availability.missing.length);
+  if (f === 'quick') list = list.filter(r => r.minutes && r.minutes <= 30);
+  if (f === 'protein') list = list.filter(r => (r.tags || []).includes('high protein'));
+  if (f === 'vegetarian') list = list.filter(r => (r.tags || []).includes('vegetarian'));
+  return list.sort((a, b) => recipeScore(b) - recipeScore(a));
+}
+
 function viewCook(app) {
   const live = S.items.filter(i => !i.deleted);
   const tab = S.cookTab || 'suggested';
   const savedN = S.saved.filter(s => !s.deleted).length;
-
   const madeN = catalogList(CAT_MEAL).length;
 
-  /* AnyList's Ideas / Queue / Calendar, which is a genuinely better shape
-     than Suggested / Saved: ideas are disposable, the queue is what you've
-     decided on, the calendar is what you've committed to a day. "Made" stays
-     because it's the one nobody else has — your own cooking history. */
-  const seg = el(`<div class="chips" style="padding-bottom:14px">
-    <button class="chip" data-t="suggested" aria-pressed="${tab === 'suggested'}">${icon('sparkle',15)} Ideas</button>
-    <button class="chip" data-t="saved" aria-pressed="${tab === 'saved'}">${icon('star',15)} Queue${savedN ? ` (${savedN})` : ''}</button>
-    <button class="chip" data-a="cal" aria-pressed="false">${icon('calendar',15)} Calendar</button>
-    <button class="chip" data-t="made" aria-pressed="${tab === 'made'}">${icon('utensils',15)} Made${madeN ? ` (${madeN})` : ''}</button>
+  const seg = el(`<div class="recipe-tabs" role="tablist">
+    <button role="tab" data-t="suggested" aria-selected="${tab === 'suggested'}">Discover</button>
+    <button role="tab" data-t="saved" aria-selected="${tab === 'saved'}">Saved${savedN ? ` · ${savedN}` : ''}</button>
+    <button role="tab" data-t="made" aria-selected="${tab === 'made'}">Made${madeN ? ` · ${madeN}` : ''}</button>
   </div>`);
   seg.querySelectorAll('[data-t]').forEach(b => b.onclick = () => { S.cookTab = b.dataset.t; render(); });
-  seg.querySelector('[data-a=cal]').onclick = () => { S.view = 'plan'; render(); };
   app.appendChild(seg);
 
-  /* Every meal this house has ever actually cooked. The suggestion engine
-     needs an API key and a working connection; this is just yours, always
-     here, and over time it's the more useful of the two. */
   if (tab === 'made') {
     const box = el(`<div></div>`);
     const srow = el(`<input id="mq" placeholder="Search your meals…" value="${esc(S.mq || '')}" autocomplete="off" style="margin-bottom:12px">`);
@@ -4217,87 +4489,72 @@ function viewCook(app) {
     app.appendChild(srow);
     const addm = el(`<button class="btn ghost" style="margin-bottom:14px">${icon('plus')}Add a meal you've made</button>`);
     addm.onclick = () => addHistorySheet({ kind: CAT_MEAL, after: () => render() });
-    app.appendChild(addm);
-    app.appendChild(box);
-    paintMade(box);
+    app.appendChild(addm); app.appendChild(box); paintMade(box);
     if (S.mq) { srow.focus(); srow.setSelectionRange(srow.value.length, srow.value.length); }
     return;
   }
 
   if (tab === 'saved') {
-    const imp = el(`<button class="btn ghost" style="margin-bottom:14px">${icon('download')}Bring in a recipe from anywhere</button>`);
-    imp.onclick = () => importRecipeSheet(() => render());
-    app.appendChild(imp);
+    const imp = el(`<button class="btn ghost" style="margin-bottom:14px">${icon('download')}Bring in a recipe</button>`);
+    imp.onclick = () => importRecipeSheet(() => render()); app.appendChild(imp);
     const saved = S.saved.filter(s => !s.deleted).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
-    if (!saved.length) {
-      app.appendChild(el(`<div class="empty"><div class="ei">${icon('star', 34)}</div><div class="big">No saved recipes yet</div>
-        <div class="sub">Tap <b>Save</b> on any suggestion to keep it here — or bring one in from a website above. Each one re-checks your pantry before you cook.</div></div>`));
-      return;
-    }
-    saved.forEach(s => app.appendChild(recipeCardEl(recomputeMissing(s))));
+    if (!saved.length) app.appendChild(el(`<div class="empty"><div class="ei">${icon('star',34)}</div><div class="big">No saved recipes yet</div><div class="sub">Save anything from Discover and it will keep checking itself against your kitchen.</div></div>`));
+    else saved.forEach(s => app.appendChild(recipeCardEl(s)));
     return;
   }
 
-  const btn = el(`<button class="btn cold" style="margin-bottom:16px">${recipeCache
-    ? icon('refresh') + 'Suggest again' : icon('utensils') + 'Cook with what I have'}</button>`);
+  const readyN = localRecipeFeed().filter(r => !r.availability.missing.length).length;
+  const intro = el(`<div class="recipe-intro"><div><span class="eyebrow">Cook with what you have</span><h1>Dinner, figured out.</h1>
+    <p>${live.length ? `${readyN} ready now · every card checks your kitchen live.` : 'Add a few foods and every card will adapt to your kitchen.'}</p></div>
+    <button data-a="plan">${icon('calendar',17)}Meal plan</button></div>`);
+  intro.querySelector('[data-a=plan]').onclick = () => { S.view = 'plan'; render(); }; app.appendChild(intro);
+
+  const search = el(`<div class="recipe-search"><span>${icon('search',17)}</span><input placeholder="Search recipes or ingredients" value="${esc(S.recipeQ || '')}" autocomplete="off"></div>`);
   const out = el(`<div></div>`);
-  btn.onclick = async () => {
-    btn.disabled = true; btn.innerHTML = `<span class="spin"></span> Reading your shelves…`;
-    try {
-      recipeCache = await suggestRecipes();
-      renderRecipes(out);
-    } catch (e) {
-      out.innerHTML = `<div class="card"><div class="warn">${esc(e.message)}</div></div>`;
-    }
-    btn.disabled = false; btn.innerHTML = icon('refresh') + 'Suggest again';
+  search.querySelector('input').oninput = e => { S.recipeQ = e.target.value; renderRecipes(out, filteredRecipeFeed()); };
+  app.appendChild(search);
+
+  const filters = [['all','All'],['soon','Use soon'],['ready','Have everything'],['quick','Under 30 min'],['protein','High protein'],['vegetarian','Vegetarian']];
+  const chips = el(`<div class="recipe-filters">${filters.map(([id,label]) => `<button data-f="${id}" aria-pressed="${(S.recipeFilter || 'all') === id}">${esc(label)}</button>`).join('')}</div>`);
+  chips.querySelectorAll('[data-f]').forEach(b => b.onclick = () => {
+    S.recipeFilter = b.dataset.f; renderRecipes(out, filteredRecipeFeed());
+    chips.querySelectorAll('[data-f]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  });
+  app.appendChild(chips); app.appendChild(out); renderRecipes(out, filteredRecipeFeed());
+
+  const tools = el(`<div class="recipe-tools"><button class="btn ghost" data-a="import">${icon('download',16)}Bring in a recipe</button>
+    ${G.key() ? `<button class="btn ghost" data-a="ai">${icon('sparkle',16)}Create 5 more ideas</button>` : ''}</div>`);
+  tools.querySelector('[data-a=import]').onclick = () => importRecipeSheet(() => render());
+  const ai = tools.querySelector('[data-a=ai]');
+  if (ai) ai.onclick = async () => {
+    ai.disabled = true; ai.innerHTML = `<span class="spin"></span> Personalizing…`;
+    try { recipeCache = (await suggestRecipes()).map(recomputeMissing); renderRecipes(out, filteredRecipeFeed()); }
+    catch (e) { toast(e.message || 'Could not create more ideas'); }
+    finally { ai.disabled = false; ai.innerHTML = icon('sparkle',16) + 'Create 5 more ideas'; }
   };
-  app.appendChild(btn);
-
-  if (recipeCache?.length) {
-    const ready = recipeCache.filter(r => !(r.missing || []).length).length;
-    const cn = el(`<button class="chip" aria-pressed="${!!S.cookNow}" style="margin-bottom:14px">
-      ${icon('check', 15)} Cook now${ready ? ` · ${ready}` : ''}</button>`);
-    cn.onclick = () => { S.cookNow = !S.cookNow; render(); };
-    app.appendChild(cn);
-  }
-
-  if (!live.length) app.appendChild(el(`<div class="card"><div class="note">Nothing in the inventory yet — there's nothing to cook with. Scan something in first.</div></div>`));
-  else if (!recipeCache) app.appendChild(el(`<div class="note" style="margin:-4px 0 16px">Ranked so the ones you can make right now — using what's about to expire — come first.</div>`));
-  app.appendChild(out);
-  if (recipeCache) renderRecipes(out);
+  app.appendChild(tools); setTimeout(hydrateLocalRecipePhotos, 100);
 }
 
-function renderRecipes(out) {
+function renderRecipes(out, source = filteredRecipeFeed()) {
   out.innerHTML = '';
-  if (!recipeCache?.length) return;
-  let list = [...recipeCache].sort((a, b) => a.missing.length - b.missing.length);
-  // Cook Now: only what you can make right now, nothing missing.
-  if (S.cookNow) list = list.filter(r => !(r.missing || []).length);
+  const list = [...source];
   if (!list.length) {
-    out.appendChild(el(`<div class="empty"><div class="ei">${icon('utensils', 34)}</div>
-      <div class="big">Nothing you can make outright</div>
-      <div class="sub">Every suggestion is missing at least one thing. Turn Cook Now off to see them and what they need.</div></div>`));
+    const ready = (S.recipeFilter || 'all') === 'ready';
+    out.appendChild(el(`<div class="empty recipe-empty"><div class="ei">${icon('utensils',34)}</div><div class="big">${ready ? 'Nothing is fully stocked yet' : 'No recipes match that'}</div><div class="sub">${ready ? 'Try Almost Ready recipes, or add a few missing items to Shop.' : 'Clear the search or choose another filter.'}</div></div>`));
     return;
   }
-  /* Shelves, the way the reference apps present ideas: a flat ranked column
-     asks you to read everything, whereas "Quick prep" / "Make it again"
-     answer the question you actually arrived with. Each recipe appears once —
-     first shelf that claims it wins — so the screen never repeats itself. */
   const claimed = new Set();
   const shelf = (title, note, pick) => {
-    const rows = list.filter(r => !claimed.has(r) && pick(r));
+    const rows = list.filter(r => !claimed.has(r.id || r.name) && pick(r));
     if (!rows.length) return;
-    rows.forEach(r => claimed.add(r));
-    out.appendChild(el(`<div class="sect"><h3>${esc(title)}</h3><span class="n">${esc(note)}</span></div>`));
-    rows.forEach(r => out.appendChild(recipeCardEl(r)));
+    rows.forEach(r => claimed.add(r.id || r.name));
+    out.appendChild(el(`<div class="recipe-shelf-head"><h2>${esc(title)}</h2><p>${esc(note)}</p></div>`));
+    const grid = el(`<div class="recipe-grid"></div>`); rows.forEach(r => grid.appendChild(recipeCardEl(r))); out.appendChild(grid);
   };
-
-  shelf('Uses something dying', 'eat these first', r => (r.rescues || []).length);
-  shelf('Quick prep', 'under 30 minutes', r => r.minutes && r.minutes <= 30 && !(r.missing || []).length);
-  shelf('Make it again', 'you have cooked this before', r => timesCooked(r.name) > 0);
-  shelf('Cook right now', 'nothing missing', r => !(r.missing || []).length);
-  shelf('Worth a shop', 'a couple of things short', r => (r.missing || []).length <= 2);
-  shelf('Everything else', '', () => true);
+  shelf('Use it up', 'Meals that use food needing attention first', r => r.rescues?.length);
+  shelf('Ready now', 'Everything is already in your kitchen', r => !r.availability.missing.length);
+  shelf('Almost ready', 'One or two things away', r => r.availability.missing.length <= 2);
+  shelf('More inspiration', 'Worth saving for another night', () => true);
 }
 
 /* The "Made" tab: your own cooking history, most recent first. */
@@ -5049,19 +5306,29 @@ function manualSheet() {
   const dlg = document.getElementById('dlg');
   dlg.innerHTML = `<div class="eyebrow">Add by hand</div><h1 style="margin:6px 0 14px">What is it</h1>
     <label><span class="lbl">Name</span><input id="nm" placeholder="Roma tomatoes" autofocus></label>
-    <label><span class="lbl">What kind of thing</span><select id="cat">${CATS.map(c => `<option value="${c}">${c}</option>`).join('')}</select></label>
-    <label><span class="lbl">Shelf</span><select id="loc">${locOptions()}</select></label>
-    <label><span class="lbl">How many</span><input type="number" id="qty" value="1" min="1"></label>
+    <div class="manual-details">
+      <label><span class="lbl">Category <i>— suggested</i></span><select id="cat">${CATS.map(c => `<option value="${c}">${esc(CAT_LABEL(c))}</option>`).join('')}</select></label>
+      <label><span class="lbl">Where it lives <i>— suggested</i></span><select id="loc">${locOptions()}</select></label>
+      <label><span class="lbl">Quantity</span><input type="number" id="qty" value="1" min="1"></label>
+    </div>
     <button class="btn cold" data-a="add">Put it away</button>
     <button class="btn ghost" data-a="c" style="margin-top:8px;border:none;color:var(--vapor)">Cancel</button>`;
+  const name = dlg.querySelector('#nm'), cat = dlg.querySelector('#cat'), loc = dlg.querySelector('#loc');
+  const infer = () => {
+    if (!name.value.trim()) return;
+    cat.value = guessCat(name.value);
+    loc.value = defaultLoc(cat.value);
+  };
+  name.oninput = infer;
   dlg.querySelector('#cat').onchange = e => {
     dlg.querySelector('#loc').value = defaultLoc(e.target.value);
   };
   dlg.querySelector('[data-a=add]').onclick = async () => {
-    const name = dlg.querySelector('#nm').value.trim(); if (!name) return;
-    await addItem({ name, cat: dlg.querySelector('#cat').value, loc: dlg.querySelector('#loc').value,
-      qty: parseInt(dlg.querySelector('#qty').value) || 1 });
-    dlg.close(); render(); toast(`${name} put away`);
+    const value = name.value.trim(); if (!value) { name.focus(); return; }
+    const qty = Math.max(1, parseInt(dlg.querySelector('#qty').value, 10) || 1);
+    await addItem({ name: value, cat: cat.value, loc: loc.value,
+      qty });
+    dlg.close(); render(); toast(`${value} put away`);
   };
   dlg.querySelector('[data-a=c]').onclick = () => dlg.close();
   dlg.showModal();
@@ -6161,6 +6428,23 @@ function viewSet(app) {
   };
   app.appendChild(card);
 
+  app.appendChild(el(`<h2 style="margin:22px 0 10px">Food photos</h2>`));
+  const autoPhotos = S.cfg.autoPhotos === true;
+  const pc = el(`<div class="card">
+    <div class="note" style="margin:0 0 12px">Stocked can look up missing product photos by name through Open Food Facts. This is off by default because the item name leaves this device.</div>
+    <button class="btn ghost left topt${autoPhotos ? ' on' : ''}" data-a="photos" role="switch" aria-checked="${autoPhotos}">
+      <span class="tk">${autoPhotos ? icon('check', 18) : ''}</span>
+      <span><b>${autoPhotos ? 'Automatic photos on' : 'Automatic photos off'}</b><span class="td">${autoPhotos ? 'Look up missing photos in the background.' : 'Only use photos you scan or add yourself.'}</span></span>
+    </button>
+  </div>`);
+  pc.querySelector('[data-a=photos]').onclick = async () => {
+    S.cfg.autoPhotos = !autoPhotos;
+    await saveCfg();
+    toast(S.cfg.autoPhotos ? 'Automatic photos on' : 'Automatic photos off');
+    render();
+  };
+  app.appendChild(pc);
+
   /* Siri without a native app. The app answers to its own URL, and iOS
      Shortcuts can open a URL — so "Hey Siri, add milk" becomes an Open URL
      action. No App Intents, no developer account, works today. */
@@ -6608,12 +6892,9 @@ function viewSetup(app) {
       allergies: csv(f.querySelector('#al').value), dislikes: csv(f.querySelector('#dl').value),
       staples: csv(f.querySelector('#st').value), cookStyle: f.querySelector('#cs').value,
       locations: [
-        { id: 'uf', name: 'Upstairs fridge',   kind: 'fridge'  },
-        { id: 'df', name: 'Downstairs fridge', kind: 'fridge'  },
-        { id: 'uz', name: 'Upstairs freezer',  kind: 'freezer' },
-        { id: 'dz', name: 'Downstairs freezer',kind: 'freezer' },
-        { id: 'up', name: 'Upstairs pantry',   kind: 'pantry'  },
-        { id: 'dp', name: 'Downstairs pantry', kind: 'pantry'  },
+        { id: 'fridge', name: 'Fridge', kind: 'fridge' },
+        { id: 'freezer', name: 'Freezer', kind: 'freezer' },
+        { id: 'pantry', name: 'Pantry', kind: 'pantry' },
       ],
     };
     await saveHousehold();
@@ -6674,16 +6955,12 @@ function addFoodChooser() {
   dlg.showModal();
 }
 
-/* ---------------- view: HOME ----------------
-   The screen that gives the app a reason to open on a day when nothing is
-   expiring. Summary first, then the two things that need a person: what's
-   dying, and what's planned. Every competitor opens on a dashboard, and the
-   research is blunt about why — a blank first screen is where retention dies. */
 function viewHome(app) {
   const live = S.items.filter(i => !i.deleted);
   const soon = live.filter(i => freshness(i).left <= 3).sort((a, b) => a.expires - b.expires);
-  const expired = live.filter(i => freshness(i).left < 0).length;
-  const m = monthStats();
+  const low = live.filter(runningLow).slice(0, 6);
+  const recipes = localRecipeFeed();
+  const hero = recipes.find(r => r.rescues?.length) || recipes.find(r => !r.availability.missing.length) || recipes[0];
   const h = new Date().getHours();
   const greet = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
   const first = (S.who?.name || '').split(' ')[0];
@@ -6693,27 +6970,28 @@ function viewHome(app) {
     <div class="dt">${new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</div>
   </div>`));
 
-  const qa = el(`<div class="qa">
-    <button data-a="scan">${icon('barcode', 21)}<span>Scan</span></button>
-    <button data-a="receipt">${icon('receipt', 21)}<span>Receipt</span></button>
-    <button data-a="add">${icon('plus', 21)}<span>Add</span></button>
-    <input type="file" accept="image/*" class="hide" id="hrcpt"></div>`);
-  qa.querySelector('[data-a=scan]').onclick = () => { S.cfg.scanMode = 'in'; S.view = 'scan'; render(); };
-  qa.querySelector('[data-a=receipt]').onclick = () => qa.querySelector('#hrcpt').click();
-  qa.querySelector('#hrcpt').onchange = e => { const f = e.target.files[0]; if (f) receiptFlow(f); };
-  qa.querySelector('[data-a=add]').onclick = () => addFoodChooser();
-  app.appendChild(qa);
-
-  const g = el(`<div class="glance">
-    <div class="gc"><div class="gn">${live.length}</div><div class="gl">Items</div></div>
-    <div class="gc"><div class="gn" style="color:${soon.length ? 'var(--thaw)' : 'inherit'}">${soon.length}</div><div class="gl">Use soon</div></div>
-    <div class="gc"><div class="gn" style="color:${expired ? 'var(--spoil)' : 'inherit'}">${expired}</div><div class="gl">Expired</div></div>
-    <div class="gc"><div class="gn" style="color:${m.rescued ? 'var(--chill)' : 'inherit'}">${m.rescued}</div><div class="gl">Rescued</div></div>
-  </div>`);
-  g.querySelectorAll('.gc')[1].onclick = () => { S.view = 'soon'; render(); };
-  g.querySelectorAll('.gc')[2].onclick = () => { S.view = 'pantry'; S.status = 'expired'; render(); };
-  g.querySelectorAll('.gc')[3].onclick = () => { S.view = 'soon'; render(); };
-  app.appendChild(g);
+  if (hero) {
+    const a = hero.availability;
+    const urgent = hero.rescues?.length;
+    const decision = el(`<section class="home-decision">
+      <div class="home-decision-media"><span class="recipe-fallback">${foodEmoji(hero.name,'') || '🍽️'}</span></div>
+      <div class="home-decision-copy">
+        <div class="home-kicker">${urgent ? 'Use it up · tonight' : !live.length ? 'Your kitchen can do this' : !a.missing.length ? 'Ready right now' : 'Almost ready'}</div>
+        <h1>${esc(hero.name)}</h1>
+        <p>${hero.minutes} min · ${a.haveCount}/${a.totalCount} ingredients${urgent ? ` · uses ${esc(hero.rescues.join(' + '))}` : ''}</p>
+        <div class="home-decision-actions">
+          <button class="btn cold" data-a="primary">${!live.length ? icon('plus',16)+'Add your first food' : 'View recipe'}</button>
+          <button class="btn hero-ghost" data-a="secondary">${live.length && a.missing.length <= 2 && a.missing.length ? `Add ${a.missing.length} missing` : 'Explore recipes'}</button>
+        </div>
+      </div></section>`);
+    paintRecipeImage(decision.querySelector('.home-decision-media'), hero);
+    decision.querySelector('[data-a=primary]').onclick = () => !live.length ? addFoodChooser() : openRecipeSheet(hero);
+    decision.querySelector('[data-a=secondary]').onclick = () => {
+      if (live.length && a.missing.length && a.missing.length <= 2) addRecipeMissing(hero);
+      else { S.view = 'cook'; S.cookTab = 'suggested'; render(); }
+    };
+    app.appendChild(decision);
+  }
 
   if (soon.length) {
     const sec = el(`<div class="section"><div class="section-head"><h2>Eat these first</h2>
@@ -6732,29 +7010,35 @@ function viewHome(app) {
     app.appendChild(sec);
   }
 
-  // This week's plan, so the planner earns its place without a tab of its own.
-  const wk = weekRange(0);
-  const planned = S.plan.filter(p => !p.deleted && p.date >= wk.from && p.date <= wk.to);
-  const sec2 = el(`<div class="section"><div class="section-head"><h2>This week</h2>
-    <button class="more" data-a="plan">${planned.length ? 'Open plan' : 'Plan meals'}</button></div></div>`);
-  if (planned.length) {
-    const sc = el(`<div class="hscroll"></div>`);
-    planned.sort((a, b) => a.date.localeCompare(b.date)).forEach(p => {
-      const d = new Date(p.date + 'T00:00');
-      const c = el(`<div class="foodcard"><div class="top">${p.image ? photoLayers(p.image) : (p.emoji || '🍽️')}</div>
-        <div class="lo"><div class="fn">${esc(p.name)}</div>
-        <div class="fd" style="color:var(--vapor-dim)">${d.toLocaleDateString(undefined, { weekday: 'short' })}</div></div></div>`);
-      c.onclick = () => plannedMealSheet(p);
-      sc.appendChild(c);
+  const alternates = recipes.filter(r => r.id !== hero?.id).slice(0, 3);
+  if (alternates.length) {
+    const sec = el(`<div class="section"><div class="section-head"><h2>Make tonight</h2><button class="more">See all</button></div><div class="home-recipe-row"></div></div>`);
+    const row = sec.querySelector('.home-recipe-row');
+    alternates.forEach(r => {
+      const c = el(`<button class="home-recipe-mini"><div class="mini-media"><span>${foodEmoji(r.name,'') || '🍽️'}</span></div>
+        <div class="mini-copy"><b>${esc(r.name)}</b><span>${r.minutes} min · ${r.availability.haveCount}/${r.availability.totalCount}</span></div></button>`);
+      paintRecipeImage(c.querySelector('.mini-media'), r); c.onclick = () => openRecipeSheet(r); row.appendChild(c);
     });
-    sec2.appendChild(sc);
-  } else {
-    sec2.appendChild(el(`<div class="note">Nothing planned yet. Planning even two nights is what makes the shopping list write itself.</div>`));
+    sec.querySelector('.more').onclick = () => { S.view = 'cook'; render(); }; app.appendChild(sec);
   }
-  sec2.querySelector('[data-a=plan]').onclick = () => { S.view = 'plan'; render(); };
-  app.appendChild(sec2);
 
-  setTimeout(enrichItemPhotos, 400);
+  if (low.length) {
+    const sec = el(`<div class="section"><div class="section-head"><h2>Running low</h2><button class="more">Open Shop</button></div>
+      <div class="low-row">${low.map(i => `<button data-id="${esc(i.id)}"><span>${foodEmoji(i.name,i.cat) || '•'}</span>${esc(i.name)} <i>${i.qty ?? i.level ?? ''} left</i></button>`).join('')}</div></div>`);
+    sec.querySelectorAll('[data-id]').forEach(b => b.onclick = async () => { const i = low.find(x => x.id === b.dataset.id); if (i) { await addToList(i.name); b.classList.add('added'); } });
+    sec.querySelector('.more').onclick = () => { S.view = 'shop'; render(); }; app.appendChild(sec);
+  }
+
+  const qa = el(`<div class="home-quick"><button data-a="scan">${icon('barcode',19)}<span>Scan food</span></button>
+    <button data-a="add">${icon('plus',19)}<span>Add food</span></button>
+    <button data-a="receipt">${icon('receipt',19)}<span>Receipt</span></button><input type="file" accept="image/*" class="hide" id="hrcpt"></div>`);
+  qa.querySelector('[data-a=scan]').onclick = () => { S.cfg.scanMode = 'in'; S.view = 'scan'; render(); };
+  qa.querySelector('[data-a=add]').onclick = () => addFoodChooser();
+  qa.querySelector('[data-a=receipt]').onclick = () => qa.querySelector('#hrcpt').click();
+  qa.querySelector('#hrcpt').onchange = e => { const f = e.target.files[0]; if (f) receiptFlow(f); };
+  app.appendChild(qa);
+
+  setTimeout(hydrateLocalRecipePhotos, 100);
 }
 
 /* ---------------- view: PANTRY (what's in the house) ---------------- */
@@ -6763,7 +7047,7 @@ function viewPantry(app) {
   if (!live.length) {
     app.appendChild(el(`<div class="empty" style="padding-top:40px">
       <div class="ei">${icon('box', 34)}</div>
-      <div class="big">Nothing in the pantry yet</div>
+      <div class="big">Your inventory is empty</div>
       <div class="sub">Scan a barcode, photograph a shelf, or type something in.</div></div>`));
     const b = el(`<button class="btn cold" style="max-width:320px;margin:16px auto 0">${icon('plus',17)}Add your first item</button>`);
     b.onclick = () => addFoodChooser();
@@ -6772,7 +7056,7 @@ function viewPantry(app) {
     // keep — everything you've ever bought is one tap from being back. Bailing
     // out here is what made the whole catalog look like it had been deleted.
     pantryHistory(app);
-    setTimeout(enrichCatalogPhotos, 900);
+    if (S.cfg.autoPhotos === true) setTimeout(enrichCatalogPhotos, 900);
     return;
   }
   const soon = live.filter(i => freshness(i).left <= 3).sort((a, b) => a.expires - b.expires);
@@ -6794,8 +7078,10 @@ function viewPantry(app) {
   }
   viewInv(app);
   pantryHistory(app);
-  setTimeout(enrichItemPhotos, 400);   // fill in real product photos in the background
-  setTimeout(enrichCatalogPhotos, 900);
+  if (S.cfg.autoPhotos === true) {
+    setTimeout(enrichItemPhotos, 400);
+    setTimeout(enrichCatalogPhotos, 900);
+  }
 }
 
 /* Everything that's ever lived on these shelves and isn't here now. This is
@@ -7547,11 +7833,10 @@ const ICONS = {
   set:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',
   cat:'<rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/>',
 };
-/* Five tabs, and Home is one of them. A sixth would be a menu, not a nav, so
-   the planner gives up its tab and lives on Home + Profile instead — which is
-   also where every app in this category puts it. */
-const TABS = [['home','Home'],['shop','Shop'],['pantry','Pantry'],['cook','Cook'],['profile','Profile']];
-const TITLES = { home: 'Stocked', plan: 'Meal plan', shop: 'Shopping list', pantry: 'Pantry', cook: 'Cook',
+/* Four jobs, four tabs. Profile and technical settings are utilities, not a
+   stage in the Stock → Discover → Cook → Shop loop, so they live in header. */
+const TABS = [['home','Home'],['pantry','Inventory'],['cook','Recipes'],['shop','Shop']];
+const TITLES = { home: 'Stocked', plan: 'Meal plan', shop: 'Shopping list', pantry: 'Inventory', cook: 'Recipes',
   profile: 'Profile', inv: 'Pantry', soon: 'Use soon', scan: 'Add food', cat: 'Catalog', set: 'Settings',
   insights: 'Insights', map: 'Your kitchen', calendar: 'Expiry calendar', search: 'Search' };
 const VIEWS = { home: viewHome, plan: viewPlan, shop: viewShopping, pantry: viewPantry, cook: viewCook,
@@ -7571,13 +7856,15 @@ function render() {
   fab.classList.add('hide');
 
   const search = document.getElementById('searchBtn');
+  const profile = document.getElementById('profileBtn');
   if (!S.household) {
-    nav.classList.add('hide'); search.classList.add('hide');
+    nav.classList.add('hide'); search.classList.add('hide'); profile.classList.add('hide');
     viewSetup(app);
     if (!welcomed) welcomeCarousel(() => { welcomed = true; });   // first-run tour, over the setup form
     return;
   }
   nav.classList.remove('hide');
+  profile.classList.remove('hide');
   // header search only makes sense on the pantry
   // Searchable from anywhere now that it spans every source, not just the pantry.
   search.classList.toggle('hide', S.view === 'search' || S.view === 'scan');
@@ -7594,7 +7881,7 @@ function render() {
   // per-screen add button. On the pantry it fans out; on the planner there's
   // only one thing it can mean, so it just does it.
   closeDial();
-  const fabFor = { home: () => openDial(), pantry: () => openDial(), inv: () => openDial(),
+  const fabFor = { pantry: () => openDial(), inv: () => openDial(),
     plan: () => addMealDialog(dayKey(new Date(today()))) };
   if (fabFor[S.view]) { fab.classList.remove('hide'); fab.onclick = fabFor[S.view]; }
 
@@ -7787,6 +8074,7 @@ function scrubUrl() {
   S.items = items; S.catalog = catalog; S.shopping = shopping; S.plan = plan; S.saved = saved; S.household = household || null; S.cfg = cfg || {};
   if (S.household) S.who = S.household.members.find(m => m.name === S.cfg.who) || S.household.members[0];
   document.getElementById('searchBtn').onclick = () => { S.view = 'search'; render(); };
+  document.getElementById('profileBtn').onclick = () => { S.view = 'profile'; render(); };
   render();
   /* After the first render, so the app is already usable if an action throws,
      and only once a household exists — there's nowhere to put things before

@@ -246,8 +246,7 @@ const NAME = (fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8').match(/CACHE\s*=
   ok('catalog: lists known products with thumbnails (img + emoji)', catr.count === 2 && catr.hasImg === true && catr.hasEmoji === true, JSON.stringify(catr));
   ok('catalog: shows IN STOCK for what you currently have', catr.inStock === true);
   ok('catalog: search filters the list', catr.searchFiltered === true);
-  // Home replaced Plan as a tab; the planner lives on Home and in Profile.
-  ok('nav: 5 tabs (Home/Shop/Pantry/Cook/Profile)', catr.navTabCount === 5 && /Home/.test(catr.navLabels) && /Shop/.test(catr.navLabels) && /Pantry/.test(catr.navLabels) && /Cook/.test(catr.navLabels) && /Profile/.test(catr.navLabels), JSON.stringify(catr));
+  ok('nav: 4 focused tabs (Home/Inventory/Recipes/Shop)', catr.navTabCount === 4 && /Home/.test(catr.navLabels) && /Inventory/.test(catr.navLabels) && /Recipes/.test(catr.navLabels) && /Shop/.test(catr.navLabels), JSON.stringify(catr));
   ok('catalog: item sheet has Add-to-shelf + Forget', catr.sheetOk === true);
 
   // ---- H2. pantry landing + profile hub + planner + recipe -> list/plan ----
@@ -264,13 +263,13 @@ const NAME = (fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8').match(/CACHE\s*=
     const app = document.getElementById('app');
     r.useSoon = !!app.querySelector('.foodcard') && /Use soon/.test(app.textContent) && /Spinach/.test(app.textContent);
     r.fabShown = !document.getElementById('fab').classList.contains('hide');
-    r.pantryTitle = document.getElementById('title').textContent === 'Pantry';
+    r.pantryTitle = document.getElementById('title').textContent === 'Inventory';
 
     // Empty pantry -> friendly first-item CTA
     const keep = S.items; S.items = []; render();
     // assert the guidance, not the exact headline copy
     const et = document.getElementById('app').textContent;
-    r.emptyCta = /Nothing in the pantry yet/.test(et) && /Add your first item/i.test(et);
+    r.emptyCta = /inventory is empty/i.test(et) && /Add your first item/i.test(et);
     S.items = keep;
 
     // Profile hub: greets by name + rows for receipt/recipes/catalog/settings/help
@@ -292,7 +291,7 @@ const NAME = (fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8').match(/CACHE\s*=
     S.view = 'cook'; render();
     const rc = document.getElementById('app').querySelector('.recipe-card');
     r.richCard = !!rc && /Garlic Spinach Pasta/.test(rc.textContent);
-    r.missingPills = rc ? rc.querySelectorAll('.pill.miss').length : 0;
+    r.missingPills = rc ? +(rc.querySelector('[data-a=add]')?.textContent.match(/\d+/)?.[0] || 0) : 0;
     rc.querySelector('[data-a=add]').click();
     await new Promise(z => setTimeout(z, 40));
     r.addedMissing = S.shopping.filter(s => !s.deleted).length === 2 && S.shopping.some(s => /garlic/i.test(s.name));
@@ -321,7 +320,7 @@ const NAME = (fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8').match(/CACHE\s*=
   ok('profile: hub greets by name with receipt/recipes/catalog/settings/help rows', hp.profileName && hp.profileRows);
   ok('onboarding: welcome tour shows 4 slides and advances', hp.welcomeShown && hp.welcomeAdvances);
   ok('plan: add-a-meal FAB visible on the planner', hp.planFab === true);
-  ok('recipe: rich card renders with missing pills', hp.richCard === true && hp.missingPills === 2);
+  ok('recipe: rich card clearly counts missing ingredients', hp.richCard === true && hp.missingPills === 2);
   ok('recipe: "Add missing" pushes ingredients to the shopping list', hp.addedMissing === true);
   ok('plan: meal planner shows 7 days, today highlighted, planned meal visible', hp.dayCards && hp.todayHighlighted && hp.mealShown);
   ok('plan: the week reports its missing ingredients', hp.weekBtn === true);

@@ -107,16 +107,16 @@ const server = http.createServer((q, r) => {
   ok('null returns 0', durations.none === 0, String(durations.none));
 
   /* ---- 3. a fetch the browser refuses fails usefully -------------------- */
-  const blocked = await page.evaluate(async () => {
+  const blocked = await page.evaluate(async (blockedUrl) => {
     importRecipeSheet();
     const dlg = document.getElementById('dlg');
-    dlg.querySelector('#rurl').value = 'https://blocked.invalid/recipe';
+    dlg.querySelector('#rurl').value = blockedUrl;
     dlg.querySelector('[data-a=url]').click();
-    await new Promise(r => setTimeout(r, 600));
+    await new Promise(r => setTimeout(r, 250));
     const msg = dlg.querySelector('#rstat').innerText;
     dlg.close();
     return msg;
-  });
+  }, base + 'blocked-recipe');
   ok('a blocked fetch explains what actually happened',
     /won't let an app read it/i.test(blocked), blocked.slice(0, 80));
   ok('...and points at the paste path', /paste/i.test(blocked), blocked.slice(0, 80));

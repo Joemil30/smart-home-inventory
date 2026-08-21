@@ -384,7 +384,7 @@ const server = http.createServer((q, r) => {
     const searched = [...document.querySelectorAll('#app .tile .tn')].map(n => n.textContent);
     S.mq = '';
     // meta reads "2× · today" — the count plus when it was last cooked
-    return { tab: /Made \(2\)/.test(txt), tiles, counted: /2×\s*·/.test(txt), searched };
+    return { tab: /Made\s*·\s*2/.test(txt), tiles, counted: /2×\s*·/.test(txt), searched };
   });
   ok('cook: a "Made" tab counts every distinct meal cooked', made.tab === true, JSON.stringify({tab:made.tab}));
   ok('cook: it lists them with how often you made each', made.tiles === 2 && made.counted === true);

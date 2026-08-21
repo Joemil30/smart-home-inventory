@@ -130,7 +130,7 @@ const serve = root => http.createServer((q, r) => {
   ok('snapshot: the stores came with it', opened.stores === 1);
   // lands on the Home dashboard now, so assert on what Home actually shows
   ok('snapshot: it renders as the app, not raw text',
-    opened.navThere && /Good (morning|afternoon|evening)/.test(opened.shownName) && /Items/.test(opened.shownName),
+    opened.navThere && /Good (morning|afternoon|evening)/.test(opened.shownName) && /View recipe|Add your first food/.test(opened.shownName),
     JSON.stringify(opened.shownName.replace(/\s+/g, ' ').slice(0, 70)));
 
   // and it's actually usable — navigate and add something

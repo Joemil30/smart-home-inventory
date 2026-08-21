@@ -48,7 +48,7 @@ const server = http.createServer((q, r) => {
       greets: /Good (morning|afternoon|evening)/.test(document.getElementById('app').textContent) };
   });
   ok('home: it is the first tab', nav.tabs[0] === 'Home', nav.tabs.join(' / '));
-  ok('home: five tabs, not six', nav.tabs.length === 5, String(nav.tabs.length));
+  ok('home: four focused tabs', nav.tabs.length === 4 && nav.tabs.join('|') === 'Home|Inventory|Recipes|Shop', nav.tabs.join('|'));
   ok('home: opens with a greeting', nav.greets === true);
 
   // ---- B. this month's counts ----
@@ -71,17 +71,17 @@ const server = http.createServer((q, r) => {
   ok('month: rescued is the subset finished near its date', m.rescued === 1, String(m.rescued));
   ok('month: last month is outside the window', m.binned === 1);
 
-  // ---- C. the glance row shows it ----
+  // ---- C. Home turns inventory into a decision ----
   await seed();
   const glance = await page.evaluate(async () => {
     S.items = [{ id:'x', name:'Thing', cat:'other', loc:'uf', deleted:false, mode:'count', qty:1, expires:Date.now()+9e8, added:Date.now() },
       { id:'y', name:'Saved one', cat:'other', loc:'uf', deleted:true, goneAt:Date.now(), rescued:true, mode:'count', qty:0, expires:Date.now(), added:Date.now() }];
     render();
     const t = document.getElementById('app').textContent.replace(/\s+/g, ' ');
-    return { labels: /Items/.test(t) && /Use soon/.test(t) && /Expired/.test(t) && /Rescued/.test(t),
+    return { labels: /Almost ready|Ready right now|Use it up/i.test(t) && /View recipe|Add \d+ missing/i.test(t),
       noMoney: !/\$/.test(t) };
   });
-  ok('home: four counts, including Rescued', glance.labels === true);
+  ok('home: leads with an inventory-aware meal decision', glance.labels === true);
   ok('home: no money anywhere on the screen', glance.noMoney === true);
 
   // ---- D. depleting stamps when, and whether it was a rescue ----
@@ -129,10 +129,10 @@ const server = http.createServer((q, r) => {
     render();
     const t = document.getElementById('app').textContent;
     return { soon: /Eat these first/.test(t), item: /Dying spinach/.test(t),
-      week: /This week/.test(t), meal: /Taco night/.test(t), quick: /Scan/.test(t) && /Receipt/.test(t) };
+      recipes: /Make tonight/.test(t) && /View recipe|Explore recipes/.test(t), quick: /Scan/.test(t) && /Receipt/.test(t) };
   });
   ok('home: surfaces what is dying', surf.soon && surf.item);
-  ok('home: shows this week\'s plan', surf.week && surf.meal);
+  ok('home: surfaces what can be made tonight', surf.recipes);
   ok('home: keeps the three ways to add food one tap away', surf.quick === true);
 
   ok('no page errors', errs.length === 0, errs.slice(0, 2).join(' | '));

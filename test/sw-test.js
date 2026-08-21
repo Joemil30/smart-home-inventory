@@ -6,14 +6,14 @@ const http = require('http'), fs = require('fs'), path = require('path');
 const os = require('os');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || '/opt/node22/lib/node_modules/playwright');
 const SRC = path.resolve(__dirname, '..');
-const MIME = { '.html':'text/html', '.js':'text/javascript', '.svg':'image/svg+xml', '.png':'image/png', '.webmanifest':'application/manifest+json', '.json':'application/json' };
+const MIME = { '.html':'text/html', '.js':'text/javascript', '.svg':'image/svg+xml', '.png':'image/png', '.webp':'image/webp', '.webmanifest':'application/manifest+json', '.json':'application/json' };
 
 // Serve from a scratch copy so we can mutate it mid-test without touching the repo.
 const ROOT = fs.mkdtempSync(path.join(os.tmpdir(), 'swtest-'));
 for (const f of fs.readdirSync(SRC)) {
   const s = path.join(SRC, f);
-  if (fs.statSync(s).isDirectory()) continue;
-  fs.copyFileSync(s, path.join(ROOT, f));
+  if (fs.statSync(s).isDirectory()) fs.cpSync(s, path.join(ROOT, f), { recursive:true });
+  else fs.copyFileSync(s, path.join(ROOT, f));
 }
 
 const server = http.createServer((q, r) => {

@@ -105,11 +105,14 @@ const server = http.createServer((q, r) => {
     await addItem({ name:'Fine',   cat:'condiment',    loc:'uf', qty:1, expires: plus(20) });
     await addItem({ name:'Soon',   cat:'dairy-milk',   loc:'uf', qty:1, expires: plus(2) });
     await addItem({ name:'AlsoOk', cat:'condiment',    loc:'uf', qty:1, expires: plus(2) });   // same day as Soon
-    S.calMonth = new Date(d.getFullYear(), d.getMonth(), 1).getTime(); render();
     const cell = n => [...document.querySelectorAll('.cal .cc.has')]
       .find(c => c.querySelector('.dn').textContent === String(new Date(plus(n)).getDate()));
-    return { far: cell(20)?.className || '', near: cell(2)?.className || '',
-      today: !!document.querySelector('.cc.today') };
+    const farDate = new Date(plus(20));
+    S.calMonth = new Date(farDate.getFullYear(), farDate.getMonth(), 1).getTime(); render();
+    const far = cell(20)?.className || '';
+    const nearDate = new Date(plus(2));
+    S.calMonth = new Date(nearDate.getFullYear(), nearDate.getMonth(), 1).getTime(); render();
+    return { far, near: cell(2)?.className || '', today: !!document.querySelector('.cc.today') };
   });
   ok('a distant date reads as fine', /have/.test(tint.far), tint.far);
   ok('a date within three days reads as soon', /low/.test(tint.near), tint.near);

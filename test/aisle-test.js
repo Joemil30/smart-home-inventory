@@ -159,13 +159,13 @@ const server = http.createServer((q, r) => {
     const c = recipeCardEl({ name:'Test dish', minutes:25, steps:['x'], uses:['a','b','c'], missing:['d','e'] });
     document.body.appendChild(c);
     const r = c.querySelector('.ratio');
-    const out = { text: r ? r.textContent.trim() : null, meta: c.querySelector('.rc-meta').textContent };
+    const out = { text: r ? r.textContent.trim() : null, readiness: c.querySelector('.recipe-readiness').textContent };
     c.remove(); return out;
   });
-  ok('recipe: the ratio is printed on the card', card.text === '3 / 5', String(card.text));
-  ok('recipe: and spelled out underneath', /3 of 5 ingredients/.test(card.meta), card.meta);
+  ok('recipe: the ratio is printed on the card', card.text === '3 / 5 ingredients', String(card.text));
+  ok('recipe: and spelled out underneath', /have\s+3 of 5/i.test(card.readiness), card.readiness);
 
-  // ---- G. Cook Now ----
+  // ---- G. Have everything filter ----
   await seed();
   const cook = await page.evaluate(async () => {
     recipeCache = [
@@ -173,18 +173,18 @@ const server = http.createServer((q, r) => {
       { name:'Needs stuff', minutes:30, steps:['x'], uses:['a'], missing:['b','c'] },
     ];
     S.items = [{ id:'i', name:'A', cat:'other', loc:'uf', deleted:false, mode:'count', qty:1, expires:Date.now()+9e8, added:Date.now() }];
-    S.view = 'cook'; S.cookTab = 'suggested'; S.cookNow = false; render();
-    const all = document.querySelectorAll('#app .recipe-card').length;
-    const hasToggle = /Cook now/i.test(document.getElementById('app').textContent);
-    S.cookNow = true; render();
+    S.view = 'cook'; S.cookTab = 'suggested'; S.recipeFilter = 'all'; render();
+    const all = [...document.querySelectorAll('#app .recipe-card h3')].map(h => h.textContent);
+    const hasToggle = /Have everything/i.test(document.getElementById('app').textContent);
+    S.recipeFilter = 'ready'; render();
     const filtered = [...document.querySelectorAll('#app .recipe-card h3')].map(h => h.textContent);
-    S.cookNow = false;
+    S.recipeFilter = 'all';
     return { all, hasToggle, filtered };
   });
-  ok('cook: a Cook Now toggle is offered once there are suggestions', cook.hasToggle === true);
-  ok('cook: off, it shows everything', cook.all === 2, String(cook.all));
-  ok('cook: on, only what you can make right now',
-    cook.filtered.length === 1 && /Ready one/.test(cook.filtered[0]), cook.filtered.join(','));
+  ok('cook: a Have everything filter is offered', cook.hasToggle === true);
+  ok('cook: All includes local and generated ideas', cook.all.includes('Ready one') && cook.all.includes('Needs stuff'), String(cook.all.length));
+  ok('cook: Have everything keeps ready ideas and hides missing ones',
+    cook.filtered.includes('Ready one') && !cook.filtered.includes('Needs stuff'), cook.filtered.join(','));
 
   // ---- H. the planner runs on weeks ----
   await seed();
