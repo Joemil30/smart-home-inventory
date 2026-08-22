@@ -1,10 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#F7F9F7" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0E1512" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F7F9F7">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Stocked">
@@ -408,6 +407,23 @@ label .lbl{font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:up
 .recipe-steps li::before{content:counter(steps);width:28px;height:28px;border-radius:50%;display:grid;place-items:center;
   background:var(--cold-soft);color:var(--cold);font-size:12px;font-weight:800}
 .detail-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:14px}.detail-actions .btn{padding:11px 7px;font-size:12px}
+.recipe-control{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0}
+.recipe-control .control-box{background:var(--fog);border:1px solid var(--rime);border-radius:15px;padding:11px 12px}
+.recipe-control .control-box .lbl{margin-bottom:7px}.serving-stepper{display:grid;grid-template-columns:38px 1fr 38px;align-items:center;gap:5px}
+.serving-stepper button{height:36px;border-radius:10px;background:var(--shelf);border:1px solid var(--rime-hi);font-size:20px;color:var(--frost)}
+.serving-stepper strong{text-align:center;font-size:14px}.unit-select{padding:8px 30px 8px 10px;min-height:36px;font-size:13px;background:var(--shelf)}
+.nutrition-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:8px 0 18px}
+.nutrition-grid div{background:var(--fog);border:1px solid var(--rime);border-radius:12px;padding:10px 5px;text-align:center}
+.nutrition-grid b{display:block;font-size:15px;color:var(--frost)}.nutrition-grid span{font-size:10px;color:var(--vapor);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.recipe-library-tools{display:grid;gap:9px;margin-bottom:14px}.recipe-library-tools .recipe-search{margin:0}
+.book-chips{display:flex;gap:7px;overflow-x:auto;padding:2px 0 5px;scrollbar-width:none}.book-chips::-webkit-scrollbar{display:none}
+.book-chips button{white-space:nowrap;padding:8px 12px;border:1px solid var(--rime-hi);border-radius:999px;background:var(--shelf);font-size:12px;font-weight:750;color:var(--vapor)}
+.book-chips button[aria-pressed="true"]{background:var(--frost);color:var(--void);border-color:var(--frost)}
+.cook-progress{height:6px;background:var(--fog);border-radius:999px;overflow:hidden;margin:12px 0 22px}.cook-progress i{display:block;height:100%;background:var(--cold);border-radius:inherit}
+.cook-step{min-height:210px;display:flex;align-items:flex-start;gap:14px;background:var(--shelf);border:1px solid var(--rime);border-radius:20px;padding:20px;margin-bottom:16px}
+.cook-step .step-no{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:var(--cold);color:white;font-weight:850;flex:0 0 auto}
+.cook-step p{font-size:19px;line-height:1.5;margin:2px 0;color:var(--frost)}.cook-nav{display:grid;grid-template-columns:1fr 1.4fr;gap:9px}
+.recipe-note{padding:12px 14px;background:var(--cold-soft);border-radius:13px;color:var(--frost);font-size:13px;line-height:1.5;margin:10px 0 16px}
 @media (min-width:560px){.recipe-grid{grid-template-columns:repeat(2,1fr)}.recipe-card .rc-act{grid-template-columns:1fr}.recipe-cover{height:160px}}
 @media (max-width:360px){
   :root{--pad:14px}
@@ -422,6 +438,7 @@ label .lbl{font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:up
   .ingredient-groups,.detail-actions{grid-template-columns:1fr}
   .recipe-tabs{gap:3px;padding:3px}
   .recipe-tabs button{padding:9px 5px;font-size:11px}
+  .recipe-control{grid-template-columns:1fr}.nutrition-grid{grid-template-columns:repeat(2,1fr)}
   .fab-add{right:12px;bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 24px)}
 }
 
@@ -828,7 +845,7 @@ textarea{width:100%;font:inherit;font-size:15px;padding:11px 12px;border-radius:
 dialog{border:none;background:var(--shelf);color:var(--frost);border-radius:0;
   padding:calc(env(safe-area-inset-top) + 62px) 18px calc(env(safe-area-inset-bottom) + 24px);
   width:100vw;height:100dvh;max-width:100vw;max-height:100dvh;margin:0;position:fixed;inset:0;
-  overflow:auto;box-shadow:none}
+  overflow-y:auto;overflow-x:hidden;box-shadow:none}
 dialog::backdrop{background:var(--shelf)}
 #dlgBack{position:absolute;top:calc(env(safe-area-inset-top) + 14px);left:14px;z-index:5;
   width:40px;height:40px;border-radius:50%;background:var(--fog);border:1px solid var(--rime);
@@ -1556,6 +1573,21 @@ function isoMinutes(v) {
   return m ? (+(m[1] || 0)) * 60 + (+(m[2] || 0)) : 0;
 }
 
+const nutritionValue = v => {
+  const n = parseFloat(String(v ?? '').replace(/,/g, '').match(/[\d.]+/)?.[0]);
+  return Number.isFinite(n) ? Math.round(n) : null;
+};
+function normalizeNutrition(n) {
+  if (!n) return null;
+  const out = {
+    calories: nutritionValue(n.calories || n.kcal),
+    protein: nutritionValue(n.protein || n.proteinContent),
+    carbs: nutritionValue(n.carbs || n.carbohydrateContent),
+    fat: nutritionValue(n.fat || n.fatContent),
+  };
+  return Object.values(out).some(v => v != null) ? out : null;
+}
+
 function recipeFromLd(ld, url) {
   const steps = [];
   const pushStep = s => {
@@ -1572,25 +1604,108 @@ function recipeFromLd(ld, url) {
     uses: [].concat(ld.recipeIngredient || ld.ingredients || []).map(s => String(s).trim()).filter(Boolean),
     steps: steps.map(s => String(s).replace(/\s+/g, ' ').trim()).filter(Boolean),
     image: (typeof img === 'string' ? img : img?.url || img?.[0]?.url || img?.[0]) || null,
+    nutrition: normalizeNutrition(ld.nutrition),
     source: url || '',
   };
+}
+
+/* A no-key parser keeps pasted recipes useful offline. It deliberately
+   recognizes conventional Ingredients / Method headings rather than trying
+   to hallucinate structure from prose. The optional model path below is more
+   flexible, but this baseline always works. */
+function parseRecipeTextLocal(text, source = '') {
+  const rows = String(text || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  let mode = '', name = '', minutes = 0, servings = null;
+  const uses = [], steps = [];
+  const clean = s => s.replace(/^[-*•]\s*/, '').replace(/^\d+[.)]\s*/, '').trim();
+  rows.forEach((row, index) => {
+    const low = row.toLowerCase().replace(/:$/, '');
+    if (/^(ingredients|what you need)$/.test(low)) { mode = 'ingredients'; return; }
+    if (/^(method|directions|instructions|steps|preparation)$/.test(low)) { mode = 'steps'; return; }
+    if (!name && index < 3 && !/^(serves?|yield|prep|cook|total)/i.test(row)) { name = clean(row); return; }
+    const tm = row.match(/(?:total\s+time|time|ready\s+in)\D{0,8}(\d+)\s*(?:minutes?|mins?)/i);
+    if (tm) minutes = +tm[1];
+    const sv = row.match(/(?:serves?|yield|servings?)\D{0,6}(\d+)/i);
+    if (sv) servings = +sv[1];
+    if (mode === 'ingredients') uses.push(clean(row));
+    else if (mode === 'steps') steps.push(clean(row));
+  });
+  if (!uses.length) {
+    rows.slice(name ? 1 : 0).forEach(row => {
+      const line = clean(row);
+      if (/^(?:\d+(?:\s+\d+\/\d+|[./]\d+)?|\d+\/\d+|[¼½¾⅓⅔])\s*(?:cups?|tbsp|tablespoons?|tsp|teaspoons?|oz|ounces?|lbs?|pounds?|g|kg|ml|l|cloves?|cans?|packs?|pieces?|slices?)?\b/i.test(line)) uses.push(line);
+      else if (line.length > 20 && /[.!]$/.test(line)) steps.push(line);
+    });
+  }
+  return { name: name || 'Imported recipe', minutes, servings, uses: [...new Set(uses)], steps, image: null, nutrition: null, source };
 }
 
 /* The paste path. One constrained model call — we're not asking it to invent
    a recipe, only to structure text the user already has in front of them. */
 async function parseRecipeText(text, source = '') {
+  if (!G.key()) return parseRecipeTextLocal(text, source);
   const schema = { type: 'OBJECT', properties: {
     name: { type: 'STRING' }, minutes: { type: 'INTEGER' }, servings: { type: 'INTEGER' },
     uses: { type: 'ARRAY', items: { type: 'STRING' } },
     steps: { type: 'ARRAY', items: { type: 'STRING' } },
+    nutrition: { type: 'OBJECT', properties: {
+      calories: { type: 'NUMBER' }, protein: { type: 'NUMBER' }, carbs: { type: 'NUMBER' }, fat: { type: 'NUMBER' }
+    } },
   }, required: ['name', 'uses'] };
   const out = await G.gen([{ text:
     `Structure this recipe exactly as written. Do NOT invent ingredients, steps, times or quantities that aren't there.\n\n` +
     `- "uses": one ingredient line each, keeping the quantity ("2 cups flour").\n` +
     `- "steps": the method, one instruction per entry, in order.\n` +
-    `- "minutes": total time if stated, otherwise 0.\n\n${text.slice(0, 12000)}` }], schema);
+    `- "minutes": total time if stated, otherwise 0.\n` +
+    `- "nutrition": estimated calories, protein, carbs and fat PER SERVING when ingredient quantities are complete; otherwise omit it.\n\n${text.slice(0, 12000)}` }], schema);
   return { name: out.name || 'Imported recipe', minutes: out.minutes || 0, servings: out.servings || null,
-    uses: out.uses || [], steps: out.steps || [], image: null, source };
+    uses: out.uses || [], steps: out.steps || [], image: null, nutrition: normalizeNutrition(out.nutrition), source };
+}
+
+async function parseRecipeImage(file) {
+  if (!G.key()) throw new Error('Photo reading needs an AI key. You can still paste or type the recipe without one.');
+  const { b64, mime } = await toB64(file);
+  const schema = { type: 'OBJECT', properties: {
+    name: { type: 'STRING' }, minutes: { type: 'INTEGER' }, servings: { type: 'INTEGER' },
+    uses: { type: 'ARRAY', items: { type: 'STRING' } }, steps: { type: 'ARRAY', items: { type: 'STRING' } },
+    nutrition: { type: 'OBJECT', properties: { calories: { type:'NUMBER' }, protein: { type:'NUMBER' }, carbs: { type:'NUMBER' }, fat: { type:'NUMBER' } } },
+  }, required: ['name','uses'] };
+  const out = await G.gen([{ text: 'Read this recipe photo exactly. Extract its title, servings, total minutes, every ingredient with quantity, ordered method steps, and per-serving nutrition only if printed. Do not invent missing text.' },
+    { inline_data: { mime_type: mime, data: b64 } }], schema);
+  return { name: out.name || 'Imported recipe', minutes: out.minutes || 0, servings: out.servings || null,
+    uses: out.uses || [], steps: out.steps || [], image: await downscaleImage(file, 1000), nutrition: normalizeNutrition(out.nutrition), source: '' };
+}
+
+function manualRecipeSheet(after) {
+  const dlg = document.getElementById('dlg');
+  dlg.innerHTML = `<div class="eyebrow">New recipe</div><h1 style="margin:6px 0 12px">Make it yours</h1>
+    <label><span class="lbl">Recipe name</span><input id="mrname" placeholder="Grandma's tomato soup" autocomplete="off"></label>
+    <div class="grid2"><label><span class="lbl">Minutes</span><input id="mrtime" type="number" min="0" placeholder="30"></label>
+      <label><span class="lbl">Servings</span><input id="mrserve" type="number" min="1" placeholder="4"></label></div>
+    <label><span class="lbl">Ingredients · one per line</span><textarea id="mrings" rows="7" placeholder="2 cans tomatoes\n1 onion\n2 cloves garlic"></textarea></label>
+    <label><span class="lbl">Method · one step per line</span><textarea id="mrsteps" rows="7" placeholder="Soften the onion.\nAdd tomatoes and simmer."></textarea></label>
+    <label><span class="lbl">Tags · comma separated</span><input id="mrtags" placeholder="Dinner, Vegetarian, Family favorite"></label>
+    <label><span class="lbl">Source link · optional</span><input id="mrsource" type="url" placeholder="https://…"></label>
+    <button class="btn ghost left" data-a="photo">${icon('camera',16)}Add a cover photo</button>
+    <input id="mrphoto" type="file" accept="image/*" class="hide">
+    <button class="btn cold" data-a="save" style="margin-top:10px">Save recipe</button>
+    <button class="btn ghost" data-a="c" style="margin-top:8px;border:none;color:var(--vapor)">Cancel</button>`;
+  let photo = null;
+  const file = dlg.querySelector('#mrphoto');
+  dlg.querySelector('[data-a=photo]').onclick = () => file.click();
+  file.onchange = async () => { if (file.files[0]) { photo = await downscaleImage(file.files[0], 1000); dlg.querySelector('[data-a=photo]').innerHTML = icon('check',16) + 'Photo ready'; } };
+  dlg.querySelector('[data-a=save]').onclick = async () => {
+    const name = dlg.querySelector('#mrname').value.trim();
+    const uses = dlg.querySelector('#mrings').value.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+    if (!name || !uses.length) { toast('Add a name and at least one ingredient'); return; }
+    const rec = { id:uid(), name, minutes:+dlg.querySelector('#mrtime').value || 0, servings:+dlg.querySelector('#mrserve').value || null,
+      ingredients:uses, uses, missing:[], inventoryMatch:true, rescues:[], steps:dlg.querySelector('#mrsteps').value.split(/\r?\n/).map(s => s.trim()).filter(Boolean),
+      image:photo, source:dlg.querySelector('#mrsource').value.trim(), tags:dlg.querySelector('#mrtags').value.split(',').map(s => s.trim()).filter(Boolean),
+      cookbooks:[], customTags:[], notes:'', nutrition:null, rating:0, deleted:false };
+    await saveRec(rec); dlg.close(); toast(`Saved “${name}”`); if (after) after(); else render();
+  };
+  dlg.querySelector('[data-a=c]').onclick = () => dlg.close();
+  dlg.showModal();
 }
 
 function importRecipeSheet(after) {
@@ -1606,6 +1721,10 @@ function importRecipeSheet(after) {
     <label><span class="lbl">Paste the recipe text</span>
       <textarea id="rtext" rows="6" placeholder="Ingredients and method, pasted straight in…"></textarea></label>
     <button class="btn ghost" data-a="text" style="margin-top:10px">${icon('sparkle')}Read what I pasted</button>
+    <div class="hr"><span>or</span></div>
+    <button class="btn ghost left" data-a="file">${icon('camera',16)}Import a photo or recipe file</button>
+    <input id="rfile" type="file" accept="image/*,.txt,.md,.html,.json" class="hide">
+    <button class="btn ghost left" data-a="manual" style="margin-top:8px">${icon('plus',16)}Create a recipe manually</button>
     <div id="rstat" style="margin-top:12px"></div>
     <button class="btn ghost" data-a="c" style="margin-top:10px;border:none;color:var(--vapor)">Cancel</button>`;
   const stat = dlg.querySelector('#rstat');
@@ -1616,7 +1735,7 @@ function importRecipeSheet(after) {
     if (!r.uses.length && !r.steps.length) return fail(`Found the page, but no recipe on it.`);
     const rec = { id: uid(), name: r.name, minutes: r.minutes || 0, servings: r.servings || null,
       ingredients: r.uses, uses: r.uses, missing: [], inventoryMatch: true, rescues: [], steps: r.steps, image: r.image || null,
-      source: r.source || '', rating: 0, deleted: false };
+      source: r.source || '', nutrition: normalizeNutrition(r.nutrition), cookbooks:[], customTags:[], notes:'', rating: 0, deleted: false };
     await saveRec(rec);
     dlg.close();
     toast(`Saved “${rec.name}”`);
@@ -1654,6 +1773,28 @@ function importRecipeSheet(after) {
     try { finish(await parseRecipeText(t, dlg.querySelector('#rurl').value.trim())); }
     catch (e) { fail(e.message || `Couldn't read that.`); }
   };
+  const file = dlg.querySelector('#rfile');
+  dlg.querySelector('[data-a=file]').onclick = () => file.click();
+  file.onchange = async () => {
+    const f = file.files[0]; if (!f) return;
+    busy(f.type.startsWith('image/') ? 'Reading the recipe photo…' : 'Reading the recipe file…');
+    try {
+      if (f.type.startsWith('image/')) return finish(await parseRecipeImage(f));
+      const txt = await f.text();
+      if (/\.json$/i.test(f.name)) {
+        try {
+          const raw = JSON.parse(txt); const obj = Array.isArray(raw) ? raw[0] : raw;
+          const uses = obj.ingredients?.split ? obj.ingredients.split(/\r?\n/) : obj.ingredients || obj.uses || [];
+          const steps = obj.directions?.split ? obj.directions.split(/\r?\n/) : obj.steps || obj.instructions || [];
+          return finish({ name:obj.name || obj.title || f.name.replace(/\.[^.]+$/,''), minutes:obj.total_time || obj.minutes || 0,
+            servings:parseInt(obj.servings || obj.yield,10) || null, uses:[].concat(uses).filter(Boolean), steps:[].concat(steps).filter(Boolean),
+            image:obj.image || null, source:obj.source_url || obj.source || '', nutrition:normalizeNutrition(obj.nutrition) });
+        } catch (e) {}
+      }
+      return finish(await parseRecipeText(txt, ''));
+    } catch (e) { fail(e.message || `Couldn't read that file.`); }
+  };
+  dlg.querySelector('[data-a=manual]').onclick = () => manualRecipeSheet(after);
   dlg.querySelector('[data-a=c]').onclick = () => dlg.close();
   dlg.showModal();
 }
@@ -1667,13 +1808,20 @@ async function toggleSaveRecipe(r) {
     toast('Removed from saved');
     return false;
   }
-  const all = recipeIngredientObjects(r).map(i => i.raw);
-  const rec = { id: uid(), name: r.name, minutes: r.minutes || 0, ingredients: all,
-    uses: all, missing: [], inventoryMatch: true, rescues: r.rescues || [],
-    steps: r.steps || [], image: r.image || null, deleted: false };
-  await saveRec(rec);
+  const rec = await ensureSavedRecipe(r);
   toast(`Saved “${r.name}”`);
   return true;
+}
+async function ensureSavedRecipe(r) {
+  const found = S.saved.find(x => !x.deleted && norm(x.name) === norm(r.name));
+  if (found) return found;
+  const all = recipeIngredientObjects(r).map(i => i.raw);
+  const rec = { id: uid(), name: r.name, minutes: r.minutes || 0, servings:r.servings || null, ingredients: all,
+    uses: all, missing: [], inventoryMatch: true, rescues: r.rescues || [], tags:r.tags || [],
+    steps: r.steps || [], image: r.image || null, source:r.source || '', nutrition:normalizeNutrition(r.nutrition), nutritionEstimated:!!r.nutritionEstimated,
+    cookbooks:r.cookbooks || [], customTags:r.customTags || [], notes:r.notes || '', rating:r.rating || 0, deleted: false };
+  await saveRec(rec);
+  return rec;
 }
 /* ---------------- dependable local recipe foundation ----------------
    Recipe text is for people ("2 cups flour"). Matching and shopping need the
@@ -1806,8 +1954,25 @@ const STOCKED_RECIPES = [
     steps:['Cut vegetables into bite-size pieces.','Stir-fry carrots, pepper and broccoli over high heat until crisp-tender.','Add garlic and soy sauce; serve over rice.'] },
 ];
 
+/* Curated per-serving estimates for Stocked's built-in recipes. Imported
+   recipes prefer source-provided nutrition; model estimates are visibly
+   labeled so this never pretends to be a medical-grade calculator. */
+const STOCKED_NUTRITION = {
+  'stocked:chicken-spinach-pasta':[2,520,46,55,17], 'stocked:burrito-bowls':[2,610,48,72,17],
+  'stocked:honey-garlic-chicken':[2,560,49,70,10], 'stocked:egg-fried-rice':[3,410,15,58,13],
+  'stocked:creamy-tomato-pasta':[3,500,17,66,19], 'stocked:chickpea-curry':[4,470,16,67,17],
+  'stocked:black-bean-tacos':[4,390,16,48,15], 'stocked:salmon-rice-bowls':[2,650,39,66,26],
+  'stocked:veggie-omelet':[1,390,27,10,27], 'stocked:sheet-pan-chicken':[2,490,47,42,16],
+  'stocked:banana-pancakes':[2,360,14,49,13], 'stocked:tuna-pasta-salad':[3,420,25,48,14],
+  'stocked:loaded-potatoes':[2,520,24,68,18], 'stocked:vegetable-stir-fry':[3,350,10,63,8],
+};
+function enrichBuiltinRecipe(r) {
+  const n = STOCKED_NUTRITION[r.id];
+  return n ? { ...r, servings:n[0], nutrition:{ calories:n[1], protein:n[2], carbs:n[3], fat:n[4] }, nutritionEstimated:true } : r;
+}
+
 function localRecipeFeed() {
-  return STOCKED_RECIPES.filter(recipeAllowed).map(r => recomputeMissing({ ...r, inventoryMatch: true }))
+  return STOCKED_RECIPES.filter(recipeAllowed).map(r => recomputeMissing({ ...enrichBuiltinRecipe(r), inventoryMatch: true }))
     .sort((a, b) => recipeScore(b) - recipeScore(a));
 }
 
@@ -2933,14 +3098,12 @@ const locName = id => S.household?.locations.find(l => l.id === id)?.name || '?'
    a bonus rather than the confirmation — the visible check still does that. */
 const tap = (ms = 8) => { try { navigator.vibrate?.(ms); } catch (e) {} };
 
-/* System by default; the override is for people who keep their phone light
-   and want the kitchen app dark, which is a real preference. */
+/* Stocked always opens in the designed light experience. Dark remains an
+   explicit choice, but a phone-level theme can no longer silently repaint a
+   food screen or make two household members see different defaults. */
 const GROUND = { light: '#F7F9F7', dark: '#0E1512' };
 const prefersDark = () => matchMedia('(prefers-color-scheme: dark)').matches;
-/* What the app is ACTUALLY showing right now — 'system' resolves to whatever
-   the phone is set to. */
-const effectiveTheme = (t = S.cfg.theme || 'system') =>
-  t === 'system' ? (prefersDark() ? 'dark' : 'light') : t;
+const effectiveTheme = (t = S.cfg.theme || 'light') => t === 'dark' ? 'dark' : 'light';
 
 /* The status bar / PWA chrome colour. The two <meta media="..."> tags in the
    head follow the PHONE, which is exactly wrong once you override the theme
@@ -2957,18 +3120,10 @@ function syncThemeColor() {
 }
 
 function applyTheme() {
-  const t = S.cfg.theme || 'system';
-  if (t === 'system') document.documentElement.removeAttribute('data-theme');
-  else document.documentElement.setAttribute('data-theme', t);
+  const t = effectiveTheme();
+  document.documentElement.setAttribute('data-theme', t);
   syncThemeColor();
 }
-
-/* On "Match my phone", the CSS flips itself via the media query — but the
-   chrome colour is ours to keep in step. */
-try {
-  matchMedia('(prefers-color-scheme: dark)')
-    .addEventListener('change', () => { if ((S.cfg.theme || 'system') === 'system') syncThemeColor(); });
-} catch (e) {}
 
 const el = (h) => { const d = document.createElement('div'); d.innerHTML = h.trim(); return d.firstElementChild; };
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -4307,7 +4462,11 @@ function paintRecipeImage(node, r) {
 }
 
 async function addRecipeMissing(r) {
-  const rec = recomputeMissing(r);
+  /* Cards already carry a computed availability split. Recomputing a
+     generated suggestion turns its declared `uses`/`missing` contract into
+     generic ingredient data and can incorrectly add ingredients the model
+     said were already present. */
+  const rec = r.availability ? r : recomputeMissing(r);
   const missing = rec.availability.missing;
   if (!missing.length) return toast('You already have everything');
   let added = 0;
@@ -4341,6 +4500,135 @@ function recipeCred(r) {
     ${made ? `<span class="rc-made">made ${made}×</span>` : ''}</div>`;
 }
 
+const VULGAR = { '¼':.25, '½':.5, '¾':.75, '⅓':1/3, '⅔':2/3, '⅛':.125, '⅜':.375, '⅝':.625, '⅞':.875 };
+function leadingAmount(raw) {
+  const s = String(raw || '').trim();
+  const m = s.match(/^(\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:\.\d+)?|[¼½¾⅓⅔⅛⅜⅝⅞])\s*/);
+  if (!m) return null;
+  let n;
+  if (VULGAR[m[1]]) n = VULGAR[m[1]];
+  else if (m[1].includes(' ')) { const [w, f] = m[1].split(/\s+/); const [a,b] = f.split('/'); n = +w + (+a / +b); }
+  else if (m[1].includes('/')) { const [a,b] = m[1].split('/'); n = +a / +b; }
+  else n = +m[1];
+  return Number.isFinite(n) ? { amount:n, rest:s.slice(m[0].length) } : null;
+}
+function niceAmount(n) {
+  if (!Number.isFinite(n)) return '';
+  const whole = Math.floor(n + 1e-6), frac = n - whole;
+  const options = [[.125,'⅛'],[.25,'¼'],[1/3,'⅓'],[.375,'⅜'],[.5,'½'],[.625,'⅝'],[2/3,'⅔'],[.75,'¾'],[.875,'⅞']];
+  const hit = options.find(([v]) => Math.abs(frac - v) < .035);
+  if (hit) return `${whole || ''}${hit[1]}`;
+  if (frac < .035) return String(whole);
+  return String(Math.round(n * 10) / 10);
+}
+function unitLabel(unit, n) {
+  const labels = { cup:'cup', tbsp:'tbsp', tsp:'tsp', oz:'oz', lb:'lb', g:'g', kg:'kg', ml:'ml', l:'L' };
+  return labels[unit] + (unit === 'cup' && Math.abs(n - 1) > .01 ? 's' : '');
+}
+function scaledIngredient(raw, factor = 1, mode = 'original') {
+  const q = leadingAmount(raw); if (!q) return raw;
+  let amount = q.amount * factor, rest = q.rest;
+  const um = rest.match(/^(cups?|tablespoons?|tbsp|teaspoons?|tsp|ounces?|oz|pounds?|lbs?|grams?|g|kilograms?|kg|millilit(?:er|re)s?|ml|lit(?:er|re)s?|l)\b\s*/i);
+  if (!um || mode === 'original') return `${niceAmount(amount)} ${rest}`.trim();
+  const token = um[1].toLowerCase(); rest = rest.slice(um[0].length);
+  let unit = /cup/.test(token)?'cup':/table|tbsp/.test(token)?'tbsp':/tea|tsp/.test(token)?'tsp':/ounce|^oz/.test(token)?'oz':/pound|^lbs?/.test(token)?'lb':/kilogram|^kg/.test(token)?'kg':/gram|^g/.test(token)?'g':/millilit|^ml/.test(token)?'ml':'l';
+  if (mode === 'metric' && ['cup','tbsp','tsp','oz','lb'].includes(unit)) {
+    if (unit === 'cup') { amount *= 240; unit = 'ml'; }
+    else if (unit === 'tbsp') { amount *= 15; unit = 'ml'; }
+    else if (unit === 'tsp') { amount *= 5; unit = 'ml'; }
+    else if (unit === 'oz') { amount *= 28.35; unit = 'g'; }
+    else { amount *= 453.6; unit = amount >= 1000 ? 'kg' : 'g'; if (unit === 'kg') amount /= 1000; }
+  } else if (mode === 'us' && ['g','kg','ml','l'].includes(unit)) {
+    if (unit === 'g') { amount /= 28.35; unit = 'oz'; }
+    else if (unit === 'kg') { amount *= 2.2046; unit = 'lb'; }
+    else { if (unit === 'l') amount *= 1000; amount /= 240; unit = 'cup'; }
+  }
+  return `${niceAmount(amount)} ${unitLabel(unit, amount)} ${rest}`.trim();
+}
+function nutritionMarkup(r) {
+  const n = normalizeNutrition(r.nutrition); if (!n) return '';
+  return `<div class="lbl">Nutrition · per serving${r.nutritionEstimated ? ' · estimate' : ''}</div><div class="nutrition-grid">
+    <div><b>${n.calories ?? '—'}</b><span>Calories</span></div><div><b>${n.protein != null ? n.protein+'g' : '—'}</b><span>Protein</span></div>
+    <div><b>${n.carbs != null ? n.carbs+'g' : '—'}</b><span>Carbs</span></div><div><b>${n.fat != null ? n.fat+'g' : '—'}</b><span>Fat</span></div></div>`;
+}
+async function shareRecipe(r, servings, mode) {
+  const factor = servings / (r.servings || servings || 1);
+  const text = `${r.name}\n${r.minutes ? `${r.minutes} min · ` : ''}${servings} serving${servings === 1 ? '' : 's'}\n\nINGREDIENTS\n${recipeIngredientObjects(r).map(i => `• ${scaledIngredient(i.raw, factor, mode)}`).join('\n')}\n\nMETHOD\n${(r.steps || []).map((s,i) => `${i+1}. ${s}`).join('\n')}${r.source ? `\n\nSource: ${r.source}` : ''}`;
+  try { if (navigator.share) { await navigator.share({ title:r.name, text }); return; } }
+  catch (e) { if (e?.name === 'AbortError') return; }
+  try { await navigator.clipboard.writeText(text); toast('Recipe copied — paste it anywhere'); }
+  catch (e) { toast(`Couldn't share on this device`); }
+}
+async function organizeRecipeSheet(r) {
+  const rec = await ensureSavedRecipe(r), dlg = document.getElementById('dlg');
+  dlg.innerHTML = `<div class="eyebrow">Saved recipe</div><h1 style="margin:6px 0 12px">Organize ${esc(rec.name)}</h1>
+    <label><span class="lbl">Cookbooks · comma separated</span><input id="obooks" value="${esc((rec.cookbooks || []).join(', '))}" placeholder="Weeknight dinners, Favorites"></label>
+    <label><span class="lbl">Tags · comma separated</span><input id="otags" value="${esc((rec.customTags || []).join(', '))}" placeholder="Freezer friendly, Kids love it"></label>
+    <label><span class="lbl">Your notes</span><textarea id="onotes" rows="6" placeholder="Use less salt next time…">${esc(rec.notes || '')}</textarea></label>
+    <button class="btn cold" data-a="save">Save organization</button><button class="btn ghost" data-a="c" style="margin-top:8px">Cancel</button>`;
+  dlg.querySelector('[data-a=save]').onclick = async () => {
+    rec.cookbooks = dlg.querySelector('#obooks').value.split(',').map(s => s.trim()).filter(Boolean);
+    rec.customTags = dlg.querySelector('#otags').value.split(',').map(s => s.trim()).filter(Boolean);
+    rec.notes = dlg.querySelector('#onotes').value.trim(); await saveRec(rec); dlg.close(); render(); toast('Recipe organized');
+  };
+  dlg.querySelector('[data-a=c]').onclick = () => dlg.close();
+}
+async function openCookingMode(r, servings, mode) {
+  const dlg = document.getElementById('dlg'), steps = (r.steps || []).length ? r.steps : ['Prepare the ingredients and follow your saved source.'];
+  let at = 0, lock = null;
+  try { lock = await navigator.wakeLock?.request('screen'); } catch (e) {}
+  const paint = () => {
+    dlg.innerHTML = `<div class="eyebrow">Cooking · ${at + 1} of ${steps.length}${lock ? ' · screen stays awake' : ''}</div>
+      <h1 style="margin:6px 0 4px">${esc(r.name)}</h1><div class="cook-progress"><i style="width:${((at+1)/steps.length)*100}%"></i></div>
+      <div class="cook-step"><span class="step-no">${at+1}</span><p>${esc(steps[at])}</p></div>
+      <details style="margin-bottom:16px"><summary class="btn ghost left">Ingredients for ${servings}</summary>
+        <div style="padding:8px 4px">${recipeIngredientObjects(r).map(i => `<div class="ingredient-row">${esc(scaledIngredient(i.raw, servings/(r.servings || servings || 1), mode))}</div>`).join('')}</div></details>
+      <div class="cook-nav"><button class="btn ghost" data-a="prev" ${at === 0 ? 'disabled' : ''}>Back</button>
+        <button class="btn cold" data-a="next">${at === steps.length - 1 ? 'Finish cooking' : 'Next step'}</button></div>
+      <button class="btn ghost" data-a="c" style="margin-top:10px;border:none;color:var(--vapor)">Exit cooking mode</button>`;
+    dlg.querySelector('[data-a=prev]').onclick = () => { at--; paint(); };
+    dlg.querySelector('[data-a=next]').onclick = () => { if (at < steps.length - 1) { at++; paint(); } else { dlg.close(); cookDeduct(r); } };
+    dlg.querySelector('[data-a=c]').onclick = () => dlg.close();
+  };
+  dlg.onclose = async () => { try { await lock?.release(); } catch (e) {} dlg.onclose = null; };
+  paint(); if (!dlg.open) dlg.showModal();
+}
+function showRecipeDetail(raw, opts = {}) {
+  const r = recomputeMissing(raw), a = r.availability, n = a.missing.length, dlg = document.getElementById('dlg');
+  const base = r.servings || 2, servings = Math.max(1, opts.servings || base), mode = opts.mode || S.cfg.recipeUnits || 'original';
+  const factor = servings / base, emoji = foodEmoji(r.name, '') || '🍳', status = n === 0 ? 'Ready to cook' : n <= 2 ? 'Almost ready' : `Need ${n}`;
+  const line = i => esc(scaledIngredient(i.raw, factor, mode));
+  dlg.innerHTML = `<div class="recipe-detail-hero"><span>${emoji}</span></div>
+    <div class="eyebrow" style="margin-top:14px">${r.minutes} min · ${status}</div><h1 style="margin:6px 0 6px">${esc(r.name)}</h1>${recipeCred(r)}
+    <div class="recipe-control"><div class="control-box"><div class="lbl">Servings</div><div class="serving-stepper"><button data-a="less" aria-label="Fewer servings">−</button><strong>${servings}</strong><button data-a="more" aria-label="More servings">+</button></div></div>
+      <div class="control-box"><div class="lbl">Measurements</div><select class="unit-select" id="runits"><option value="original" ${mode==='original'?'selected':''}>Original</option><option value="metric" ${mode==='metric'?'selected':''}>Metric</option><option value="us" ${mode==='us'?'selected':''}>US customary</option></select></div></div>
+    ${nutritionMarkup(r)}
+    ${(r.cookbooks || []).length || (r.customTags || []).length ? `<div class="rc-cred">${[...(r.cookbooks || []),...(r.customTags || [])].map(x => `<span class="rc-src">${esc(x)}</span>`).join('')}</div>` : ''}
+    ${r.notes ? `<div class="recipe-note"><b>Your note</b><br>${esc(r.notes)}</div>` : ''}
+    <div class="ingredient-groups"><section><div class="lbl">You have · ${a.have.length}</div>${a.have.length ? a.have.map(i => `<div class="ingredient-row have">${icon('check',14)}<span>${line(i)}</span></div>`).join('') : '<div class="note">Nothing matched yet.</div>'}</section>
+      <section><div class="lbl">You need · ${a.missing.length}</div>${a.missing.length ? a.missing.map(i => `<div class="ingredient-row need">${icon('plus',14)}<span>${line(i)}</span></div>`).join('') : '<div class="ingredient-row have">'+icon('check',14)+'<span>Nothing missing</span></div>'}</section></div>
+    ${n ? `<button class="btn cold" data-a="add" style="margin:4px 0 10px">${icon('plus',16)}Add missing ingredients</button>` : ''}
+    <button class="btn cold" data-a="start" style="margin-bottom:16px">${icon('utensils',16)}Start cooking</button>
+    ${(r.steps || []).length ? `<div class="lbl">Method</div><ol class="recipe-steps">${r.steps.map(s => `<li><span>${esc(s)}</span></li>`).join('')}</ol>` : ''}
+    <div class="detail-actions"><button class="btn ghost" data-a="plan">${icon('calendar',16)}Plan</button><button class="btn ghost" data-a="save">${icon('star',16)}${isSaved(r)?'Saved':'Save'}</button><button class="btn ghost" data-a="organize">${icon('more',16)}Organize</button>
+      <button class="btn ghost" data-a="share">${icon('share',16)}Share</button><button class="btn ghost" data-a="cook">${icon('check',16)}Made it</button></div>
+    ${isSaved(r) ? `<div class="lbl">Your rating</div><div class="rate">${[1,2,3,4,5].map(i => `<button data-r="${i}" class="${(r.rating || 0) >= i ? 'on' : ''}" aria-label="${i} star${i > 1 ? 's' : ''}">★</button>`).join('')}</div>` : ''}
+    ${r.source ? `<a class="btn ghost left" style="margin-top:12px" href="${esc(r.source)}" target="_blank" rel="noopener">${icon('link')}Open ${esc(sourceHost(r.source))}</a>` : ''}<button class="btn ghost" data-a="c" style="margin-top:10px">Close</button>`;
+  paintRecipeImage(dlg.querySelector('.recipe-detail-hero'), r);
+  dlg.querySelector('[data-a=less]').onclick = () => showRecipeDetail(r,{servings:Math.max(1,servings-1),mode});
+  dlg.querySelector('[data-a=more]').onclick = () => showRecipeDetail(r,{servings:servings+1,mode});
+  dlg.querySelector('#runits').onchange = async e => { S.cfg.recipeUnits=e.target.value; await saveCfg(); showRecipeDetail(r,{servings,mode:e.target.value}); };
+  dlg.querySelector('[data-a=add]')?.addEventListener('click', async () => { await addRecipeMissing(r); dlg.close(); });
+  dlg.querySelector('[data-a=start]').onclick = () => openCookingMode(r,servings,mode);
+  dlg.querySelector('[data-a=plan]').onclick = () => { dlg.close(); pickDayForRecipe(r); };
+  dlg.querySelector('[data-a=save]').onclick = async () => { await toggleSaveRecipe(r); dlg.close(); render(); };
+  dlg.querySelector('[data-a=organize]').onclick = () => organizeRecipeSheet(r);
+  dlg.querySelector('[data-a=share]').onclick = () => shareRecipe(r,servings,mode);
+  dlg.querySelector('[data-a=cook]').onclick = () => { dlg.close(); cookDeduct(r); };
+  dlg.querySelectorAll('[data-r]').forEach(b => b.onclick = async () => { const rec=S.saved.find(x=>!x.deleted&&norm(x.name)===norm(r.name)); if(!rec)return; rec.rating=rec.rating===+b.dataset.r?0:+b.dataset.r; await saveRec(rec); showRecipeDetail(rec,{servings,mode}); });
+  dlg.querySelector('[data-a=c]').onclick = () => dlg.close(); if (!dlg.open) dlg.showModal();
+}
+
 function recipeCardEl(r) {
   r = recomputeMissing(r);
   const a = r.availability;
@@ -4367,44 +4655,7 @@ function recipeCardEl(r) {
       </div>
     </div></article>`);
   paintRecipeImage(card.querySelector('.recipe-cover'), r);
-  const openRecipe = () => {
-    const dlg = document.getElementById('dlg');
-    dlg.innerHTML = `<div class="recipe-detail-hero"><span>${emoji}</span></div>
-      <div class="eyebrow" style="margin-top:14px">${r.minutes} min · ${status}</div><h1 style="margin:6px 0 6px">${esc(r.name)}</h1>
-      ${recipeCred(r)}
-      <div class="ingredient-groups">
-        <section><div class="lbl">You have · ${a.have.length}</div>${a.have.length ? a.have.map(i => `<div class="ingredient-row have">${icon('check',14)}<span>${esc(i.raw)}</span></div>`).join('') : '<div class="note">Nothing matched yet.</div>'}</section>
-        <section><div class="lbl">You need · ${a.missing.length}</div>${a.missing.length ? a.missing.map(i => `<div class="ingredient-row need">${icon('plus',14)}<span>${esc(i.raw)}</span></div>`).join('') : '<div class="ingredient-row have">'+icon('check',14)+'<span>Nothing missing</span></div>'}</section>
-      </div>
-      ${n ? `<button class="btn cold" data-a="add" style="margin:4px 0 16px">${icon('plus',16)}Add missing ingredients</button>` : ''}
-      ${(r.steps || []).length ? `<div class="lbl">Method</div>
-        <ol class="recipe-steps">${r.steps.map(s => `<li><span>${esc(s)}</span></li>`).join('')}</ol>` : ''}
-      <div class="detail-actions">
-        <button class="btn ghost" data-a="plan">${icon('calendar',16)}Plan it</button>
-        <button class="btn ghost" data-a="save">${icon('star',16)}${isSaved(r) ? 'Saved' : 'Save recipe'}</button>
-        <button class="btn ghost" data-a="cook">${icon('utensils',16)}I made this</button>
-      </div>
-      ${isSaved(r) ? `<div class="lbl">Your rating</div>
-        <div class="rate">${[1,2,3,4,5].map(i => `<button data-r="${i}" class="${(r.rating || 0) >= i ? 'on' : ''}" aria-label="${i} star${i > 1 ? 's' : ''}">★</button>`).join('')}</div>` : ''}
-      ${r.source ? `<a class="btn ghost left" style="margin-top:12px" href="${esc(r.source)}" target="_blank" rel="noopener">${icon('link')}Open ${esc(sourceHost(r.source))}</a>` : ''}
-      <button class="btn ghost" data-a="c" style="margin-top:10px">Close</button>`;
-    paintRecipeImage(dlg.querySelector('.recipe-detail-hero'), r);
-    dlg.querySelector('[data-a=add]')?.addEventListener('click', async () => { await addRecipeMissing(r); dlg.close(); });
-    dlg.querySelector('[data-a=plan]').onclick = () => { dlg.close(); pickDayForRecipe(r); };
-    dlg.querySelector('[data-a=save]').onclick = async () => { await toggleSaveRecipe(r); dlg.close(); render(); };
-    dlg.querySelector('[data-a=cook]').onclick = () => { dlg.close(); cookDeduct(r); };
-    /* Rating only means something for a recipe you've kept — rating a
-       throwaway suggestion would have nowhere to be stored. */
-    dlg.querySelectorAll('[data-r]').forEach(b => b.onclick = async () => {
-      const rec = S.saved.find(x => !x.deleted && norm(x.name) === norm(r.name));
-      if (!rec) return;
-      rec.rating = rec.rating === +b.dataset.r ? 0 : +b.dataset.r;   // tap the same star to clear
-      await saveRec(rec);
-      dlg.querySelectorAll('[data-r]').forEach(x => x.classList.toggle('on', +x.dataset.r <= rec.rating));
-    });
-    dlg.querySelector('[data-a=c]').onclick = () => dlg.close();
-    dlg.showModal();
-  };
+  const openRecipe = () => showRecipeDetail(r);
   card.querySelector('[data-a=how]').onclick = openRecipe;
   card.querySelector('[data-a=open]').onclick = openRecipe;
   const addBtn = card.querySelector('[data-a=add]');
@@ -4499,7 +4750,21 @@ function viewCook(app) {
     imp.onclick = () => importRecipeSheet(() => render()); app.appendChild(imp);
     const saved = S.saved.filter(s => !s.deleted).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
     if (!saved.length) app.appendChild(el(`<div class="empty"><div class="ei">${icon('star',34)}</div><div class="big">No saved recipes yet</div><div class="sub">Save anything from Discover and it will keep checking itself against your kitchen.</div></div>`));
-    else saved.forEach(s => app.appendChild(recipeCardEl(s)));
+    else {
+      const books = [...new Set(saved.flatMap(s => s.cookbooks || []))].sort((a,b) => a.localeCompare(b));
+      const tools = el(`<div class="recipe-library-tools"><div class="recipe-search"><span>${icon('search',17)}</span><input placeholder="Search saved recipes, ingredients or tags" value="${esc(S.savedRecipeQ || '')}" autocomplete="off"></div>
+        <div class="book-chips"><button data-b="" aria-pressed="${!S.savedBook}">All recipes</button>${books.map(b => `<button data-b="${esc(b)}" aria-pressed="${S.savedBook === b}">${esc(b)}</button>`).join('')}</div></div>`);
+      const out = el(`<div></div>`);
+      const paint = () => {
+        out.innerHTML = ''; const q = canon(S.savedRecipeQ || '');
+        const rows = saved.filter(s => (!S.savedBook || (s.cookbooks || []).includes(S.savedBook)) && (!q || canon([s.name,...recipeIngredientObjects(s).map(i=>i.name),...(s.tags||[]),...(s.customTags||[]),...(s.cookbooks||[])].join(' ')).includes(q)));
+        if (!rows.length) out.appendChild(el(`<div class="empty recipe-empty"><div class="ei">${icon('search',30)}</div><div class="big">No saved recipes match</div><div class="sub">Try another cookbook or clear the search.</div></div>`));
+        else rows.forEach(s => out.appendChild(recipeCardEl(s)));
+      };
+      tools.querySelector('input').oninput = e => { S.savedRecipeQ=e.target.value; paint(); };
+      tools.querySelectorAll('[data-b]').forEach(b => b.onclick = () => { S.savedBook=b.dataset.b; tools.querySelectorAll('[data-b]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); paint(); });
+      app.appendChild(tools); app.appendChild(out); paint();
+    }
     return;
   }
 
@@ -6512,11 +6777,10 @@ function viewSet(app) {
   app.appendChild(ac);
 
   app.appendChild(el(`<h2 style="margin:22px 0 10px">Appearance</h2>`));
-  const th = S.cfg.theme || 'system';
+  const th = effectiveTheme();
   const THEMES = [
-    ['system', 'Match my phone', "Follows your phone's Light/Dark setting, and changes with it."],
-    ['light',  'Light',          'Always light — even when your phone is in dark mode.'],
-    ['dark',   'Dark',           'Always dark — even when your phone is in light mode.'],
+    ['light',  'Light',          'Stocked’s default — bright, appetizing and consistent on every device.'],
+    ['dark',   'Dark',           'Optional when you choose it here.'],
   ];
   const tc = el(`<div class="card">
     ${THEMES.map(([v, l, d]) => `<button class="btn ghost left topt${th === v ? ' on' : ''}" data-t="${v}"
@@ -6524,8 +6788,7 @@ function viewSet(app) {
         <span class="tk">${th === v ? icon('check', 18) : ''}</span>
         <span><b>${l}</b><span class="td">${d}</span></span>
       </button>`).join('')}
-    <div class="note" style="margin-top:4px">Showing <b>${effectiveTheme(th)}</b> right now${
-      th === 'system' ? ` — your phone is set to ${prefersDark() ? 'dark' : 'light'}.` : '.'}</div>
+    <div class="note" style="margin-top:4px">Showing <b>${effectiveTheme(th)}</b> right now. New and previously system-matched installs default to light.</div>
   </div>`);
   tc.setAttribute('role', 'radiogroup');
   tc.setAttribute('aria-label', 'Appearance');
@@ -8072,6 +8335,11 @@ function scrubUrl() {
     DB.all('items'), DB.all('catalog'), DB.all('shopping'), DB.all('plan'), DB.all('saved'), DB.get('meta', 'household'), DB.get('meta', 'cfg')
   ]);
   S.items = items; S.catalog = catalog; S.shopping = shopping; S.plan = plan; S.saved = saved; S.household = household || null; S.cfg = cfg || {};
+  /* v61 migration: "system" used to be the implicit default. Preserve a
+     deliberate dark choice, but move every implicit/system install to the
+     consistent light default the product now promises. */
+  if (!S.cfg.theme || S.cfg.theme === 'system') { S.cfg.theme = 'light'; await saveCfg(); }
+  applyTheme();
   if (S.household) S.who = S.household.members.find(m => m.name === S.cfg.who) || S.household.members[0];
   document.getElementById('searchBtn').onclick = () => { S.view = 'search'; render(); };
   document.getElementById('profileBtn').onclick = () => { S.view = 'profile'; render(); };

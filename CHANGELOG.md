@@ -4,6 +4,41 @@ This is the human-readable record of changes to Stocked. Release branches preser
 exact files for every deployed version, while this log explains what changed
 and why.
 
+## v61 — Recipe studio and light-first experience
+
+**Released:** 2026-08-22
+**Previous version:** `release/stocked-v60`
+
+### Recipe experience
+
+- Added serving controls that scale ingredient quantities from 1 serving upward.
+- Added Original, Metric, and US customary measurement conversion.
+- Added per-serving calories, protein, carbohydrates, and fat panels; Stocked's
+  built-in values are clearly labeled as estimates.
+- Added a focused step-by-step cooking mode with progress and best-effort screen wake lock.
+- Added native recipe sharing with a clipboard fallback.
+- Added custom cookbooks, tags, personal notes, ratings, and richer Saved search.
+- Added manual recipe creation with cover photos.
+- Added photo and text/Markdown/HTML/JSON recipe-file import paths.
+- Added a local no-key parser so conventionally formatted pasted recipes remain usable offline.
+- Extended schema.org imports to retain source-provided nutrition.
+
+### Product behavior
+
+- Light is now the default on every device, including phones set to dark mode.
+- Existing installs that used the old Match-my-phone setting migrate to Light.
+- Dark mode remains available only as an explicit choice in Appearance.
+- Fixed generated-recipe shopping transfers so ingredients already declared as owned
+  are not accidentally added to the shopping list.
+- Removed horizontal recipe-dialog overflow at narrow phone widths.
+
+### Verification
+
+- All 23 browser suites pass, including the new recipe-studio regression suite.
+- Visual checks pass at 320 px and 390 px in the light theme.
+- Recipe scaling, conversions, nutrition, cooking steps, organization, search,
+  no-key paste parsing, and shopping transfer are covered by browser tests.
+
 ## v60 — Visual food experience and connected recipes
 
 **Released:** 2026-08-21
@@ -57,4 +92,5 @@ Recipes, and Inventory redesign. It remains available as the rollback baseline.
 
 - `release/stocked-v59` is the last live build before the redesign.
 - `release/stocked-v60` is the first release of the redesigned core experience.
+- `release/stocked-v61` adds the complete local recipe-studio workflow and light-first default.
 - Future deployments will add another dated section here and a matching release branch.

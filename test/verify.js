@@ -293,7 +293,9 @@ const NAME = (fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8').match(/CACHE\s*=
     r.richCard = !!rc && /Garlic Spinach Pasta/.test(rc.textContent);
     r.missingPills = rc ? +(rc.querySelector('[data-a=add]')?.textContent.match(/\d+/)?.[0] || 0) : 0;
     rc.querySelector('[data-a=add]').click();
-    await new Promise(z => setTimeout(z, 40));
+    /* Two IndexedDB writes happen sequentially; give slower Windows/CI disks
+       enough time to finish before inspecting the durable list. */
+    await new Promise(z => setTimeout(z, 150));
     r.addedMissing = S.shopping.filter(s => !s.deleted).length === 2 && S.shopping.some(s => /garlic/i.test(s.name));
 
     // Plan a recipe onto today, then meal planner shows it + week-missing button + plan FAB

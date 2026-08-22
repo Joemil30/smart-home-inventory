@@ -283,7 +283,7 @@ const server = http.createServer((q, r) => {
   ok('theme: status colours get dark variants too, not the light ones',
     /#14271B/i.test(theme.tag), theme.tag);
   ok('theme: an explicit choice stamps the root', theme.attr === 'dark');
-  ok('theme: "match my phone" removes the override', theme.cleared === null, String(theme.cleared));
+  ok('theme: legacy "system" preference now resolves to the light default', theme.cleared === 'light', String(theme.cleared));
 
   ok('no page errors', errs.length === 0, errs.slice(0, 2).join(' | '));
 

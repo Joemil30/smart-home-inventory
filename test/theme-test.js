@@ -1,5 +1,6 @@
-/* The Appearance switch, run on a phone whose OS is set to DARK — the case
-   where an in-app override has to beat the system preference. */
+/* The Appearance switch, run on a phone whose OS is set to DARK. Stocked now
+   defaults to light regardless of the phone while preserving an explicit
+   dark choice. */
 const http = require('http'), fs = require('fs'), path = require('path');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || '/opt/node22/lib/node_modules/playwright');
 const ROOT = path.resolve(__dirname, '..');
@@ -64,17 +65,17 @@ const server = http.createServer((q, r) => {
       says: /Showing/.test(document.getElementById('app').textContent),
     };
   });
-  ok('theme: all three choices are offered', ui.values.join() === 'system,light,dark', ui.values.join());
-  ok('theme: each is labelled', ui.labels.join(' / ') === 'Match my phone / Light / Dark', ui.labels.join(' / '));
+  ok('theme: light and dark choices are offered', ui.values.join() === 'light,dark', ui.values.join());
+  ok('theme: each is labelled', ui.labels.join(' / ') === 'Light / Dark', ui.labels.join(' / '));
   ok('theme: each explains itself', ui.descs.every(d => d.length > 20), JSON.stringify(ui.descs));
   ok('theme: it is a radio group with exactly one selected',
-    ui.group && ui.checked.length === 1 && ui.checked[0] === 'system', JSON.stringify(ui.checked));
+    ui.group && ui.checked.length === 1 && ui.checked[0] === 'light', JSON.stringify(ui.checked));
   ok('theme: it states which one is actually showing', ui.says === true);
 
-  // ---- default: follows the phone (which is dark here) ----
+  // ---- default: light even though the phone is dark ----
   const sys = await read();
-  ok('theme: by default it follows the phone, so a dark phone gets a dark app',
-    sys.ground === '#0E1512' && sys.attr === null, JSON.stringify(sys));
+  ok('theme: a dark phone still gets the light default',
+    sys.ground === '#F7F9F7' && sys.attr === 'light', JSON.stringify(sys));
 
   // ---- the whole point: force LIGHT on a DARK phone ----
   await pick('light');
@@ -92,12 +93,6 @@ const server = http.createServer((q, r) => {
   const dark = await read();
   ok('theme: choosing Dark works too', dark.ground === '#0E1512' && dark.attr === 'dark', JSON.stringify(dark));
   ok('theme: status bar goes dark with it', dark.bar === '#0E1512' && dark.ios === 'black', JSON.stringify([dark.bar, dark.ios]));
-
-  // ---- back to system ----
-  await pick('system');
-  const back = await read();
-  ok('theme: "Match my phone" clears the override', back.attr === null && back.saved === 'system', JSON.stringify(back));
-  ok('theme: and returns to the phone\'s dark setting', back.ground === '#0E1512' && back.bar === '#0E1512', JSON.stringify(back));
 
   // ---- it survives a reload ----
   await page.evaluate(async () => { S.cfg.theme = 'light'; await saveCfg(); });
