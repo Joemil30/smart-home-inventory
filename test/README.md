@@ -1,5 +1,13 @@
 # Tests
 
+The unreleased account foundation has separate suites:
+`accounts-ui-test.js` (actual browser UI, simulated Supabase transport) and
+`accounts-db-test.js` (actual embedded PostgreSQL, synthetic auth identities).
+See [account test setup and limits](../docs/ACCOUNT_SETUP.md). These do not prove
+production email delivery or live multi-device sync. The database suite requires
+PGlite. Run both account suites separately before an account release; the regular
+browser runner covers the deployed pantry application, not these staged features.
+
 ```sh
 sh test/run.sh
 ```

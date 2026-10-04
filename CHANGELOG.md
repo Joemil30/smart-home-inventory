@@ -4,6 +4,24 @@ This is the human-readable record of changes to Stocked. Release branches preser
 exact files for every deployed version, while this log explains what changed
 and why.
 
+## Unreleased — Accounts and household foundation
+
+**Started:** 2026-10-04. Development branch only; v62 remains live.
+
+- Added a separate, light-mode account preview with email/password signup,
+  verification resend, sign-in, password recovery, session handling and sign-out.
+- Added server-enforced household membership, owner/member roles, one-person
+  expiring invitations, invitation review, removal/leave and ownership transfer.
+- Added isolated PostgreSQL permission tests and browser account-flow tests.
+- Account configuration defaults off. No local food is read, uploaded, replaced
+  or merged by the preview. The legacy app and sync behavior are untouched.
+- Real email delivery and hosted Auth verification require a user-controlled
+  Supabase staging project. Inventory sync/transfer, MFA and account deletion
+  remain unfinished and are not offered as completed features.
+
+See [account setup and release gates](docs/ACCOUNT_SETUP.md) and
+[architecture decision](docs/ADR-001-ACCOUNTS.md).
+
 ## v62 — A calmer, more useful household kitchen
 
 **Release date:** 2026-10-03

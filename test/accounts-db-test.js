@@ -1,0 +1,70 @@
+/* Executes the SQL against embedded PostgreSQL, not a mocked permission model.
+   Supabase's trusted auth.uid() and auth.users are represented by test fixtures.
+   It does not verify the hosted Auth/SMTP gateway or real concurrent connections. */
+const {PGlite}=require(process.env.PGLITE_MODULE || '@electric-sql/pglite');
+const fs=require('fs'),path=require('path'),assert=require('assert/strict');
+const sql=fs.readFileSync(path.join(__dirname,'../supabase/accounts-foundation.sql'),'utf8');
+(async()=>{
+  const db=new PGlite();let checks=0;
+  const id=n=>`00000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
+  const eq=(a,b,label)=>{assert.deepEqual(a,b,label);checks++;console.log('PASS '+label);};
+  const as=async n=>{await db.exec('reset role');await db.query("select set_config('request.jwt.claim.sub',$1,false)",[n?id(n):'']);await db.exec('set role '+(n?'authenticated':'anon'));};
+  const rpc=async(name,args=[])=>{const r=await db.query(`select public.${name}(${args.map((_,i)=>'$'+(i+1)).join(',')}) as result`,args);return r.rows[0].result;};
+  const denied=async(fn,label)=>{await assert.rejects(fn);checks++;console.log('PASS '+label);};
+  try {
+    await db.exec(`create role anon;create role authenticated;create schema auth;
+      create table auth.users(id uuid primary key,email_confirmed_at timestamptz);
+      create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
+      grant usage on schema auth to anon,authenticated;grant execute on function auth.uid() to anon,authenticated;`);
+    for(let n=1;n<=7;n++)await db.query('insert into auth.users values($1,$2)',[id(n),n===7?null:new Date().toISOString()]);
+    await db.exec(sql);await db.exec(sql);console.log('PASS migration applies twice safely');checks++;
+    await as(null);await denied(()=>rpc('stocked_create_home',['Intruder','Nope']),'anonymous cannot create home');
+    await denied(()=>db.query('select * from public.stocked_members'),'anonymous cannot read memberships');
+    await as(7);await denied(()=>rpc('stocked_create_home',['Unverified','Nope']),'unverified account cannot create home');
+    await as(1);eq((await rpc('stocked_cloud_status')).ready,true,'fresh project passes readiness gate');
+    const a=await rpc('stocked_create_home',['Alpha','Alice']);eq(a.role,'owner','creator becomes owner');
+    const retry=await rpc('stocked_create_home',['Another name','Alice']);eq(retry.id,a.id,'repeated creation returns same home');
+    await denied(()=>db.query('insert into public.stocked_members(home_id,user_id,display_name,role) values($1,$2,$3,$4)',[a.id,id(3),'Mallory','owner']),'direct membership insertion forbidden');
+    const first=await rpc('stocked_create_invite');eq(first.token.length,64,'strong invitation token returned once');
+    const next=await rpc('stocked_create_invite');
+    await as(2);await denied(()=>rpc('stocked_join_home',[first.token,'Bob']),'replaced invitation rejected');
+    eq(await rpc('stocked_preview_invite',[next.token]),{name:'Alpha',owner:'Alice'},'recipient can review household identity before joining');
+    const joined=await rpc('stocked_join_home',[next.token,'Bob']);eq(joined.id,a.id,'valid invitation joins correct household');
+    eq(joined.role,'member','invite cannot grant owner role');
+    eq((await rpc('stocked_join_home',[next.token,'Bob'])).members.length,2,'redemption retry does not duplicate member');
+    await denied(()=>rpc('stocked_create_invite'),'member cannot mint invitation');
+    await denied(()=>rpc('stocked_transfer_home',[id(2)]),'member cannot promote self');
+    await denied(()=>rpc('stocked_remove_member',[id(1)]),'member cannot remove owner');
+    await denied(()=>db.query("update public.stocked_members set role='owner' where user_id=$1",[id(2)]),'direct role edits forbidden');
+    await denied(()=>db.query('select token_hash from public.stocked_invites'),'invite hashes not directly readable');
+    await as(3);eq((await db.query('select * from public.stocked_homes')).rows.length,0,'outsider sees no households');
+    eq((await db.query('select * from public.stocked_members')).rows.length,0,'outsider sees no roster');
+    eq(await rpc('stocked_account_home'),null,'outsider has no household');
+    await denied(()=>rpc('stocked_join_home',[next.token,'Mallory']),'one-time invitation cannot be reused by another user');
+    await denied(()=>rpc('stocked_join_home',['a'.repeat(64),'Mallory']),'unknown invitation rejected');
+    const b=await rpc('stocked_create_home',['Beta','Mallory']);
+    eq((await db.query('select id from public.stocked_homes')).rows.map(x=>x.id),[b.id],'second household only sees itself');
+    await as(1);const inviteForBeta=await rpc('stocked_create_invite');
+    await as(3);await denied(()=>rpc('stocked_join_home',[inviteForBeta.token,'Mallory']),'joining cannot silently replace existing membership');
+    await as(1);const expiring=await rpc('stocked_create_invite');await db.exec('reset role');
+    await db.query("update public.stocked_invites set expires_at=now()-interval '1 second' where home_id=$1",[a.id]);
+    await as(4);await denied(()=>rpc('stocked_join_home',[expiring.token,'Dana']),'expired invitation rejected');
+    await as(1);const revoked=await rpc('stocked_create_invite');await rpc('stocked_revoke_invites');
+    await as(4);await denied(()=>rpc('stocked_join_home',[revoked.token,'Dana']),'revoked invitation rejected');
+    await as(1);await denied(()=>rpc('stocked_remove_member',[id(1)]),'owner cannot orphan household by leaving');
+    await rpc('stocked_transfer_home',[id(2)]);eq((await rpc('stocked_account_home')).role,'member','owner can transfer to another member');
+    await as(2);eq((await rpc('stocked_account_home')).role,'owner','new owner receives role');
+    await rpc('stocked_remove_member',[id(1)]);
+    await as(1);eq(await rpc('stocked_account_home'),null,'removed member loses account-home access');
+    eq((await db.query('select * from public.stocked_homes')).rows.length,0,'removed member loses direct table access');
+    await as(2);const leaveInvite=await rpc('stocked_create_invite');
+    await as(4);await rpc('stocked_join_home',[leaveInvite.token,'Dana']);await rpc('stocked_remove_member',[id(4)]);
+    eq(await rpc('stocked_account_home'),null,'ordinary member can leave voluntarily');
+    await db.exec('reset role');await db.exec('create table public.sync(id text);insert into public.sync values(\'preserved\')');
+    await as(5);eq((await rpc('stocked_cloud_status')).ready,false,'legacy sync project fails activation gate');
+    await denied(()=>rpc('stocked_create_home',['Unsafe rollout','Eve']),'legacy project cannot be silently repurposed');
+    await db.exec('reset role');eq((await db.query('select id from public.sync')).rows,[{id:'preserved'}],'legacy data untouched');
+    eq((await db.query("select count(*)::int as n from public.stocked_members where role='owner'")).rows[0].n,2,'exactly one owner remains per home');
+    console.log(`ALL ${checks} DATABASE CHECKS PASS`);
+  } finally { await db.close(); }
+})().catch(e=>{console.error(e);process.exitCode=1;});
