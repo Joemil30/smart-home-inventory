@@ -943,6 +943,8 @@ dialog::backdrop{background:var(--shelf)}
 <dialog id="dlg"></dialog>
 <dialog id="cdlg"></dialog>
 
+<script src="cloud-config.js" data-cloud-script></script>
+<script src="assets/cloud-kitchen.js" data-cloud-script></script>
 <script>
 /* ================================================================
    COLD ROOM — household food inventory
@@ -952,7 +954,7 @@ dialog::backdrop{background:var(--shelf)}
 
 /* ---------------- storage: tiny IndexedDB wrapper ---------------- */
 const DB = (() => {
-  let db, mem = null;   // mem: in-memory fallback for contexts with no IndexedDB
+  let db, mem = null, cloud = null;   // Account scopes never fall back to device data.
   const STORES = ['items','catalog','recipes','meta','log','shopping','plan','saved'];
   const open = () => new Promise((res, rej) => {
     if (!('indexedDB' in window)) return rej(new Error('no indexedDB'));
@@ -972,11 +974,15 @@ const DB = (() => {
     // the CSS painted but render() never got called, i.e. a blank coloured
     // screen. Falling back to memory means the snapshot still opens; it just
     // won't remember edits after the tab closes, same as any other view copy.
-    async init() { try { await open(); } catch (e) { mem = {}; STORES.forEach(s => mem[s] = new Map()); } },
-    get: (s, id) => mem ? Promise.resolve(mem[s].get(id)) : p(tx(s).get(id)),
-    all: (s) => mem ? Promise.resolve([...mem[s].values()]) : p(tx(s).getAll()),
-    put: (s, v) => mem ? (mem[s].set(v.id, v), Promise.resolve(v.id)) : p(tx(s, 'readwrite').put(v)),
-    del: (s, id) => mem ? (mem[s].delete(id), Promise.resolve()) : p(tx(s, 'readwrite').delete(id)),
+    async init() {
+      cloud = await window.CloudKitchen?.init();
+      if (cloud) return;
+      try { await open(); } catch (e) { mem = {}; STORES.forEach(s => mem[s] = new Map()); }
+    },
+    get: (s, id) => cloud ? cloud.get(s,id) : mem ? Promise.resolve(mem[s].get(id)) : p(tx(s).get(id)),
+    all: (s) => cloud ? cloud.all(s) : mem ? Promise.resolve([...mem[s].values()]) : p(tx(s).getAll()),
+    put: (s, v) => cloud ? cloud.put(s,v).catch(e=>{window.CloudKitchen.guard(e);throw e;}) : mem ? (mem[s].set(v.id, v), Promise.resolve(v.id)) : p(tx(s, 'readwrite').put(v)),
+    del: (s, id, expected) => cloud ? cloud.del(s,id,expected).catch(e=>{window.CloudKitchen.guard(e);throw e;}) : mem ? (mem[s].delete(id), Promise.resolve()) : p(tx(s, 'readwrite').delete(id)),
   };
 })();
 
@@ -2614,7 +2620,7 @@ const AUTH = {
 
 const SYNC = {
   cli: null, chan: null,
-  configured: () => !!(S.cfg.supaUrl && S.cfg.supaKey && S.cfg.householdCode),
+  configured: () => !window.CloudKitchen?.active && !!(S.cfg.supaUrl && S.cfg.supaKey && S.cfg.householdCode),
   on: () => SYNC.configured() && !!window.supabase,
   code: () => S.cfg.householdCode,
   /* persistSession is now ON. Under the v1 schema there was no session to
@@ -5710,7 +5716,7 @@ function catalogSheet(c) {
   dlg.querySelector('[data-a=photo]').onclick = () => dlg.querySelector('#cphoto').click();
   dlg.querySelector('#cphoto').onchange = e => { const f = e.target.files[0]; if (f) { dlg.close(); setCatalogPhoto(c, f); } };
   dlg.querySelector('[data-a=forget]').onclick = async () => {
-    await DB.del('catalog', c.id);
+    await DB.del('catalog', c.id, c);
     S.catalog = S.catalog.filter(x => x.id !== c.id);
     dlg.close(); render();
     toast(`Forgot ${c.name}`, async () => { await DB.put('catalog', c); S.catalog.push(c); });
@@ -5796,6 +5802,10 @@ function renderAuthCard(box) {
 }
 
 function renderSyncCard(sc) {
+  if (window.CloudKitchen?.active || window.CloudKitchen?.validConfig()) {
+    sc.innerHTML = '<p class="note">Use your Stocked account to keep a private kitchen or share selected food and recipes with your household. Family members don’t need developer keys or project codes.</p><a class="btn ghost" href="kitchens.html">Kitchens & sharing</a><a class="btn ghost" href="account.html">Account & family</a>';
+    return;
+  }
   const c = S.cfg;
   if (SYNC.configured()) {
     sc.innerHTML = `
@@ -7145,6 +7155,8 @@ async function snapshotHTML() {
   // A snapshot can itself be exported again: replace its old seed rather
   // than appending a second copy which would restore stale household data.
   documentCopy.querySelectorAll('#shelflife-restore,#stocked-recipe-art').forEach(node => node.remove());
+  // Portable backups must never sign in or reconnect to the exporting account.
+  documentCopy.querySelectorAll('[data-cloud-script]').forEach(node => node.remove());
   const styleLink = documentCopy.querySelector('link[href="assets/household.css"]');
   if (styleLink) {
     const response = await fetch('assets/household.css');
@@ -8390,7 +8402,7 @@ function scrubUrl() {
 }
 
 (async function boot() {
-  await DB.init();
+  try { await DB.init(); } catch (error) { window.CloudKitchen?.guard(error); return; }
   // Ask the browser NOT to evict our data. On installed PWAs (esp. iOS) this
   // is the difference between "kept" and "wiped after a week unused". Best
   // effort — never blocks boot, and Family sync is still the real backup.
@@ -8419,6 +8431,7 @@ function scrubUrl() {
     scrubUrl();
   }
   registerSW();
+  window.CloudKitchen?.attach();
   applyTheme();
   loadSnapshotSeed();   // opened one of the .html backups? bring its data in
   G.ensureModel();   // silently repair a discontinued Gemini model (e.g. the dead 2.0-flash)

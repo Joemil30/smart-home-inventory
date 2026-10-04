@@ -2,6 +2,9 @@
 -- Does not alter legacy sync tables/policies or upload any household inventory.
 -- All membership writes go through authenticated, transaction-safe RPCs.
 begin;
+-- The project may disable all automatic Data API grants. Only authenticated
+-- callers need schema usage; individual objects are explicitly granted below.
+grant usage on schema public to authenticated;
 
 create table if not exists public.stocked_homes (
   id uuid primary key default gen_random_uuid(),

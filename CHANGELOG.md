@@ -13,14 +13,22 @@ and why.
 - Added server-enforced household membership, owner/member roles, one-person
   expiring invitations, invitation review, removal/leave and ownership transfer.
 - Added isolated PostgreSQL permission tests and browser account-flow tests.
-- Account configuration defaults off. No local food is read, uploaded, replaced
-  or merged by the preview. The legacy app and sync behavior are untouched.
+- Added separate private and household cloud kitchens, explicit selected food
+  and recipe copying, durable offline outbox, revision-conflict review, replay
+  protection and recovery export. The original device kitchen stays separate.
+- The app storage adapter uses an account-scoped database only after deliberate
+  cloud selection. Account configuration still defaults off; no real food was
+  uploaded and no hosted project has been configured by this development build.
+- Added real PostgreSQL + browser/IndexedDB integration tests, including second
+  device loading, account isolation, stale tabs, interrupted acknowledgements,
+  original data preservation, selected sharing and member removal.
 - Real email delivery and hosted Auth verification require a user-controlled
-  Supabase staging project. Inventory sync/transfer, MFA and account deletion
-  remain unfinished and are not offered as completed features.
+  Supabase staging project. Hosted sync verification, MFA and account deletion
+  remain release gates. No new version is deployed yet; v62 remains live.
 
 See [account setup and release gates](docs/ACCOUNT_SETUP.md) and
 [architecture decision](docs/ADR-001-ACCOUNTS.md).
+See also [private/shared sync design](docs/ADR-002-PRIVATE-KITCHEN-SYNC.md).
 
 ## v62 — A calmer, more useful household kitchen
 

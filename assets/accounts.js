@@ -3,7 +3,7 @@
 (() => {
   'use strict';
   const root = document.getElementById('account');
-  const state = { client:null,user:null,home:null,mode:'signin',busy:false,recovery:false,ready:false,epoch:0,invite:'' };
+  const state = { client:null,user:null,home:null,mode:'signin',busy:false,recovery:false,ready:false,epoch:0,invite:'',syncReady:false };
   const esc = value => String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const field = (name,label,type='text',extra='') => `<label>${label}<input name="${name}" type="${type}" required ${extra}></label>`;
   const status = (message,error=false) => {
@@ -121,6 +121,7 @@
     if(!user)return renderAuth();
     if(state.recovery)return renderAuth();
     const availability=await rpc('stocked_cloud_status');
+    state.syncReady=availability?.inventorySync===true&&availability?.syncProtocol===1;
     if(epoch!==state.epoch || user!==state.user?.id)return;
     if(availability?.protocol!==1 || availability?.ready!==true) {
       shell('<h2>Account connected.</h2><p class="note">The household service needs an operator setup check. Your local kitchen is unchanged; nothing is syncing yet.</p><button id="signout">Sign out</button>');bindSignOut();return;
@@ -136,23 +137,24 @@
   }); }
   function renderSetup() {
     shell(`<span class="status-pill">Account connected</span><h2>Who’s in your kitchen?</h2><p class="account-email">${esc(state.user.email)}</p>
+      ${state.syncReady?'<p><a href="kitchens.html">Open my private kitchen →</a></p><p class="note">You don’t need a household to sync your own food and recipes. Create or join one below when you want to share.</p>':''}
       <form id="home-create">${field('homeName','Household name','text','maxlength="80" placeholder="Our home"')}${field('displayName','Your name','text',`maxlength="60" autocomplete="name" value="${esc(state.user.user_metadata?.display_name||'')}"`)}<button class="primary" type="submit">Create household</button></form>
       <hr class="separator"><h2>Have an invitation?</h2><form id="home-join">${field('invite','Invitation link','text',`autocomplete="off" spellcheck="false" value="${esc(state.invite)}"`)}${field('displayName','Your name in this home','text',`maxlength="60" value="${esc(state.user.user_metadata?.display_name||'')}"`)}<button type="submit" class="primary">Review & join household</button></form>
       <p class="note">Joining changes your cloud membership only. Nothing from this device is uploaded or merged.</p><button id="signout" class="text-button">Sign out</button>`);
     bindSignOut();
-    root.querySelector('#home-create').onsubmit=e=>{e.preventDefault();const data=new FormData(e.currentTarget);task(async()=>{state.home=await rpc('stocked_create_home',{home_name:data.get('homeName').trim(),member_name:data.get('displayName').trim()});renderHome();status('Household created. Inventory is still local; transfer is not enabled in this preview.');});};
+    root.querySelector('#home-create').onsubmit=e=>{e.preventDefault();const data=new FormData(e.currentTarget);task(async()=>{state.home=await rpc('stocked_create_home',{home_name:data.get('homeName').trim(),member_name:data.get('displayName').trim()});renderHome();status(state.syncReady?'Household created. Open Kitchens & sharing to choose what belongs there. Nothing was uploaded automatically.':'Household created. Inventory is still local; transfer is not enabled in this preview.');});};
     root.querySelector('#home-join').onsubmit=e=>{e.preventDefault();const data=new FormData(e.currentTarget);task(async()=>{
       const token=tokenFrom(data.get('invite'));
       const preview=await rpc('stocked_preview_invite',{invite_token:token});
       // The link is one-time and trusted only after the server verifies it.
       if(!window.confirm(`Join “${preview.name}”, owned by ${preview.owner}? Your local food will stay separate and will not be uploaded.`))return status('No changes made.');
-      state.home=await rpc('stocked_join_home',{invite_token:token,member_name:data.get('displayName').trim()});state.invite='';pending('');renderHome();status('You joined the household. Inventory sync is not active in this preview.');
+      state.home=await rpc('stocked_join_home',{invite_token:token,member_name:data.get('displayName').trim()});state.invite='';pending('');renderHome();status(state.syncReady?'You joined the household. Open Kitchens & sharing to use its shared kitchen. Your private kitchen stays separate.':'You joined the household. Inventory sync is not active in this preview.');
     });};
   }
   function renderHome() {
     const h=state.home,owner=h.role==='owner';
     shell(`<span class="status-pill">Household membership connected</span><h2>${esc(h.name)}</h2><p class="account-email">${esc(state.user.email)}</p>
-      <p class="note">Inventory sync is not active yet. Your current kitchen remains on this device.</p>
+      ${state.syncReady?'<p><a href="kitchens.html">Open kitchens & sharing →</a></p><p class="note">Keep a private kitchen or choose what to copy into the shared household. Nothing from this device is uploaded automatically.</p>':'<p class="note">Inventory sync is not active yet. Your current kitchen remains on this device.</p>'}
       <div aria-label="Household members">${h.members.map(m=>`<div class="member"><span>${esc(m.name)}${m.user_id===state.user.id?' (you)':''}<small>${m.role==='owner'?'Household owner':'Member'}</small></span>${owner&&m.user_id!==state.user.id?`<button data-remove="${esc(m.user_id)}" class="danger">Remove</button>`:''}</div>`).join('')}</div>
       ${owner?'<button class="primary" id="invite-create">Invite someone</button><p class="note">One person · expires in 48 hours. A new invitation replaces the previous unused link. Only share it with someone you want in your household.</p><div id="invite-result"></div><button id="invite-revoke" class="text-button">Revoke unused invitation</button>':'<button id="leave-home" class="text-button danger">Leave household</button>'}
       ${owner&&h.members.length>1?`<details><summary>Transfer household ownership</summary><p class="note">The new owner can invite and remove people, including you.</p>${h.members.filter(m=>m.user_id!==state.user.id).map(m=>`<button data-transfer="${esc(m.user_id)}">Make ${esc(m.name)} the owner</button>`).join('')}</details>`:''}

@@ -14,6 +14,7 @@ const CACHE = 'stocked-v62';      // app shell — wiped on each version bump
 // blank out photos for anyone offline.
 const IMG = 'shelflife-img';        // product thumbnails — kept across app updates
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg', './apple-touch-icon.png', './zxing.min.js',
+  './cloud-config.js', './assets/cloud-kitchen.js',
   './assets/household.css', './assets/recipes/chicken-spinach-pasta.webp',
   ...['burrito-bowls','honey-garlic-chicken','egg-fried-rice','creamy-tomato-pasta','chickpea-curry',
     'black-bean-tacos','salmon-rice-bowls','veggie-omelet','sheet-pan-chicken','banana-pancakes',
@@ -68,6 +69,11 @@ self.addEventListener('fetch', e => {
   const { request } = e;
   if (request.method !== 'GET') return;
   const url = new URL(request.url);
+
+  // Account callbacks/config and provider requests must not be served from a
+  // stale shell cache. In particular, never retain callback token URLs.
+  if (url.hostname.endsWith('.supabase.co') ||
+      /\/(account\.html|kitchens\.html|cloud-config\.js)$/.test(url.pathname)) return;
 
   // Product images: cache-first into the persistent image cache (offline-friendly).
   if (isOffImage(url)) {

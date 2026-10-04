@@ -77,3 +77,15 @@ through its real functions and assert on real DOM. Two habits worth keeping:
 - **Derive versions and cache names from the source**, never hardcode them —
   `verify` and `sw-test` read `CACHE` out of `sw.js`, because hardcoding it is
   exactly how a suite ends up asserting against a version the app dropped.
+# Cloud kitchen tests (unreleased)
+
+Run `node test/kitchen-db-test.js` for the private/shared database protocol, and
+`node test/kitchen-sync-test.js` for real browser/IndexedDB + PostgreSQL integration.
+Use the same `PGLITE_MODULE`, `PLAYWRIGHT_MODULE` and `CHROME_PATH` environment
+variables as the account suites. These are separate from `test/run.sh` because
+they require the extra PGlite development dependency.
+
+Auth is synthetic in the integration test; SQL/RLS, storage, outbox, transfer and
+the app are real. This is not a substitute for hosted JWT/email or concurrent
+PostgreSQL tests. Fixtures never touch the live app's browser data. See
+`docs/ACCOUNT_SETUP.md` for hosted gates and rollback.
