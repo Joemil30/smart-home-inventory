@@ -4,7 +4,7 @@
 const http = require('http'), fs = require('fs'), path = require('path'), os = require('os');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || '/opt/node22/lib/node_modules/playwright');
 const ROOT = path.resolve(__dirname, '..');
-const MIME = { '.html':'text/html', '.js':'text/javascript', '.webmanifest':'application/manifest+json', '.svg':'image/svg+xml', '.png':'image/png', '.json':'application/json' };
+const MIME = { '.css':'text/css', '.webp':'image/webp', '.html':'text/html', '.js':'text/javascript', '.webmanifest':'application/manifest+json', '.svg':'image/svg+xml', '.png':'image/png', '.json':'application/json' };
 
 const serve = root => http.createServer((q, r) => {
   let p = decodeURIComponent(q.url.split('?')[0]);
@@ -88,6 +88,7 @@ const serve = root => http.createServer((q, r) => {
   ok('snapshot: carries the app source (render + views)', /function render\s*\(/.test(html) && /function viewShopping/.test(html));
   ok('snapshot: embeds the data payload', /id="shelflife-restore"/.test(html) && /Taco night/.test(html));
   ok('snapshot: still keeps keys out of the file', !/AIza-SECRET-KEY/.test(html) && !/sk-or-SECRET/.test(html));
+  ok('snapshot: includes household design and recipe artwork', /<style data-stocked-household/.test(html) && /data:image\/webp;base64,/.test(html));
 
   // ---- D. readBackup accepts both file shapes ----
   const parsed = await page.evaluate(async ([j, h]) => {
@@ -128,6 +129,11 @@ const serve = root => http.createServer((q, r) => {
     opened.items === 1 && opened.house === true, JSON.stringify({ ...opened, shownName: undefined }));
   ok('snapshot: the meal plan and saved recipes came with it', opened.plan === 1 && opened.saved === 1);
   ok('snapshot: the stores came with it', opened.stores === 1);
+  const portableDesign = await p2.evaluate(() => ({
+    background: getComputedStyle(document.documentElement).getPropertyValue('--void').trim(),
+    cover: recipeImageSource(STOCKED_RECIPES[0]),
+  }));
+  ok('snapshot: redesigned theme and covers work without asset files', portableDesign.background === '#FAF9F6' && portableDesign.cover.startsWith('data:image/webp;base64,'));
   // lands on the Home dashboard now, so assert on what Home actually shows
   ok('snapshot: it renders as the app, not raw text',
     opened.navThere && /Good (morning|afternoon|evening)/.test(opened.shownName) && /View recipe|Add your first food/.test(opened.shownName),
@@ -144,6 +150,12 @@ const serve = root => http.createServer((q, r) => {
   });
   ok('snapshot: it is a working app you can still add to',
     usable.after === usable.before + 1 && usable.shows, JSON.stringify(usable));
+  const reexport = await p2.evaluate(async () => {
+    const copy = new DOMParser().parseFromString(await snapshotHTML(), 'text/html');
+    const seed = JSON.parse(copy.querySelector('#shelflife-restore').textContent);
+    return { seeds:copy.querySelectorAll('#shelflife-restore').length, hasButter:seed.shopping.some(i => i.name === 'Butter'), art:Object.keys(JSON.parse(copy.querySelector('#stocked-recipe-art').textContent)).length };
+  });
+  ok('snapshot: re-export includes latest data and retains all 14 covers', reexport.seeds === 1 && reexport.hasButter && reexport.art === 14, JSON.stringify(reexport));
   ok('snapshot: no script errors when opened cold', errs2.length === 0, errs2.slice(0, 2).join(' | '));
 
   // ---- F. opening a snapshot must not silently clobber a live app ----

@@ -2,7 +2,7 @@
 const http = require('http'), fs = require('fs'), path = require('path');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || '/opt/node22/lib/node_modules/playwright');
 const ROOT = path.resolve(__dirname, '..');
-const MIME = { '.html':'text/html', '.js':'text/javascript', '.svg':'image/svg+xml', '.png':'image/png', '.webmanifest':'application/manifest+json' };
+const MIME = { '.css':'text/css', '.webp':'image/webp', '.html':'text/html', '.js':'text/javascript', '.svg':'image/svg+xml', '.png':'image/png', '.webmanifest':'application/manifest+json' };
 
 const server = http.createServer((q, r) => {
   let p = decodeURIComponent(q.url.split('?')[0]);
@@ -108,7 +108,7 @@ const server = http.createServer((q, r) => {
   ok('aisle: a single-aisle store list shows no header at all', single.heads === 0 && single.tiles === 2,
     JSON.stringify(single));
 
-  // ---- D2. the GENERAL list is a flat checklist — no headers, no reorder ----
+  // ---- D2. general groceries group by aisle; only real stores customize order ----
   await seed();
   const general = await page.evaluate(async () => {
     await addToList('Whole milk');        // dairy
@@ -119,8 +119,8 @@ const server = http.createServer((q, r) => {
       tiles: document.querySelectorAll('#shoplist .tile').length,
       reorderBtn: /Reorder aisles/i.test(document.getElementById('shoplist').textContent) };
   });
-  ok('aisle: the general list has no aisle headers', general.heads === 0, JSON.stringify(general));
-  ok('aisle: the general list shows every item flat', general.tiles === 3, JSON.stringify(general));
+  ok('aisle: general groceries have three category headers', general.heads === 3, JSON.stringify(general));
+  ok('aisle: the general list still shows every item', general.tiles === 3, JSON.stringify(general));
   ok('aisle: the general list offers no Reorder aisles button', general.reorderBtn === false);
 
   // ---- E. each store walks its own order ----
@@ -163,7 +163,7 @@ const server = http.createServer((q, r) => {
     c.remove(); return out;
   });
   ok('recipe: the ratio is printed on the card', card.text === '3 / 5 ingredients', String(card.text));
-  ok('recipe: and spelled out underneath', /have\s+3 of 5/i.test(card.readiness), card.readiness);
+  ok('recipe: and spelled out underneath', /3\/5 ingredients at home/i.test(card.readiness), card.readiness);
 
   // ---- G. Have everything filter ----
   await seed();

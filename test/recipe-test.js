@@ -14,7 +14,7 @@
 const http = require('http'), fs = require('fs'), path = require('path');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || '/opt/node22/lib/node_modules/playwright');
 const ROOT = path.resolve(__dirname, '..');
-const MIME = { '.html':'text/html', '.js':'text/javascript', '.svg':'image/svg+xml', '.png':'image/png', '.webmanifest':'application/manifest+json', '.json':'application/json' };
+const MIME = { '.css':'text/css', '.webp':'image/webp', '.html':'text/html', '.js':'text/javascript', '.svg':'image/svg+xml', '.png':'image/png', '.webmanifest':'application/manifest+json', '.json':'application/json' };
 
 /* A page with real schema.org markup, served same-origin so the fetch is
    actually allowed — this is the happy path the code takes when a site

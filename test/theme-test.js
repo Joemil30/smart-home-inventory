@@ -4,7 +4,7 @@
 const http = require('http'), fs = require('fs'), path = require('path');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || '/opt/node22/lib/node_modules/playwright');
 const ROOT = path.resolve(__dirname, '..');
-const MIME = { '.html':'text/html', '.js':'text/javascript', '.svg':'image/svg+xml', '.png':'image/png', '.webmanifest':'application/manifest+json' };
+const MIME = { '.css':'text/css', '.webp':'image/webp', '.html':'text/html', '.js':'text/javascript', '.svg':'image/svg+xml', '.png':'image/png', '.webmanifest':'application/manifest+json' };
 
 const server = http.createServer((q, r) => {
   let p = decodeURIComponent(q.url.split('?')[0]);
@@ -75,16 +75,16 @@ const server = http.createServer((q, r) => {
   // ---- default: light even though the phone is dark ----
   const sys = await read();
   ok('theme: a dark phone still gets the light default',
-    sys.ground === '#F7F9F7' && sys.attr === 'light', JSON.stringify(sys));
+    sys.ground === '#FAF9F6' && sys.attr === 'light', JSON.stringify(sys));
 
   // ---- the whole point: force LIGHT on a DARK phone ----
   await pick('light');
   const light = await read();
-  ok('theme: choosing Light beats the phone', light.ground === '#F7F9F7' && light.attr === 'light', JSON.stringify(light));
+  ok('theme: choosing Light beats the phone', light.ground === '#FAF9F6' && light.attr === 'light', JSON.stringify(light));
   ok('theme: text flips with it', /#0[BbEe]/i.test(light.ink) || light.ink !== '#E7EFE9', light.ink);
   ok('theme: the choice is saved', light.saved === 'light', String(light.saved));
   // the bug: the status bar used to stay dark because its meta followed the phone
-  ok('theme: the status bar follows the APP, not the phone', light.bar === '#F7F9F7', String(light.bar));
+  ok('theme: the status bar follows the APP, not the phone', light.bar === '#FAF9F6', String(light.bar));
   ok('theme: the phone-driven meta tags are gone, so they cannot win', light.mediaBars === 0, String(light.mediaBars));
   ok('theme: iOS status bar style follows too', light.ios === 'default', String(light.ios));
 
@@ -102,7 +102,7 @@ const server = http.createServer((q, r) => {
     ground: getComputedStyle(document.documentElement).getPropertyValue('--void').trim(),
     bar: document.querySelector('meta[name="theme-color"]:not([media])')?.getAttribute('content'),
   }));
-  ok('theme: the choice survives a restart', after.ground === '#F7F9F7' && after.bar === '#F7F9F7', JSON.stringify(after));
+  ok('theme: the choice survives a restart', after.ground === '#FAF9F6' && after.bar === '#FAF9F6', JSON.stringify(after));
 
   ok('no page errors', errs.length === 0, errs.slice(0, 3).join(' | '));
 

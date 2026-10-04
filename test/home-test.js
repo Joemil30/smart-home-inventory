@@ -3,7 +3,7 @@
 const http = require('http'), fs = require('fs'), path = require('path');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || '/opt/node22/lib/node_modules/playwright');
 const ROOT = path.resolve(__dirname, '..');
-const MIME = { '.html':'text/html', '.js':'text/javascript', '.svg':'image/svg+xml', '.png':'image/png', '.webmanifest':'application/manifest+json' };
+const MIME = { '.css':'text/css', '.webp':'image/webp', '.html':'text/html', '.js':'text/javascript', '.svg':'image/svg+xml', '.png':'image/png', '.webmanifest':'application/manifest+json' };
 
 const server = http.createServer((q, r) => {
   let p = decodeURIComponent(q.url.split('?')[0]);
@@ -47,8 +47,8 @@ const server = http.createServer((q, r) => {
       view: S.view, title: document.getElementById('title').textContent,
       greets: /Good (morning|afternoon|evening)/.test(document.getElementById('app').textContent) };
   });
-  ok('home: it is the first tab', nav.tabs[0] === 'Home', nav.tabs.join(' / '));
-  ok('home: four focused tabs', nav.tabs.length === 4 && nav.tabs.join('|') === 'Home|Inventory|Recipes|Shop', nav.tabs.join('|'));
+  ok('home: it is the first tab', nav.tabs[0] === 'Today', nav.tabs.join(' / '));
+  ok('home: four focused tabs', nav.tabs.length === 4 && nav.tabs.join('|') === 'Today|Inventory|Cook|Shop', nav.tabs.join('|'));
   ok('home: opens with a greeting', nav.greets === true);
 
   // ---- B. this month's counts ----
@@ -78,7 +78,7 @@ const server = http.createServer((q, r) => {
       { id:'y', name:'Saved one', cat:'other', loc:'uf', deleted:true, goneAt:Date.now(), rescued:true, mode:'count', qty:0, expires:Date.now(), added:Date.now() }];
     render();
     const t = document.getElementById('app').textContent.replace(/\s+/g, ' ');
-    return { labels: /Almost ready|Ready right now|Use it up/i.test(t) && /View recipe|Add \d+ missing/i.test(t),
+    return { labels: /Dinner from your kitchen|Use it up/i.test(t) && /View recipe|Add \d+ missing/i.test(t),
       noMoney: !/\$/.test(t) };
   });
   ok('home: leads with an inventory-aware meal decision', glance.labels === true);
@@ -128,8 +128,8 @@ const server = http.createServer((q, r) => {
     await planMeal(weekRange(0).days[2] && dayKey(weekRange(0).days[2]), { name:'Taco night', emoji:'🌮' });
     render();
     const t = document.getElementById('app').textContent;
-    return { soon: /Eat these first/.test(t), item: /Dying spinach/.test(t),
-      recipes: /Make tonight/.test(t) && /View recipe|Explore recipes/.test(t), quick: /Scan/.test(t) && /Receipt/.test(t) };
+    return { soon: /Use first/.test(t), item: /Dying spinach/.test(t),
+      recipes: /Something else\?/.test(t) && /View recipe|Explore recipes/.test(t), quick: /Scan/.test(t) && /Receipt/.test(t) };
   });
   ok('home: surfaces what is dying', surf.soon && surf.item);
   ok('home: surfaces what can be made tonight', surf.recipes);

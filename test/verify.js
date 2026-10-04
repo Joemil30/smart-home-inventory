@@ -4,7 +4,7 @@ const path = require('path');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || '/opt/node22/lib/node_modules/playwright');
 
 const ROOT = path.resolve(__dirname, '..');
-const MIME = { '.html':'text/html', '.js':'text/javascript', '.webmanifest':'application/manifest+json',
+const MIME = { '.css':'text/css', '.webp':'image/webp', '.html':'text/html', '.js':'text/javascript', '.webmanifest':'application/manifest+json',
   '.svg':'image/svg+xml', '.json':'application/json', '.md':'text/markdown' };
 
 const server = http.createServer((req, res) => {
@@ -246,7 +246,7 @@ const NAME = (fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8').match(/CACHE\s*=
   ok('catalog: lists known products with thumbnails (img + emoji)', catr.count === 2 && catr.hasImg === true && catr.hasEmoji === true, JSON.stringify(catr));
   ok('catalog: shows IN STOCK for what you currently have', catr.inStock === true);
   ok('catalog: search filters the list', catr.searchFiltered === true);
-  ok('nav: 4 focused tabs (Home/Inventory/Recipes/Shop)', catr.navTabCount === 4 && /Home/.test(catr.navLabels) && /Inventory/.test(catr.navLabels) && /Recipes/.test(catr.navLabels) && /Shop/.test(catr.navLabels), JSON.stringify(catr));
+  ok('nav: 4 focused tabs (Home/Inventory/Recipes/Shop)', catr.navTabCount === 4 && /Today/.test(catr.navLabels) && /Inventory/.test(catr.navLabels) && /Cook/.test(catr.navLabels) && /Shop/.test(catr.navLabels), JSON.stringify(catr));
   ok('catalog: item sheet has Add-to-shelf + Forget', catr.sheetOk === true);
 
   // ---- H2. pantry landing + profile hub + planner + recipe -> list/plan ----
@@ -261,7 +261,7 @@ const NAME = (fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8').match(/CACHE\s*=
     // Pantry landing: "Use soon" strip + the add FAB, and the pantry search
     S.view = 'pantry'; render();
     const app = document.getElementById('app');
-    r.useSoon = !!app.querySelector('.foodcard') && /Use soon/.test(app.textContent) && /Spinach/.test(app.textContent);
+    r.useSoon = !!app.querySelector('.location-tile') && /Use soon/.test(app.textContent) && /Spinach/.test(app.textContent);
     r.fabShown = !document.getElementById('fab').classList.contains('hide');
     r.pantryTitle = document.getElementById('title').textContent === 'Inventory';
 
@@ -546,18 +546,20 @@ const NAME = (fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8').match(/CACHE\s*=
   // ---- M. on-device date OCR parser (full Tesseract round-trip in ocr_test.js) ----
   const od = await page.evaluate(() => {
     const iso = ts => ts ? new Date(ts).toISOString().slice(0, 10) : null;
+    const year = new Date().getFullYear() + 1;
     return {
-      a: iso(extractDate('BEST BY 08/15/2026')),
-      b: iso(extractDate('2026-09-01 lot 55')),
-      c: iso(extractDate('USE BY 15 AUG 2026')),
-      d: iso(extractDate('EXP SEP 03 2026')),
+      year,
+      a: iso(extractDate(`BEST BY 08/15/${year}`)),
+      b: iso(extractDate(`${year}-09-01 lot 55`)),
+      c: iso(extractDate(`USE BY 15 AUG ${year}`)),
+      d: iso(extractDate(`EXP SEP 03 ${year}`)),
       junk: extractDate('no date here'),
       loader: typeof loadTessLib === 'function' && typeof ocrDate === 'function' && typeof scanDateForItem === 'function',
       notLoaded: !('Tesseract' in window),   // stays lazy until a date is scanned
       live: typeof liveDateScan === 'function',
     };
   });
-  ok('date OCR: parses MM/DD/YYYY, YYYY-MM-DD, DD MON YYYY, MON DD YYYY', od.a === '2026-08-15' && od.b === '2026-09-01' && od.c === '2026-08-15' && od.d === '2026-09-03', JSON.stringify(od));
+  ok('date OCR: parses MM/DD/YYYY, YYYY-MM-DD, DD MON YYYY, MON DD YYYY', od.a === `${od.year}-08-15` && od.b === `${od.year}-09-01` && od.c === `${od.year}-08-15` && od.d === `${od.year}-09-03`, JSON.stringify(od));
   ok('date OCR: no false positive on dateless text', od.junk === null);
   ok('date OCR: helpers exist and Tesseract stays lazy', od.loader === true && od.notLoaded === true);
   ok('date OCR: live-video scanner (liveDateScan) present', od.live === true);
@@ -700,7 +702,7 @@ const NAME = (fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8').match(/CACHE\s*=
     S.status = 'soon'; render(); const soon = names();
     S.status = 'fresh'; render(); const fresh = names();
     S.status = 'all';
-    r.filtersPresent = /Expired/.test(document.getElementById('app').textContent) && /Fresh/.test(document.getElementById('app').textContent);
+    r.filtersPresent = /Past date/.test(document.getElementById('app').textContent) && /Later/.test(document.getElementById('app').textContent);
     r.expired = expd.length === 1 && /spinach/i.test(expd[0]);
     r.soon = soon.length === 1 && /milk/i.test(soon[0]);
     r.fresh = fresh.length === 1 && /rice/i.test(fresh[0]);

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#F7F9F7">
+<meta name="theme-color" content="#FAF9F6">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Stocked">
@@ -922,6 +922,7 @@ dialog::backdrop{background:var(--shelf)}
 .wc-dots i{width:8px;height:8px;border-radius:50%;background:var(--rime-hi)}
 .wc-dots i.on{background:var(--cold);width:22px;border-radius:4px}
 </style>
+<link rel="stylesheet" href="assets/household.css">
 </head>
 <body>
 
@@ -929,6 +930,7 @@ dialog::backdrop{background:var(--shelf)}
   <h1 id="title">Stocked</h1>
   <button id="searchBtn" class="hide" aria-label="Search everything"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m20 20-4.4-4.4"/></svg></button>
   <button id="profileBtn" class="hide" aria-label="Profile and settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c0-3.9 3.4-6 7.5-6s7.5 2.1 7.5 6"/></svg></button>
+  <button id="quickAddBtn" class="hide" aria-label="Scan or add food"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg></button>
 </header>
 
 <main id="app"></main>
@@ -1818,7 +1820,7 @@ async function ensureSavedRecipe(r) {
   const all = recipeIngredientObjects(r).map(i => i.raw);
   const rec = { id: uid(), name: r.name, minutes: r.minutes || 0, servings:r.servings || null, ingredients: all,
     uses: all, missing: [], inventoryMatch: true, rescues: r.rescues || [], tags:r.tags || [],
-    steps: r.steps || [], image: r.image || null, source:r.source || '', nutrition:normalizeNutrition(r.nutrition), nutritionEstimated:!!r.nutritionEstimated,
+    steps: r.steps || [], image: recipeImageSource(r) || null, source:r.source || '', nutrition:normalizeNutrition(r.nutrition), nutritionEstimated:!!r.nutritionEstimated,
     cookbooks:r.cookbooks || [], customTags:r.customTags || [], notes:r.notes || '', rating:r.rating || 0, deleted: false };
   await saveRec(rec);
   return rec;
@@ -1900,15 +1902,14 @@ function recipeAllowed(r) {
 
 function recomputeMissing(r) {
   const a = recipeAvailability(r);
-  const urgent = S.items.filter(i => !i.deleted && freshness(i).left <= 3 && freshness(i).left >= -1);
+  const urgent = S.items.filter(i => !i.deleted && freshness(i).left <= 3 && freshness(i).left >= 0);
   const rescues = urgent.filter(i => a.all.some(x => ingredientMatch(x.name, i.name))).map(i => i.name);
   return { ...r, ingredients: a.all, uses: a.all.map(i => i.raw), missing: a.missing.map(i => i.raw),
     availability: a, rescues: [...new Set(rescues)] };
 }
 
-/* A deliberately small, consistent V1 library. These recipes work with no
-   account, key or network. Real photos hydrate best-effort from TheMealDB;
-   the gradients remain designed fallbacks rather than blank cards. */
+/* A small offline recipe library with original, locally bundled serving
+   imagery. No search-provider dependency or unrelated dish substitution. */
 const STOCKED_RECIPES = [
   { id:'stocked:chicken-spinach-pasta', builtin:true, name:'Chicken Spinach Pasta', minutes:28, tags:['high protein','under 30'], accent:'#315d43', image:'assets/recipes/chicken-spinach-pasta.webp',
     uses:['8 oz pasta','2 chicken breasts','3 cups spinach','2 cloves garlic','1/2 cup parmesan','1 tbsp olive oil'],
@@ -3101,7 +3102,7 @@ const tap = (ms = 8) => { try { navigator.vibrate?.(ms); } catch (e) {} };
 /* Stocked always opens in the designed light experience. Dark remains an
    explicit choice, but a phone-level theme can no longer silently repaint a
    food screen or make two household members see different defaults. */
-const GROUND = { light: '#F7F9F7', dark: '#0E1512' };
+const GROUND = { light: '#FAF9F6', dark: '#0E1512' };
 const prefersDark = () => matchMedia('(prefers-color-scheme: dark)').matches;
 const effectiveTheme = (t = S.cfg.theme || 'light') => t === 'dark' ? 'dark' : 'light';
 
@@ -3180,6 +3181,11 @@ const ICON = {
   back:    '<path d="m14.6 5.6-6.4 6.4 6.4 6.4"/>',
   box:     '<path d="M20.6 7.8v8.4a1.8 1.8 0 0 1-.9 1.6l-6.8 3.8a1.8 1.8 0 0 1-1.8 0l-6.8-3.8a1.8 1.8 0 0 1-.9-1.6V7.8a1.8 1.8 0 0 1 .9-1.6l6.8-3.8a1.8 1.8 0 0 1 1.8 0l6.8 3.8a1.8 1.8 0 0 1 .9 1.6z"/><path d="m3.6 7 8.4 4.7L20.4 7M12 21v-9.3"/>',
 };
+Object.assign(ICON, {
+  fridge:'<rect x="5" y="2" width="14" height="19" rx="2"/><path d="M5 9h14M8 5v2M8 12v4M8 21v1M16 21v1"/>',
+  freezer:'<path d="M12 2v20M3.3 7l17.4 10M3.3 17 20.7 7M9 4l3 3 3-3M9 20l3-3 3 3M4 10l4-1-1-4M17 19l-1-4 4-1M4 14l4 1-1 4M17 5l-1 4 4 1"/>',
+  pantry:'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 12h18M8 12V7h3v5M14 12V6h3v6M6 21v-5h4v5M14 21v-6h4v6"/>'
+});
 const icon = (n, size = 19) =>
   `<svg class="ico" viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor"
     stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[n] || ''}</svg>`;
@@ -3410,7 +3416,7 @@ function searchHistory(box, q, shown = []) {
 
 /* Honour the pantry's photos/compact preference in one place. */
 function paintRows(box, rows) {
-  if (S.cfg.pantryView === 'list') { rows.forEach(i => box.appendChild(itemRow(i))); return; }
+  if (S.cfg.pantryView !== 'grid') { rows.forEach(i => box.appendChild(itemRow(i))); return; }
   const g = el(`<div class="tiles${rows.length === 1 ? ' one' : ''}"></div>`);
   rows.forEach(i => g.appendChild(itemTile(i)));
   box.appendChild(g);
@@ -3998,7 +4004,7 @@ function viewInv(app) {
      chips the moment someone photographs their kitchen properly. A shelf's
      count includes everything in its zones. */
   chips.appendChild(mk('all', `All (${live.length})`));
-  topLocations().forEach(l =>
+  if (S.view !== 'pantry') topLocations().forEach(l =>
     chips.appendChild(mk(l.id, `${l.name} (${itemsIn(l.id).length})`)));
   app.appendChild(chips);
 
@@ -4014,21 +4020,21 @@ function viewInv(app) {
   };
   const cnt = f => scoped.filter(f).length;
   statusChips.appendChild(stat('all', 'Any date'));
-  statusChips.appendChild(stat('expired', `🔴 Expired (${cnt(i => freshness(i).left < 0)})`));
-  statusChips.appendChild(stat('soon', `🟡 Soon (${cnt(i => { const l = freshness(i).left; return l >= 0 && l <= 3; })})`));
-  statusChips.appendChild(stat('fresh', `🟢 Fresh (${cnt(i => freshness(i).left > 3)})`));
+  statusChips.appendChild(stat('expired', `Past date (${cnt(i => freshness(i).left < 0)})`));
+  statusChips.appendChild(stat('soon', `Use soon (${cnt(i => { const l = freshness(i).left; return l >= 0 && l <= 3; })})`));
+  statusChips.appendChild(stat('fresh', `Later (${cnt(i => freshness(i).left > 3)})`));
   /* "Nearly out" is a different question from "about to go off", and Food
      Stock puts both on the same strip for exactly that reason. Only shown
      once some item actually has a threshold set, so it isn't a permanent
      chip reading (0). */
   const lowN = cnt(runningLow);
-  if (lowN || scoped.some(i => i.low > 0)) statusChips.appendChild(stat('low', `🛒 Running low (${lowN})`));
+  if (lowN || scoped.some(i => i.low > 0)) statusChips.appendChild(stat('low', `Running low (${lowN})`));
   app.appendChild(statusChips);
 
   /* At 500 items search isn't a nicety, it's the primary way in. The
      photos/compact switch rides alongside it rather than taking a third row
      of chips — you have to get past this chrome before you can see any food. */
-  const grid = S.cfg.pantryView !== 'list';
+  const grid = S.cfg.pantryView === 'grid';
   const swap = grid ? 'Switch to a compact list' : 'Switch to photos';
   const srow = el(`<div class="row" style="margin-bottom:12px">
     <input id="q" placeholder="Search ${live.length} items…" value="${esc(S.q || '')}" style="flex:1" autocomplete="off" enterkeyhint="search">
@@ -4043,7 +4049,7 @@ function viewInv(app) {
   srow.querySelector('[data-a=vt]').onclick = async () => {
     S.cfg.pantryView = grid ? 'list' : 'grid'; await saveCfg(); render();
   };
-  app.appendChild(srow);
+  app.insertBefore(srow, app.querySelector('.location-strip') || chips);
 
   /* On a single shelf, three numbers add context. The all-inventory view
      leads with the food itself; location photography is useful secondary
@@ -4055,7 +4061,10 @@ function viewInv(app) {
   const box = el(`<div id="results"></div>`);
   app.appendChild(box);
   paintList(box);
-  if (!S.q?.trim() && S.loc === 'all') locationCards(app, live);
+  if (!S.q?.trim() && S.loc === 'all') {
+    const more = el('<details class="recipe-extras"><summary>Manage location photos</summary><div></div></details>');
+    locationCards(more.querySelector('div'), live); app.appendChild(more);
+  }
   if (S.q || S.focusSearch) { sb.focus(); sb.setSelectionRange(sb.value.length, sb.value.length); }
   S.focusSearch = false;
 }
@@ -4090,7 +4099,7 @@ function paintList(box) {
 
   if (!live.length) return box.appendChild(el(`<div class="empty">
     <div class="big">Nothing on this shelf</div>
-    <div class="sub">Scan tab → photograph the whole shelf at once. That's how you fill 500 slots without losing a weekend.</div></div>`));
+    <div class="sub">Tap + to scan food, photograph a shelf, or add an item.</div></div>`));
 
   if (S.loc !== 'all') {
     const hints = restockHints(S.loc);
@@ -4453,12 +4462,26 @@ const matchRatio = r => {
 
 function paintRecipeImage(node, r) {
   if (!node) return;
-  const accent = /^#[0-9a-f]{6}$/i.test(r.accent || '') ? r.accent : '#315d43';
-  node.style.setProperty('--recipe-accent', accent);
-  if (r.image && /^(?:https?:\/\/|\.?\/?assets\/recipes\/[\w.-]+)$/i.test(r.image)) {
-    node.classList.add('photo');
-    node.style.backgroundImage = `linear-gradient(180deg,rgba(8,18,12,.04),rgba(8,18,12,.68)),url("${String(r.image).replace(/["\\]/g, '')}")`;
+  const src = recipeImageSource(r);
+  node.classList.remove('photo'); node.style.backgroundImage = '';
+  if (!src) return;
+  // Do not hide the fallback until decoding succeeds. Uploaded covers are
+  // data URLs; rejecting them made a successful upload look like lost work.
+  const img = new Image();
+  img.onload = () => { node.classList.add('photo'); node.style.backgroundImage = `url(${JSON.stringify(src)})`; };
+  img.onerror = () => { node.classList.remove('photo'); node.style.backgroundImage = ''; };
+  img.src = src;
+}
+
+let snapshotRecipeArtwork;
+function recipeImageSource(r) {
+  if (snapshotRecipeArtwork === undefined) {
+    try { snapshotRecipeArtwork = JSON.parse(document.getElementById('stocked-recipe-art')?.textContent || '{}'); }
+    catch (_) { snapshotRecipeArtwork = {}; }
   }
+  const src = r.builtin && /^stocked:[a-z-]+$/.test(r.id || '') ? `assets/recipes/${r.id.slice(8)}.webp` : String(r.image || '');
+  if (snapshotRecipeArtwork[src] && /^data:image\/webp;base64,/i.test(snapshotRecipeArtwork[src])) return snapshotRecipeArtwork[src];
+  return /^(https?:\/\/|data:image\/(png|jpeg|webp);base64,|\.?\/?assets\/recipes\/[\w.-]+$)/i.test(src) ? src : '';
 }
 
 async function addRecipeMissing(r) {
@@ -4599,25 +4622,36 @@ function showRecipeDetail(raw, opts = {}) {
   const factor = servings / base, emoji = foodEmoji(r.name, '') || '🍳', status = n === 0 ? 'Ready to cook' : n <= 2 ? 'Almost ready' : `Need ${n}`;
   const line = i => esc(scaledIngredient(i.raw, factor, mode));
   dlg.innerHTML = `<div class="recipe-detail-hero"><span>${emoji}</span></div>
-    <div class="eyebrow" style="margin-top:14px">${r.minutes} min · ${status}</div><h1 style="margin:6px 0 6px">${esc(r.name)}</h1>${recipeCred(r)}
+    <div class="eyebrow">${r.builtin ? 'From the Stocked kitchen' : 'Your recipe collection'}</div><h1 class="recipe-detail-heading">${esc(r.name)}</h1>
+    <div class="recipe-detail-summary"><span>${r.minutes ? `${r.minutes} min` : 'Time not added'} · ${status}</span><span>${a.haveCount}/${a.totalCount} at home</span></div>${recipeCred(r)}
     <div class="recipe-control"><div class="control-box"><div class="lbl">Servings</div><div class="serving-stepper"><button data-a="less" aria-label="Fewer servings">−</button><strong>${servings}</strong><button data-a="more" aria-label="More servings">+</button></div></div>
       <div class="control-box"><div class="lbl">Measurements</div><select class="unit-select" id="runits"><option value="original" ${mode==='original'?'selected':''}>Original</option><option value="metric" ${mode==='metric'?'selected':''}>Metric</option><option value="us" ${mode==='us'?'selected':''}>US customary</option></select></div></div>
-    ${nutritionMarkup(r)}
-    ${(r.cookbooks || []).length || (r.customTags || []).length ? `<div class="rc-cred">${[...(r.cookbooks || []),...(r.customTags || [])].map(x => `<span class="rc-src">${esc(x)}</span>`).join('')}</div>` : ''}
-    ${r.notes ? `<div class="recipe-note"><b>Your note</b><br>${esc(r.notes)}</div>` : ''}
-    <div class="ingredient-groups"><section><div class="lbl">You have · ${a.have.length}</div>${a.have.length ? a.have.map(i => `<div class="ingredient-row have">${icon('check',14)}<span>${line(i)}</span></div>`).join('') : '<div class="note">Nothing matched yet.</div>'}</section>
+    <button class="btn cold" data-a="start">${icon('utensils',16)}Start cooking</button>
+    <div class="recipe-detail-tabs" role="tablist" aria-label="Recipe sections"><button role="tab" aria-selected="${opts.panel !== 'steps'}" aria-controls="recipe-ingredients" id="ingredients-tab" data-panel="ingredients">Ingredients</button><button role="tab" aria-selected="${opts.panel === 'steps'}" aria-controls="recipe-method" id="steps-tab" data-panel="steps">Steps</button></div>
+    <div id="recipe-ingredients" role="tabpanel" aria-labelledby="ingredients-tab" ${opts.panel === 'steps' ? 'hidden' : ''}>
+    <div class="ingredient-groups"><section><div class="lbl">From your kitchen · ${a.have.length}</div>${a.have.length ? a.have.map(i => `<div class="ingredient-row have">${icon('check',16)}<span>${line(i)}</span></div>`).join('') : '<div class="note">No ingredients matched yet.</div>'}</section>
       <section><div class="lbl">You need · ${a.missing.length}</div>${a.missing.length ? a.missing.map(i => `<div class="ingredient-row need">${icon('plus',14)}<span>${line(i)}</span></div>`).join('') : '<div class="ingredient-row have">'+icon('check',14)+'<span>Nothing missing</span></div>'}</section></div>
     ${n ? `<button class="btn cold" data-a="add" style="margin:4px 0 10px">${icon('plus',16)}Add missing ingredients</button>` : ''}
-    <button class="btn cold" data-a="start" style="margin-bottom:16px">${icon('utensils',16)}Start cooking</button>
-    ${(r.steps || []).length ? `<div class="lbl">Method</div><ol class="recipe-steps">${r.steps.map(s => `<li><span>${esc(s)}</span></li>`).join('')}</ol>` : ''}
+    <p class="availability-note">Matches ingredient names, not exact quantities. Check amounts and dates before cooking.</p></div>
+    <div id="recipe-method" role="tabpanel" aria-labelledby="steps-tab" ${opts.panel !== 'steps' ? 'hidden' : ''}>${(r.steps || []).length ? `<ol class="recipe-steps">${r.steps.map(s => `<li><span>${esc(s)}</span></li>`).join('')}</ol>` : '<p class="availability-note">No steps saved. Open the original source for instructions.</p>'}</div>
+    <details class="recipe-extras"><summary>Save, plan & recipe details</summary>
     <div class="detail-actions"><button class="btn ghost" data-a="plan">${icon('calendar',16)}Plan</button><button class="btn ghost" data-a="save">${icon('star',16)}${isSaved(r)?'Saved':'Save'}</button><button class="btn ghost" data-a="organize">${icon('more',16)}Organize</button>
       <button class="btn ghost" data-a="share">${icon('share',16)}Share</button><button class="btn ghost" data-a="cook">${icon('check',16)}Made it</button></div>
     ${isSaved(r) ? `<div class="lbl">Your rating</div><div class="rate">${[1,2,3,4,5].map(i => `<button data-r="${i}" class="${(r.rating || 0) >= i ? 'on' : ''}" aria-label="${i} star${i > 1 ? 's' : ''}">★</button>`).join('')}</div>` : ''}
-    ${r.source ? `<a class="btn ghost left" style="margin-top:12px" href="${esc(r.source)}" target="_blank" rel="noopener">${icon('link')}Open ${esc(sourceHost(r.source))}</a>` : ''}<button class="btn ghost" data-a="c" style="margin-top:10px">Close</button>`;
+    ${nutritionMarkup(r)}
+    ${(r.cookbooks || []).length || (r.customTags || []).length ? `<div class="rc-cred">${[...(r.cookbooks || []),...(r.customTags || [])].map(x => `<span class="rc-src">${esc(x)}</span>`).join('')}</div>` : ''}
+    ${r.notes ? `<div class="recipe-note"><b>Your note</b><br>${esc(r.notes)}</div>` : ''}
+    ${r.builtin ? '<p class="availability-note">Original AI-generated serving image. Your finished dish may vary.</p>' : ''}
+    ${/^https?:\/\//i.test(r.source || '') ? `<a class="btn ghost left" style="margin-top:12px" href="${esc(r.source)}" target="_blank" rel="noopener noreferrer">${icon('link')}Open ${esc(sourceHost(r.source))}</a>` : ''}</details><button class="btn ghost" data-a="c" style="margin-top:10px">Close recipe</button>`;
   paintRecipeImage(dlg.querySelector('.recipe-detail-hero'), r);
-  dlg.querySelector('[data-a=less]').onclick = () => showRecipeDetail(r,{servings:Math.max(1,servings-1),mode});
-  dlg.querySelector('[data-a=more]').onclick = () => showRecipeDetail(r,{servings:servings+1,mode});
-  dlg.querySelector('#runits').onchange = async e => { S.cfg.recipeUnits=e.target.value; await saveCfg(); showRecipeDetail(r,{servings,mode:e.target.value}); };
+  let panel = opts.panel || 'ingredients';
+  const panelButtons = [...dlg.querySelectorAll('[data-panel]')];
+  const selectPanel = value => { panel=value; panelButtons.forEach(b => b.setAttribute('aria-selected',String(b.dataset.panel===panel))); dlg.querySelector('#recipe-ingredients').hidden=panel!=='ingredients'; dlg.querySelector('#recipe-method').hidden=panel!=='steps'; };
+  panelButtons.forEach((b,i) => { b.onclick=()=>selectPanel(b.dataset.panel); b.onkeydown=e=>{ if(['ArrowLeft','ArrowRight'].includes(e.key)){ e.preventDefault(); const next=panelButtons[1-i]; next.focus(); selectPanel(next.dataset.panel); } }; });
+  const redraw = next => { const top=dlg.scrollTop; showRecipeDetail(r,{servings,mode,panel,...next}); dlg.scrollTop=top; };
+  dlg.querySelector('[data-a=less]').onclick = () => redraw({servings:Math.max(1,servings-1)});
+  dlg.querySelector('[data-a=more]').onclick = () => redraw({servings:servings+1});
+  dlg.querySelector('#runits').onchange = async e => { const value=e.target.value; S.cfg.recipeUnits=value; await saveCfg(); redraw({mode:value}); };
   dlg.querySelector('[data-a=add]')?.addEventListener('click', async () => { await addRecipeMissing(r); dlg.close(); });
   dlg.querySelector('[data-a=start]').onclick = () => openCookingMode(r,servings,mode);
   dlg.querySelector('[data-a=plan]').onclick = () => { dlg.close(); pickDayForRecipe(r); };
@@ -4645,10 +4679,10 @@ function recipeCardEl(r) {
       ${r.rescues?.length ? `<span class="rescue">Use soon · ${esc(r.rescues.slice(0,2).join(' + '))}</span>` : ''}
     </button>
     <div class="rc-body">
-      <h3>${esc(r.name)}</h3>
-      <div class="rc-meta"><b>${r.minutes} min</b>${tags.map(t => `<span>${esc(t)}</span>`).join('')}</div>
+      <button class="recipe-title" data-a="title"><h3>${esc(r.name)}</h3></button>
+      <div class="rc-meta"><b>${r.minutes ? `${r.minutes} min` : 'Time not added'}${tags.includes('vegetarian') ? ' · Vegetarian' : ''}</b></div>
       ${recipeCred(r)}
-      <div class="recipe-readiness">${n ? `You have <b>${mr.have} of ${mr.total}</b> · missing ${a.missing.slice(0,2).map(i => esc(i.name)).join(', ')}${n > 2 ? ` +${n-2}` : ''}` : `<b>Everything is in your kitchen</b>`}</div>
+      <div class="recipe-readiness">${n ? `<b>${mr.have}/${mr.total} ingredients at home</b>` : `<b>All ingredients at home</b>`}${r.rescues?.length ? '<br>Uses food to check soon' : ''}</div>
       <div class="rc-act">
         <button class="btn cold sm" data-a="open">View recipe</button>
         ${n ? `<button class="btn ghost sm" data-a="add">${icon('plus',15)}Add ${n} missing</button>` : `<button class="btn ghost sm" data-a="cook">I made this</button>`}
@@ -4657,6 +4691,7 @@ function recipeCardEl(r) {
   paintRecipeImage(card.querySelector('.recipe-cover'), r);
   const openRecipe = () => showRecipeDetail(r);
   card.querySelector('[data-a=how]').onclick = openRecipe;
+  card.querySelector('[data-a=title]').onclick = openRecipe;
   card.querySelector('[data-a=open]').onclick = openRecipe;
   const addBtn = card.querySelector('[data-a=add]');
   if (addBtn) addBtn.onclick = () => addRecipeMissing(r);
@@ -4685,22 +4720,9 @@ function pickDayForRecipe(r, after) {
   dlg.querySelector('[data-a=c]').onclick = () => dlg.close();
   dlg.showModal();
 }
-let recipePhotosLoading = false;
 async function hydrateLocalRecipePhotos() {
-  if (recipePhotosLoading || navigator.onLine === false) return;
-  const todo = STOCKED_RECIPES.filter(r => !r.image && !r._photoTried);
-  if (!todo.length) return;
-  recipePhotosLoading = true;
-  let changed = false;
-  try {
-    await Promise.all(todo.map(async r => {
-      r._photoTried = true;
-      try { const src = await PHOTO.dish(r.name, ingredientName(r.uses[0])); if (src) { r.image = src; changed = true; } } catch (e) {}
-    }));
-  } finally {
-    recipePhotosLoading = false;
-    if (changed && (S.view === 'home' || S.view === 'cook')) render();
-  }
+  // Built-in covers ship with the offline shell. No third-party requests,
+  // guessed dish photos or asynchronous full-screen repaint while browsing.
 }
 
 function filteredRecipeFeed() {
@@ -4754,7 +4776,7 @@ function viewCook(app) {
       const books = [...new Set(saved.flatMap(s => s.cookbooks || []))].sort((a,b) => a.localeCompare(b));
       const tools = el(`<div class="recipe-library-tools"><div class="recipe-search"><span>${icon('search',17)}</span><input placeholder="Search saved recipes, ingredients or tags" value="${esc(S.savedRecipeQ || '')}" autocomplete="off"></div>
         <div class="book-chips"><button data-b="" aria-pressed="${!S.savedBook}">All recipes</button>${books.map(b => `<button data-b="${esc(b)}" aria-pressed="${S.savedBook === b}">${esc(b)}</button>`).join('')}</div></div>`);
-      const out = el(`<div></div>`);
+      const out = el(`<div class="recipe-grid"></div>`);
       const paint = () => {
         out.innerHTML = ''; const q = canon(S.savedRecipeQ || '');
         const rows = saved.filter(s => (!S.savedBook || (s.cookbooks || []).includes(S.savedBook)) && (!q || canon([s.name,...recipeIngredientObjects(s).map(i=>i.name),...(s.tags||[]),...(s.customTags||[]),...(s.cookbooks||[])].join(' ')).includes(q)));
@@ -4769,10 +4791,12 @@ function viewCook(app) {
   }
 
   const readyN = localRecipeFeed().filter(r => !r.availability.missing.length).length;
-  const intro = el(`<div class="recipe-intro"><div><span class="eyebrow">Cook with what you have</span><h1>Dinner, figured out.</h1>
-    <p>${live.length ? `${readyN} ready now · every card checks your kitchen live.` : 'Add a few foods and every card will adapt to your kitchen.'}</p></div>
-    <button data-a="plan">${icon('calendar',17)}Meal plan</button></div>`);
-  intro.querySelector('[data-a=plan]').onclick = () => { S.view = 'plan'; render(); }; app.appendChild(intro);
+  const intro = el(`<div class="recipe-intro"><div><h1>Dinner, figured out.</h1>
+    <p>${live.length ? `${readyN} ready now. More possibilities below.` : 'Good food starts with what you have.'}</p></div></div>`);
+  app.appendChild(intro);
+  const capture=el(`<div class="recipe-top-actions"><button class="btn ghost" data-a="capture">${icon('plus',17)}Add recipe</button><button class="btn ghost" data-a="plan">${icon('calendar',17)}Meal plan</button></div>`);
+  capture.querySelector('[data-a=capture]').onclick=()=>importRecipeSheet(()=>render());
+  capture.querySelector('[data-a=plan]').onclick=()=>{S.view='plan';render();};app.appendChild(capture);
 
   const search = el(`<div class="recipe-search"><span>${icon('search',17)}</span><input placeholder="Search recipes or ingredients" value="${esc(S.recipeQ || '')}" autocomplete="off"></div>`);
   const out = el(`<div></div>`);
@@ -6040,6 +6064,7 @@ function catalogPicker({ kind = CAT_PRODUCT, store = '', onPick, multi = true })
    out of, and what's already in the cart — split per store, because a Costco
    run and a corner-shop run are different errands with different lists. */
 function viewShopping(app) {
+  app.appendChild(el(`<div><h1 class="shop-heading">The grocery list.</h1><p class="shop-caption">A little help from what’s already home.</p></div>`));
   const stores = storeList();
   // Shops come first and General comes LAST, because that's the order the
   // lists actually matter in: a Costco run is a real errand with its own
@@ -6097,7 +6122,7 @@ function viewShopping(app) {
   app.appendChild(add);
 
   if (!SYNC.configured())
-    app.appendChild(el(`<div class="note" style="margin:0 0 12px">This list is on this phone only. Turn on <b>Profile → Family sync</b> and the whole family shares one list.</div>`));
+    app.appendChild(el(`<div class="note" style="margin:0 0 12px;font-size:12px">Saved on this device · Sharing setup in Profile</div>`));
 
   app.appendChild(listBox);
   repaint();
@@ -6105,7 +6130,7 @@ function viewShopping(app) {
   // The history sits under the live list, scoped to the shop you're standing
   // in. Ticking something off at the till lands it here; tapping it here puts
   // it back on the list. That round trip is the whole feature.
-  app.appendChild(el(`<div id="shophist" style="margin-top:26px"></div>`));
+  app.appendChild(el(`<details class="recipe-extras"><summary>Previously bought · browse your history</summary><div id="shophist"></div></details>`));
   paintHistory(document.getElementById('shophist'), store);
 }
 
@@ -6339,7 +6364,7 @@ function listAsText(store) {
   const mine = S.shopping.filter(s => !s.deleted && !s.done && (!store || (s.store || '') === store));
   if (!mine.length) return '';
   const title = storeName(store) || 'Shopping list';
-  if (!store || !isShop(store)) {
+  if (store && !isShop(store)) {
     return `${title}\n${mine.map(s => `• ${shownName(s)}${s.qty ? ` (${s.qty})` : ''}`).join('\n')}`;
   }
   /* Grouped by aisle in the store's own walking order, because a flat list
@@ -6470,6 +6495,8 @@ function runningTotal(box, todo, done) {
 }
 
 function shopRow(s, box, flash = false) {
+  const owned=S.items.filter(i=>!i.deleted&&ingredientMatch(s.name,i.name));
+  const homeHint=owned.length ? owned.slice(0,2).map(i=>`${i.mode==='count' ? i.qty+' × ' : ''}${i.name} · ${locName(i.loc)}`).join('; ') : '';
   const st = s.done
     ? (s.missing ? `<span class="tag out">Didn't have it</span>` : `<span class="tag have">In the cart</span>`)
     : stockTag(s.name);
@@ -6477,7 +6504,9 @@ function shopRow(s, box, flash = false) {
     <button class="cbx" data-a="chk" aria-label="${s.done ? 'Undo' : 'Got it'}">${s.done ? icon('check', 16) : ''}</button>
     <div class="body"><div class="nm">${esc(shownName(s))}${s.qty ? ` <span class="qty">×${esc(s.qty)}</span>` : ''}</div>
       ${shownName(s) !== s.name ? `<div class="orig">${esc(s.name)}</div>` : ''}
-      ${st || s.price ? `<div class="meta">${st || ''}${s.price ? `<span class="tag price">$${Number(s.price).toFixed(2)}</span>` : ''}</div>` : ''}</div>
+      ${st || s.price ? `<div class="meta">${st || ''}${s.price ? `<span class="tag price">$${Number(s.price).toFixed(2)}</span>` : ''}</div>` : ''}
+      ${!s.done && homeHint ? `<div class="shop-inventory-hint">At home: ${esc(homeHint)}</div>` : ''}
+      ${s.sourceName ? `<div class="shop-inventory-hint">For ${esc(s.sourceName)}</div>` : ''}</div>
     <div class="act"><button data-a="del" aria-label="Remove ${esc(s.name)}">${icon('x', 16)}</button></div>
   </div>`);
   row.querySelector('[data-a=chk]').onclick = async () => {
@@ -6536,16 +6565,23 @@ function paintShopping(box, flashId = '') {
   const todo = mine.filter(s => !s.done).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
   const done = mine.filter(s => s.done).sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0));
 
+  const recipeIds = [...new Set(todo.flatMap(s=>s.sourceIds || []))];
+  const recipes = [...STOCKED_RECIPES,...S.saved.filter(r=>!r.deleted)];
+  const sources = recipeIds.map(id=>recipes.find(r=>r.id===id||canon(r.name)===id)).filter(Boolean).slice(0,6);
+  if (sources.length) {
+    const strip=el('<div class="shop-recipes" aria-label="Recipes on this list"></div>');
+    sources.forEach(r=>{ const b=el(`<button class="shop-recipe"><div class="mini-media"></div><b>${esc(r.name)}</b></button>`); paintRecipeImage(b.querySelector('.mini-media'),r);b.onclick=()=>showRecipeDetail(r);strip.appendChild(b); });
+    box.appendChild(strip);
+  }
+
   listProgress(box, todo, done);
   missedBand(box, store);
-  dueBand(box, store);
-  lowStockBand(box, todo);
   runningTotal(box, todo, done);
 
   /* Sending the list to whoever is actually going. Sits at the top, not
      buried at the bottom, because you use it before you leave the house. */
   if (todo.length) {
-    const sh = el(`<button class="btn ghost" style="margin-bottom:12px">${icon('share')}Send this list to someone</button>`);
+    const sh = el(`<button class="btn ghost sm" style="margin:0 0 12px auto;display:flex">${icon('share',16)}Share list</button>`);
     sh.onclick = () => shareList(store);
     box.appendChild(sh);
   }
@@ -6553,10 +6589,9 @@ function paintShopping(box, flashId = '') {
   // No "Need to get" heading — the list IS the things to get. A header over
   // the only content on the screen just pushes the content down.
   if (todo.length) {
-    // Aisle grouping + reorder is a per-store thing — Costco's walk isn't the
-    // corner shop's. The General list has no single store to walk, so it
-    // stays what it's actually for: a plain checklist, nothing to reorder.
-    if (store && isShop(store)) {
+    // General groceries and stores group by aisle. Only a named store has
+    // a custom walk order; non-grocery personal lists remain plain checklists.
+    if (!store || isShop(store)) {
       const groups = new Map();
       todo.forEach(s => {
         const a = aisleOf(s.cat || guessCat(s.name));
@@ -6575,7 +6610,7 @@ function paintShopping(box, flashId = '') {
           box.appendChild(g);
         } else rows.forEach(s => box.appendChild(shopRow(s, box, s.id === flashId)));
       });
-      if (order.length > 1) {
+      if (order.length > 1 && store) {
         const ro = el(`<button class="btn ghost" style="margin-bottom:4px">${icon('rows')}Reorder aisles for ${esc(storeName(store) || 'this list')}</button>`);
         ro.onclick = () => aisleOrderSheet(store, () => paintShopping(box));
         box.appendChild(ro);
@@ -6613,6 +6648,10 @@ function paintShopping(box, flashId = '') {
     };
     box.appendChild(clr);
   }
+
+  const suggestions=el('<details class="recipe-extras"><summary>Suggestions from your kitchen</summary><div></div></details>');
+  dueBand(suggestions.querySelector('div'),store);lowStockBand(suggestions.querySelector('div'),todo);
+  if(suggestions.querySelector('div').children.length)box.appendChild(suggestions);
 
   // Ticking something off changes what the history says ("on the list" ->
   // available again), so the two panes always repaint together.
@@ -7097,13 +7136,39 @@ async function applyBackup(data) {
   return items.length;
 }
 
-/* The whole app, with the data baked in, as one file. The app is a single
-   HTML document already, so this is genuinely the entire thing — not a
-   pointer to it. */
+/* A portable app and household backup. Inline the design stylesheet and
+   bundled recipe artwork so a saved file does not depend on our server. */
 async function snapshotHTML() {
-  const src = await (await fetch('index.html', { cache: 'no-store' })).text();
+  const shell = await fetch('index.html', { cache: 'no-store' });
+  if (!shell.ok) throw new Error('Could not read the app for backup. Please try again.');
+  const documentCopy = new DOMParser().parseFromString(await shell.text(), 'text/html');
+  // A snapshot can itself be exported again: replace its old seed rather
+  // than appending a second copy which would restore stale household data.
+  documentCopy.querySelectorAll('#shelflife-restore,#stocked-recipe-art').forEach(node => node.remove());
+  const styleLink = documentCopy.querySelector('link[href="assets/household.css"]');
+  if (styleLink) {
+    const response = await fetch('assets/household.css');
+    if (!response.ok) throw new Error('Could not include the app styles. Please try the backup again.');
+    const style = documentCopy.createElement('style');
+    style.setAttribute('data-stocked-household', '');
+    style.textContent = await response.text(); styleLink.replaceWith(style);
+  }
+  const src = '<!doctype html>\n' + documentCopy.documentElement.outerHTML;
+  const artwork = { ...snapshotRecipeArtwork };
+  await Promise.all(STOCKED_RECIPES.map(async r => {
+    const asset = `assets/recipes/${r.id.slice(8)}.webp`;
+    if (artwork[asset]) return;
+    try {
+      const response = await fetch(asset);
+      if (!response.ok) return;
+      const blob = await response.blob();
+      artwork[asset] = await new Promise((resolve, reject) => {
+        const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(blob);
+      });
+    } catch (_) { /* Data backup remains available if a decorative cover is missing. */ }
+  }));
   const json = JSON.stringify(await backupData()).replace(/</g, '\\u003c');
-  const tag = `<script id="shelflife-restore" type="application/json">${json}<\/script>`;
+  const tag = `<script id="stocked-recipe-art" type="application/json">${JSON.stringify(artwork).replace(/</g, '\\u003c')}<\/script><script id="shelflife-restore" type="application/json">${json}<\/script>`;
   // Anchor on the LAST close-body tag, and never write that tag literally
   // here: this function's own source ends up inside `src`, so splicing at the
   // first hit buries the payload in the middle of the code instead of at the
@@ -7199,16 +7264,19 @@ function openDial() {
 /* ---------------- add-food chooser (the one obvious way to add) ---------------- */
 function addFoodChooser() {
   const dlg = document.getElementById('dlg');
-  dlg.innerHTML = `<div class="eyebrow">Add food</div><h1 style="margin:6px 0 15px">How do you want to add it?</h1>
-    <button class="btn ghost left" data-a="barcode" style="margin-bottom:9px">${icon('camera')}Scan a barcode</button>
-    <button class="btn ghost left" data-a="receipt" style="margin-bottom:9px">${icon('receipt')}Scan a receipt — a whole trip at once</button>
-    <button class="btn ghost left" data-a="photo" style="margin-bottom:9px">${icon('image')}Photograph what you bought<span class="hintline">Lay it on the counter — everything goes in at once</span></button>
-    <button class="btn ghost left" data-a="type" style="margin-bottom:14px">${icon('pencil')}Type it in</button>
+  dlg.innerHTML = `<div class="eyebrow">Bring your kitchen up to date</div><h1 class="recipe-detail-heading">What are you doing?</h1>
+    <div class="capture-options">
+    <button class="capture-option" data-a="barcode">${icon('barcode',24)}<span><b>Putting groceries away</b><small>Scan barcodes, one after another.</small></span>${icon('chevron',16)}</button>
+    <button class="capture-option" data-a="photo">${icon('image',24)}<span><b>Adding a shelf of food</b><small>Photograph a shelf or your groceries. Review before adding.</small></span>${icon('chevron',16)}</button>
+    <button class="capture-option" data-a="receipt">${icon('receipt',24)}<span><b>Adding a shopping trip</b><small>Read a receipt and review the items.</small></span>${icon('chevron',16)}</button>
+    <button class="capture-option" data-a="used">${icon('check',24)}<span><b>Using something up</b><small>Scan an empty wrapper to find it in your kitchen.</small></span>${icon('chevron',16)}</button>
+    <button class="capture-option" data-a="type">${icon('pencil',24)}<span><b>Just adding one thing</b><small>Type a name. Keep it simple.</small></span>${icon('chevron',16)}</button></div>
     <input type="file" accept="image/*" capture="environment" id="afp" class="hide">
     <input type="file" accept="image/*" id="afr" class="hide">
     <button class="btn ghost" data-a="c" style="border:none;color:var(--vapor)">Cancel</button>`;
   const close = () => dlg.close();
   dlg.querySelector('[data-a=barcode]').onclick = () => { close(); S.cfg.scanMode = 'in'; S.view = 'scan'; render(); };
+  dlg.querySelector('[data-a=used]').onclick = () => { close(); S.cfg.scanMode = 'out'; S.view='scan'; render(); };
   dlg.querySelector('[data-a=receipt]').onclick = () => dlg.querySelector('#afr').click();
   dlg.querySelector('#afr').onchange = e => { const f = e.target.files[0]; if (f) { close(); receiptFlow(f); } };
   dlg.querySelector('[data-a=photo]').onclick = () => dlg.querySelector('#afp').click();
@@ -7227,11 +7295,29 @@ function viewHome(app) {
   const h = new Date().getHours();
   const greet = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
   const first = (S.who?.name || '').split(' ')[0];
+  const named = first && first !== 'Me';
 
   app.appendChild(el(`<div class="greet">
-    <div class="hi">${greet}${first ? ', ' + esc(first) : ''}</div>
-    <div class="dt">${new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</div>
+    <div class="today-date">${new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</div>
+    <div class="hi">${greet}${named ? ', ' + esc(first) : ''}.</div>
+    <div class="dt">${!live.length ? 'A little less waste. A little more dinner.' : soon.length ? `${soon.length} food${soon.length === 1 ? '' : 's'} to check. Let’s start there.` : 'Your kitchen, a little more together.'}</div>
   </div>`));
+
+  if (!live.length) {
+    const intro = el(`<section class="onboarding-note"><h2>Start with one shelf.</h2><p>Add a few things you have. Stocked will help you find them, use them, and know what to buy next.</p><button class="btn cold">${icon('plus',17)}Add your first food</button></section>`);
+    intro.querySelector('button').onclick = addFoodChooser; app.appendChild(intro);
+  }
+
+  if (soon.length) {
+    const sec = el(`<section class="section today-attention"><div class="section-head"><h2>Use first</h2><button class="more">Review ${soon.length}${icon('chevron',14)}</button></div><div class="attention-list"></div></section>`);
+    soon.slice(0,3).forEach(it => {
+      const d = freshness(it).left;
+      const label = d < 0 ? 'Past date · check' : d === 0 ? 'Date is today' : d === 1 ? 'Date is tomorrow' : `${d} days left`;
+      const row = el(`<button class="attention-row"><span class="thumb">${it.image ? photoLayers(it.image) : icon('box',22)}</span><span class="attention-copy"><b>${esc(it.name)}</b><small><span class="attention-status ${d < 0 ? 'past' : ''}">${label}${it.dateConfirmed ? '' : ' · estimated'}</span> · ${esc(locName(it.loc))}</small></span>${icon('chevron',17)}</button>`);
+      row.onclick = () => itemSheet(it); sec.querySelector('.attention-list').appendChild(row);
+    });
+    sec.querySelector('.more').onclick = () => { S.view='soon'; render(); }; app.appendChild(sec);
+  }
 
   if (hero) {
     const a = hero.availability;
@@ -7239,43 +7325,21 @@ function viewHome(app) {
     const decision = el(`<section class="home-decision">
       <div class="home-decision-media"><span class="recipe-fallback">${foodEmoji(hero.name,'') || '🍽️'}</span></div>
       <div class="home-decision-copy">
-        <div class="home-kicker">${urgent ? 'Use it up · tonight' : !live.length ? 'Your kitchen can do this' : !a.missing.length ? 'Ready right now' : 'Almost ready'}</div>
+        <div class="home-kicker">${urgent ? 'Use it up · tonight' : !live.length ? 'A little dinner inspiration' : 'Dinner from your kitchen'}</div>
         <h1>${esc(hero.name)}</h1>
-        <p>${hero.minutes} min · ${a.haveCount}/${a.totalCount} ingredients${urgent ? ` · uses ${esc(hero.rescues.join(' + '))}` : ''}</p>
+        <p>${hero.minutes} min · ${!a.missing.length ? 'All ingredients at home' : `${a.haveCount}/${a.totalCount} ingredients at home`}${urgent ? `<br>Uses ${esc(hero.rescues.join(' + '))}` : ''}</p>
         <div class="home-decision-actions">
-          <button class="btn cold" data-a="primary">${!live.length ? icon('plus',16)+'Add your first food' : 'View recipe'}</button>
-          <button class="btn hero-ghost" data-a="secondary">${live.length && a.missing.length <= 2 && a.missing.length ? `Add ${a.missing.length} missing` : 'Explore recipes'}</button>
+          <button class="btn cold" data-a="primary">View recipe ${icon('chevron',16)}</button>
         </div>
       </div></section>`);
     paintRecipeImage(decision.querySelector('.home-decision-media'), hero);
-    decision.querySelector('[data-a=primary]').onclick = () => !live.length ? addFoodChooser() : openRecipeSheet(hero);
-    decision.querySelector('[data-a=secondary]').onclick = () => {
-      if (live.length && a.missing.length && a.missing.length <= 2) addRecipeMissing(hero);
-      else { S.view = 'cook'; S.cookTab = 'suggested'; render(); }
-    };
+    decision.querySelector('[data-a=primary]').onclick = () => openRecipeSheet(hero);
     app.appendChild(decision);
-  }
-
-  if (soon.length) {
-    const sec = el(`<div class="section"><div class="section-head"><h2>Eat these first</h2>
-      <button class="more" data-a="all">See all</button></div></div>`);
-    const sc = el(`<div class="hscroll"></div>`);
-    soon.slice(0, 10).forEach(it => {
-      const d = freshness(it).left;
-      const col = d < 0 ? 'var(--spoil)' : d <= 2 ? 'var(--thaw)' : 'var(--fresh)';
-      const c = el(`<div class="foodcard"><div class="top">${it.image ? photoLayers(it.image) : (foodEmoji(it.name, it.cat) || '🍽️')}</div>
-        <div class="lo"><div class="fn">${esc(it.name)}</div><div class="fd" style="color:${col}">${daysLabel(d)}</div></div></div>`);
-      c.onclick = () => itemSheet(it);
-      sc.appendChild(c);
-    });
-    sec.appendChild(sc);
-    sec.querySelector('[data-a=all]').onclick = () => { S.view = 'soon'; render(); };
-    app.appendChild(sec);
   }
 
   const alternates = recipes.filter(r => r.id !== hero?.id).slice(0, 3);
   if (alternates.length) {
-    const sec = el(`<div class="section"><div class="section-head"><h2>Make tonight</h2><button class="more">See all</button></div><div class="home-recipe-row"></div></div>`);
+    const sec = el(`<div class="section"><div class="section-head"><h2>Something else?</h2><button class="more">Explore Cook</button></div><div class="home-recipe-row"></div></div>`);
     const row = sec.querySelector('.home-recipe-row');
     alternates.forEach(r => {
       const c = el(`<button class="home-recipe-mini"><div class="mini-media"><span>${foodEmoji(r.name,'') || '🍽️'}</span></div>
@@ -7292,6 +7356,10 @@ function viewHome(app) {
     sec.querySelector('.more').onclick = () => { S.view = 'shop'; render(); }; app.appendChild(sec);
   }
 
+  const shopN = S.shopping.filter(s => !s.deleted && !s.done).length;
+  const shopping = el(`<button class="today-link">${icon('cart',22)}<span><b>${shopN ? `${shopN} item${shopN === 1 ? '' : 's'} on your shopping list` : 'Your next grocery trip'}</b><small>${shopN ? 'Check what’s home before you buy.' : 'Keep the things you need in one place.'}</small></span>${icon('chevron',18)}</button>`);
+  shopping.onclick = () => { S.view='shop'; render(); }; app.appendChild(shopping);
+
   const qa = el(`<div class="home-quick"><button data-a="scan">${icon('barcode',19)}<span>Scan food</span></button>
     <button data-a="add">${icon('plus',19)}<span>Add food</span></button>
     <button data-a="receipt">${icon('receipt',19)}<span>Receipt</span></button><input type="file" accept="image/*" class="hide" id="hrcpt"></div>`);
@@ -7307,6 +7375,8 @@ function viewHome(app) {
 /* ---------------- view: PANTRY (what's in the house) ---------------- */
 function viewPantry(app) {
   const live = S.items.filter(i => !i.deleted);
+  const heading = el(`<div class="inventory-heading"><div><h1>Your kitchen.</h1><p>${live.length} foods · ${topLocations().length} places</p></div><button aria-label="Open kitchen map">${icon('map',20)}</button></div>`);
+  heading.querySelector('button').onclick = () => { S.view='map'; render(); }; app.appendChild(heading);
   if (!live.length) {
     app.appendChild(el(`<div class="empty" style="padding-top:40px">
       <div class="ei">${icon('box', 34)}</div>
@@ -7322,24 +7392,16 @@ function viewPantry(app) {
     if (S.cfg.autoPhotos === true) setTimeout(enrichCatalogPhotos, 900);
     return;
   }
-  const soon = live.filter(i => freshness(i).left <= 3).sort((a, b) => a.expires - b.expires);
-  if (soon.length) {
-    const sec = el(`<div class="section" style="margin-bottom:8px"><div class="section-head"><h2>Use soon</h2><button class="more" data-a="cal">${icon('calendar',14)} Calendar</button><button class="more" data-a="allsoon">See all</button></div></div>`);
-    sec.querySelector('[data-a=cal]').onclick = () => { S.view = 'calendar'; render(); };
-    const sc = el(`<div class="hscroll"></div>`);
-    soon.slice(0, 10).forEach(it => {
-      const d = freshness(it).left;
-      const col = d <= 0 ? 'var(--spoil)' : d <= 2 ? 'var(--thaw)' : 'var(--fresh)';
-      const c = el(`<div class="foodcard"><div class="top">${it.image ? photoLayers(it.image) : (foodEmoji(it.name, it.cat) || '🍽️')}</div>
-        <div class="lo"><div class="fn">${esc(it.name)}</div><div class="fd" style="color:${col}">${daysLabel(d)}</div></div></div>`);
-      c.onclick = () => itemSheet(it);
-      sc.appendChild(c);
-    });
-    sec.appendChild(sc);
-    app.appendChild(sec);
-    sec.querySelector('[data-a=allsoon]').onclick = () => { S.view = 'soon'; render(); };
-  }
+  const locations = el('<div class="location-strip" aria-label="Storage locations"></div>');
+  topLocations().forEach(l => {
+    const mine=itemsIn(l.id), attention=mine.filter(i=>freshness(i).left<=3).length;
+    const tile=el(`<button class="location-tile" aria-pressed="${S.loc===l.id}">${l.photo ? `<img src="${esc(l.photo)}" alt="" loading="lazy">` : icon(['fridge','freezer','pantry'].includes(l.kind)?l.kind:'box',26)}<b>${esc(l.name)}</b><small>${mine.length} items${attention ? ` · ${attention} to check` : ''}</small></button>`);
+    tile.onclick=()=>{ S.loc=S.loc===l.id?'all':l.id; S.q=''; render(); }; locations.appendChild(tile);
+  });
+  app.appendChild(locations);
   viewInv(app);
+  const calendar=el(`<button class="today-link">${icon('calendar',20)}<span><b>Date calendar</b><small>Review printed and estimated dates</small></span>${icon('chevron',18)}</button>`);
+  calendar.onclick=()=>{S.view='calendar';render();};app.appendChild(calendar);
   pantryHistory(app);
   if (S.cfg.autoPhotos === true) {
     setTimeout(enrichItemPhotos, 400);
@@ -8098,7 +8160,7 @@ const ICONS = {
 };
 /* Four jobs, four tabs. Profile and technical settings are utilities, not a
    stage in the Stock → Discover → Cook → Shop loop, so they live in header. */
-const TABS = [['home','Home'],['pantry','Inventory'],['cook','Recipes'],['shop','Shop']];
+const TABS = [['home','Today'],['pantry','Inventory'],['cook','Cook'],['shop','Shop']];
 const TITLES = { home: 'Stocked', plan: 'Meal plan', shop: 'Shopping list', pantry: 'Inventory', cook: 'Recipes',
   profile: 'Profile', inv: 'Pantry', soon: 'Use soon', scan: 'Add food', cat: 'Catalog', set: 'Settings',
   insights: 'Insights', map: 'Your kitchen', calendar: 'Expiry calendar', search: 'Search' };
@@ -8120,6 +8182,10 @@ function render() {
 
   const search = document.getElementById('searchBtn');
   const profile = document.getElementById('profileBtn');
+  const quickAdd = document.getElementById('quickAddBtn');
+  quickAdd.classList.toggle('hide', !S.household);
+  quickAdd.onclick = addFoodChooser;
+  app.dataset.view = S.view;
   if (!S.household) {
     nav.classList.add('hide'); search.classList.add('hide'); profile.classList.add('hide');
     viewSetup(app);
@@ -8136,7 +8202,7 @@ function render() {
   // The list you land on is the general one; a store tab renames the screen
   // so it's obvious which list you're adding to.
   document.getElementById('title').textContent = S.view === 'shop'
-    ? (S.store ? `${storeName(S.store) || 'Store'} list` : 'General shopping list')
+    ? (S.store ? `${storeName(S.store) || 'Store'} list` : 'Shopping')
     : (TITLES[S.view] || 'Stocked');
 
   (VIEWS[S.view] || viewPantry)(app);

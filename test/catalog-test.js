@@ -3,7 +3,7 @@
 const http = require('http'), fs = require('fs'), path = require('path');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || '/opt/node22/lib/node_modules/playwright');
 const ROOT = path.resolve(__dirname, '..');
-const MIME = { '.html':'text/html', '.js':'text/javascript', '.webmanifest':'application/manifest+json', '.svg':'image/svg+xml', '.png':'image/png' };
+const MIME = { '.css':'text/css', '.webp':'image/webp', '.html':'text/html', '.js':'text/javascript', '.webmanifest':'application/manifest+json', '.svg':'image/svg+xml', '.png':'image/png' };
 
 const server = http.createServer((q, r) => {
   let p = decodeURIComponent(q.url.split('?')[0]);
@@ -414,8 +414,8 @@ const server = http.createServer((q, r) => {
     return { generalTitle, storeTitle, chip,
       both: S.shopping.filter(s => !s.deleted).length };
   });
-  ok('shop: the default list is called the General shopping list',
-    /General shopping list/.test(gen.generalTitle) && /General/.test(gen.chip), gen.generalTitle);
+  ok('shop: a compact Shopping title with a General list chip',
+    gen.generalTitle === 'Shopping' && /General/.test(gen.chip), gen.generalTitle);
   ok('shop: picking a store renames the screen to that list', /Costco list/.test(gen.storeTitle), gen.storeTitle);
   ok('shop: the same item can sit on two lists (two real errands)', gen.both === 2);
 

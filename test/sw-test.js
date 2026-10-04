@@ -6,7 +6,7 @@ const http = require('http'), fs = require('fs'), path = require('path');
 const os = require('os');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || '/opt/node22/lib/node_modules/playwright');
 const SRC = path.resolve(__dirname, '..');
-const MIME = { '.html':'text/html', '.js':'text/javascript', '.svg':'image/svg+xml', '.png':'image/png', '.webp':'image/webp', '.webmanifest':'application/manifest+json', '.json':'application/json' };
+const MIME = { '.css':'text/css', '.webp':'image/webp', '.html':'text/html', '.js':'text/javascript', '.svg':'image/svg+xml', '.png':'image/png', '.webmanifest':'application/manifest+json', '.json':'application/json' };
 
 // Serve from a scratch copy so we can mutate it mid-test without touching the repo.
 const ROOT = fs.mkdtempSync(path.join(os.tmpdir(), 'swtest-'));

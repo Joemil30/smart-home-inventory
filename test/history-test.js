@@ -10,7 +10,7 @@
 const http = require('http'), fs = require('fs'), path = require('path');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || '/opt/node22/lib/node_modules/playwright');
 const ROOT = path.resolve(__dirname, '..');
-const MIME = { '.html':'text/html', '.js':'text/javascript', '.svg':'image/svg+xml', '.png':'image/png', '.webmanifest':'application/manifest+json', '.json':'application/json' };
+const MIME = { '.css':'text/css', '.webp':'image/webp', '.html':'text/html', '.js':'text/javascript', '.svg':'image/svg+xml', '.png':'image/png', '.webmanifest':'application/manifest+json', '.json':'application/json' };
 
 const server = http.createServer((q, r) => {
   let p = decodeURIComponent(q.url.split('?')[0]);
@@ -78,7 +78,11 @@ const server = http.createServer((q, r) => {
   /* ---- 2. the shop screen renders history per tab --------------------- */
   const ui = await page.evaluate(async () => {
     S.view = 'shop'; S.store = 'cst'; render();
-    const txt = () => document.getElementById('shophist')?.innerText || '';
+    const txt = () => {
+      const history = document.getElementById('shophist');
+      history?.closest('details').querySelector('summary').click();
+      return history?.innerText || '';
+    };
     const costco = txt();
     S.store = 'grn'; render();
     const greens = txt();

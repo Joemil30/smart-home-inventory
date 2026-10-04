@@ -4,6 +4,45 @@ This is the human-readable record of changes to Stocked. Release branches preser
 exact files for every deployed version, while this log explains what changed
 and why.
 
+## v62 — A calmer, more useful household kitchen
+
+**Release date:** 2026-10-03
+
+**Previous version:** `release/stocked-v61`
+
+**Preserved version:** branch `release/stocked-v62`, tag `stocked-v62`
+
+### What changed
+
+- Rebuilt the visual hierarchy around **Today, Inventory, Cook, Shop**. Warm light surfaces, restrained green accents, editorial headings, simpler controls, and fixed mobile navigation replace the dense dashboard treatment.
+- Today puts foods needing attention before meal inspiration, distinguishes estimated dates, and links directly into item review and shopping.
+- Inventory defaults to compact, editable rows with search first and physical storage-location cards. The photo grid, kitchen map, date calendar, and location-photo management remain available.
+- Cook has a two-column phone recipe gallery, 13 new original AI-generated serving images, and the existing chicken-pasta cover. All 14 covers ship locally and work offline after installation.
+- Recipe detail now separates Ingredients and Steps. Serving scaling, conversions, cooking mode, saving, planning, organization, ratings, notes, nutrition, and sharing remain available with less visual clutter.
+- General groceries now group by aisle. Recipe-linked shopping items show their source and available inventory context. Purchase history and suggestions are expandable instead of overwhelming the active list.
+- A global + opens an intent-based capture chooser: put groceries away, add a shelf, add a shopping trip, use something up, or add one item manually.
+
+### Reliability and data
+
+- No database migration, reset, or household-data replacement.
+- Fixed uploaded recipe covers being rejected and broken images hiding the fallback.
+- Removed network-dependent guessed recipe photography and cached all local covers with the new design stylesheet.
+- Foods already past their date no longer contribute to recipe rescue ranking. Ingredient matching is still name-based, not a quantity or food-safety guarantee; the detail page states that limitation.
+- Portable HTML backups now embed the new stylesheet and recipe covers. Re-exporting a snapshot replaces its old embedded data with the latest household data.
+- Kept light as the default, including on dark-mode devices; an explicit dark preference still works.
+
+### Verification
+
+- Release gate: all 24 suites (syntax check plus 23 browser suites).
+- A real v61-to-v62 upgrade test deep-compares all eight IndexedDB stores, including 500 synthetic inventory records.
+- Layout checks at 320, 390, 768, and 1280 pixels; all four primary screens, recipe dialogs, image failures, reduced motion, search, quantity editing, and recipe-to-shopping context.
+- Existing backup, service-worker update/offline, shopping-to-inventory, import, recipe studio, history, and other regression coverage retained.
+- Tests run locally in Chromium, not in the deployment workflow. Real-device camera/OCR accuracy and concurrent household sync are not newly certified by this release.
+
+Design decisions and the next product priorities: [Household product direction](docs/HOUSEHOLD_DIRECTION.md).
+
+Image provenance and prompts: [Recipe artwork](docs/RECIPE_ARTWORK.md).
+
 ## v61 — Recipe studio and light-first experience
 
 **Released:** 2026-08-22

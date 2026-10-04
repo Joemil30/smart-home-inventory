@@ -38,6 +38,17 @@ PLAYWRIGHT_MODULE=playwright CHROME_PATH=/path/to/chrome sh test/run.sh
 | `calendar-test` | month-grid layout maths, day tinting, and list progress |
 | `urlaction-test` | URL actions, the share target, and that links can only *add* |
 | `latest-test` | buying rhythm, unified search, plain lists, sharing, low-stock chip, impact, translation |
+| `recipe-pro-test` | scaling, units, nutrition, cooking mode, recipe imports and organization |
+| `household-test` | v61 upgrade preserving all eight stores with 500 items; four responsive sizes; local and uploaded covers; broken-image fallback; recipe tabs and shopping context |
+
+The household upgrade suite requires Git and the `stocked-v61` tag (`git fetch --tags`
+in a shallow/new checkout). Its fixture is synthetic and runs in a disposable
+browser context; it never opens or changes the production household. Screenshots
+go to `STOCKED_SCREENSHOTS` or the workspace's `outputs/stocked-v62` directory.
+
+Test servers must serve `.css` as `text/css` and `.webp` as `image/webp`.
+The app now has a separate design stylesheet and locally bundled food imagery;
+testing only inline HTML no longer verifies its actual presentation.
 
 `syntax-check` runs first and is not a browser suite: it parses `index.html`'s
 inline script, `sw.js` and the manifest, and reports a real file line. Without

@@ -13,7 +13,7 @@
 const http = require('http'), fs = require('fs'), path = require('path');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || '/opt/node22/lib/node_modules/playwright');
 const ROOT = path.resolve(__dirname, '..');
-const MIME = { '.html':'text/html', '.js':'text/javascript', '.svg':'image/svg+xml', '.png':'image/png', '.webmanifest':'application/manifest+json', '.json':'application/json' };
+const MIME = { '.css':'text/css', '.webp':'image/webp', '.html':'text/html', '.js':'text/javascript', '.svg':'image/svg+xml', '.png':'image/png', '.webmanifest':'application/manifest+json', '.json':'application/json' };
 
 const server = http.createServer((q, r) => {
   let p = decodeURIComponent(q.url.split('?')[0]);
@@ -105,6 +105,7 @@ const server = http.createServer((q, r) => {
     const quiet = !!document.querySelector('.missed.low');          // 5 > 2, so silent
     while ((S.items.find(i => i.id === it.id).qty ?? 0) > 2) await deplete(S.items.find(i => i.id === it.id), 'used');
     render();
+    document.querySelector('.missed.low')?.closest('details').querySelector('summary').click();
     return { hidden, quiet, loud: !!document.querySelector('.missed.low'),
       txt: document.querySelector('.missed.low')?.innerText || '',
       flag: runningLow(S.items.find(i => i.id === it.id)) };
@@ -128,6 +129,7 @@ const server = http.createServer((q, r) => {
   const dedupe = await page.evaluate(async () => {
     await addToList('Olive oil', '', 'cst');
     render();
+    document.querySelector('.missed.low')?.closest('details').querySelector('summary').click();
     return document.querySelector('.missed.low')?.innerText || '';
   });
   ok('something already on the list is not offered again', !/Olive oil/.test(dedupe), dedupe.replace(/\n/g, ' '));

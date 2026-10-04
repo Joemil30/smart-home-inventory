@@ -4,7 +4,7 @@
 const http = require('http'), fs = require('fs'), path = require('path');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || '/opt/node22/lib/node_modules/playwright');
 const ROOT = path.resolve(__dirname, '..');
-const MIME = { '.html':'text/html', '.js':'text/javascript', '.svg':'image/svg+xml', '.png':'image/png', '.webp':'image/webp', '.webmanifest':'application/manifest+json' };
+const MIME = { '.css':'text/css', '.webp':'image/webp', '.html':'text/html', '.js':'text/javascript', '.svg':'image/svg+xml', '.png':'image/png', '.webmanifest':'application/manifest+json' };
 
 const server = http.createServer((q, r) => {
   let p = decodeURIComponent(q.url.split('?')[0]);
@@ -28,7 +28,7 @@ const server = http.createServer((q, r) => {
   const ok = (n, c, x='') => { console.log(`${c?'PASS':'FAIL'}  ${n}${x?'  — '+x:''}`); if (!c) pass=false; };
 
   const initial = await page.evaluate(() => ({ theme:document.documentElement.dataset.theme, ground:getComputedStyle(document.documentElement).getPropertyValue('--void').trim() }));
-  ok('dark phone still opens in light mode', initial.theme === 'light' && initial.ground === '#F7F9F7', JSON.stringify(initial));
+  ok('dark phone still opens in light mode', initial.theme === 'light' && initial.ground === '#FAF9F6', JSON.stringify(initial));
 
   await page.evaluate(async () => {
     S.household = { id:'household', locations:[{id:'f',name:'Fridge',kind:'fridge'}], members:[{name:'Joe'}], staples:[], allergies:[], dislikes:[], people:2, stores:[], aisleOrder:{} };
@@ -50,8 +50,9 @@ const server = http.createServer((q, r) => {
   ok('metric weights convert to US', /17(?:\.6|⅝) oz flour/.test(math.us), math.us);
 
   await page.evaluate(() => showRecipeDetail(localRecipeFeed().find(r => r.id === 'stocked:chicken-spinach-pasta')));
+  await page.locator('#dlg .recipe-extras summary').click();
   let detail = await page.locator('#dlg').innerText();
-  ok('recipe detail includes nutrition', /520[\s\S]*Calories[\s\S]*46g[\s\S]*Protein/i.test(detail), detail.slice(0,180));
+  ok('recipe detail includes nutrition in its disclosure', /520[\s\S]*Calories[\s\S]*46g[\s\S]*Protein/i.test(detail), detail.slice(0,180));
   ok('recipe detail includes serving and measurement controls', /Servings/.test(detail) && /Measurements/.test(detail));
   await page.locator('#dlg [data-a=more]').click();
   detail = await page.locator('#dlg').innerText();
@@ -70,6 +71,7 @@ const server = http.createServer((q, r) => {
   await page.locator('#dlg [data-a=c]').click();
 
   await page.evaluate(() => showRecipeDetail(localRecipeFeed().find(r => r.id === 'stocked:chicken-spinach-pasta')));
+  await page.locator('#dlg .recipe-extras summary').click();
   await page.locator('#dlg [data-a=organize]').click();
   await page.waitForTimeout(100);
   await page.locator('#dlg #obooks').fill('Weeknight dinners, Favorites');
