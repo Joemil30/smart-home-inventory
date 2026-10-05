@@ -1,6 +1,42 @@
 # Context handoff — paste this into a new chat
 
-Everything a fresh session needs to pick this up. Written 2026-08-04.
+## Latest continuation — 2026-10-05
+
+Live remains **v62** on `claude/cold-room-pwa-mpph5h`. New account/cloud work is
+on `codex/accounts-foundation`; do not confuse saved development work with a
+production release. The user has already authorized implementation, Supabase
+setup, GitHub pushes and deployment after verification. No need to ask again
+for those routine steps.
+
+Supabase project: `qeqgxuubasxvpdvmvvda` (Stocked staging). Four current SQL files
+are applied: accounts-foundation, kitchen-sync, account-security, account-deletion.
+`stocked-delete-account` is deployed with gateway JWT verification ON. Never run
+the old permissive `schema.sql`, `schema-v2-auth.sql` or legacy delete-account
+function on this project. Client config contains only URL/publishable key and
+is still disabled. Real user kitchen data was never uploaded.
+
+Completed: private/shared kitchen sync, selected food/recipe copy, durable outbox,
+revision conflicts, account UI, TOTP plus backup authenticator, database-enforced
+MFA, and account deletion preserving remaining members' shared contributions.
+Hosted tests: 26 sync checks, 9 MFA checks, 8 deletion checks. The two synthetic
+test accounts were deleted through the app; SQL confirmed no test data remains.
+See `docs/CLOUD_VERIFICATION.md`, `docs/ACCOUNT_SETUP.md` and `CHANGELOG.md`.
+
+Next concrete dependency: the user was asked whether they own a domain or email
+sender for Stocked. No answer has arrived. Supabase's default sender only reaches
+project team members, so do not claim family signup/verification/reset works.
+Set up a user-owned sender, verify DNS, then test real mail delivery and phone/PWA
+callbacks. Configure independent backups and prove restore before public rollout.
+All-authenticators-lost recovery currently needs verified operator assistance;
+do not remove a real person's MFA merely because someone requests it.
+
+The user's one-time continuation automation ran and was deleted. There is no
+remaining scheduled continuation. Supabase browser changes are finished for now;
+the user was told they can close those tabs.
+
+---
+
+The historical context below was written 2026-08-04. Current state above takes precedence.
 
 ---
 

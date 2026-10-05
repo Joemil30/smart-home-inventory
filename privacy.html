@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Privacy Policy</title>
   <style>
-    :root { color-scheme: light dark; }
+    :root { color-scheme: light; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
            line-height: 1.62; color: #1a1a1a; background: #fff; padding: 24px 20px 64px;
@@ -23,32 +23,26 @@
     th { font-weight: 700; }
     .box { background: #f3f7f4; border-left: 3px solid #12A150; padding: 12px 14px; margin: 14px 0;
            border-radius: 0 8px 8px 0; }
-    @media (prefers-color-scheme: dark) {
-      body { background: #0E1512; color: #E7EFE9; }
-      a { color: #3CC974; } code { background: #1A241E; }
-      .sub { color: #9AA89F; } th, td { border-bottom-color: #243029; }
-      .box { background: #15291D; }
-    }
   </style>
 </head>
 <body>
 
 <h1>Privacy Policy</h1>
-<p class="sub">Last updated 4 August 2026</p>
+<p class="sub">Last updated 5 October 2026 — cloud account features described below are available only on enabled builds.</p>
 
 <div class="box">
-  <strong>The short version.</strong> Everything lives on your own phone. Nothing is sent
-  anywhere unless you switch on a feature that needs to, and each of those is off until
-  you turn it on. There is no analytics, no advertising, no tracking, and nothing is ever
-  sold or shared with anyone.
+  <strong>Your kitchen, your choice.</strong> You can use Stocked on this device without an account.
+  When accounts are enabled, you can choose a private cloud kitchen or a shared household.
+  Signing in does not upload your original device kitchen. Sharing selected food and recipes
+  requires an explicit copy. Stocked does not sell kitchen data or use advertising trackers.
 </div>
 
 <h2>1. What is stored, and where</h2>
 
 <h3>On your device, always</h3>
 <p>All of it is held in your browser's local database (<code>IndexedDB</code>) on the device
-itself. The app works fully offline. None of this reaches a server unless you turn on
-Family sync.</p>
+itself. The original device kitchen works offline. Optional cloud kitchens and integrations
+send the data described below to their services.</p>
 <ul>
   <li>Food items: names, categories, quantities, prices you enter, expiry dates, which shelf
       or drawer they're on, and their position on a shelf photo</li>
@@ -59,11 +53,22 @@ Family sync.</p>
   <li>Meal plans, settings, and a log of actions used for the Insights screen</li>
 </ul>
 
-<h3>Only if you turn on Family sync</h3>
-<p>Family sync is off by default. When you enable it, the data above is copied to
-<strong>a Supabase project that you create and control</strong> — not to us. We operate no
-server and hold no copy of your data. If you later add sign-in, your email address is stored
-by Supabase to identify your account.</p>
+<h3>Accounts and private or shared cloud kitchens</h3>
+<p>On account-enabled builds, Supabase stores your account email, authentication information,
+household membership, and records you create or explicitly copy into a cloud kitchen.
+Cloud records include food, the product catalog, saved recipes, shopping, meal plans and
+kitchen layout. Device API keys, local appearance settings and local activity history are
+not automatically uploaded by this system.</p>
+<p>Your private kitchen is accessible through the app only to your signed-in account.
+Shared household records are accessible to its current members. The household owner cannot
+read another member's private kitchen. The app operator and infrastructure provider have
+administrative access: this is access-controlled storage, not end-to-end encryption.
+Supabase and the email delivery provider also process operational logs and authentication emails.</p>
+<p>Removing a family member prevents new server access but cannot recall offline or exported
+copies. Opening a cloud kitchen requires an online access check; edits made offline in an
+already-open kitchen wait for reconnection.</p>
+<p>The older code-based Family sync setup is separate from account-based cloud kitchens.
+Do not connect its permissive legacy schema to the account database.</p>
 
 <h3>Only if you turn on notifications</h3>
 <p>A push subscription token is stored in your own Supabase project so reminders can reach
@@ -96,10 +101,10 @@ printed date is ever uploaded.</p>
 
 <h2>3. What we never do</h2>
 <ul>
-  <li>No analytics or telemetry of any kind</li>
+  <li>No advertising analytics; infrastructure providers may keep operational logs</li>
   <li>No advertising, and no advertising identifiers</li>
   <li>No tracking across apps or websites</li>
-  <li>No selling, renting or sharing of personal data</li>
+  <li>No selling or renting personal data; chosen integrations and household sharing send data as described above</li>
   <li>No account required to use the app</li>
 </ul>
 
@@ -109,14 +114,16 @@ printed date is ever uploaded.</p>
       elsewhere.</li>
   <li><strong>Delete</strong> — remove any item at any time. Deleting the app, or clearing its
       site data, erases everything on the device.</li>
-  <li><strong>Delete your account</strong> — if you created one for sync, Settings has a delete
-      button that removes your sign-in and leaves every household. If you were the last member,
-      that household's synced copy is deleted too.</li>
+  <li><strong>Delete your account</strong> — on enabled builds, Account → Account security →
+      Delete my account removes your sign-in and private cloud records. Transfer ownership
+      first if you own a household with other members. Shared contributions remain with that
+      household without your author ID. The last member's deletion removes its shared kitchen.
+      Previously downloaded copies, device data and provider backup/log retention are separate.</li>
   <li><strong>Stop syncing</strong> — disconnect at any time; the data stays on your phone.</li>
 </ul>
-<p>These cover the rights the UK/EU GDPR and the CCPA give you over access, portability and
-erasure. Because we hold no copy of your data, you exercise them directly in the app rather
-than by asking us.</p>
+<p>For help with account access, exports or deletion, contact the app operator below.
+Cloud synchronization is not an independent backup. Keep a private recovery export before
+clearing browser storage, especially if edits have not yet synced.</p>
 
 <h2>5. Children</h2>
 <p>This app is not directed at children under 13, and we do not knowingly collect anything

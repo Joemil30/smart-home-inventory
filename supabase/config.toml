@@ -1,0 +1,5 @@
+# The gateway check is enabled and verified with actual project user tokens.
+# The function additionally validates the caller against Auth, checks recent
+# password authentication, enrolled MFA and household ownership.
+[functions.stocked-delete-account]
+verify_jwt = true

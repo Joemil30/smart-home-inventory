@@ -16,6 +16,7 @@ const mock=`(() => {
   const call=async(name,args)=>{m.calls.push({name,args});if(m.delay)await new Promise(r=>setTimeout(r,m.delay));return m.fail===name?{error:{message:name==='signin'?'Invalid login credentials':'Network request failed'}}:{error:null}};
   window.supabase={createClient:(url,key,options)=>{m.options=options;return {
     auth:{
+      mfa:{getAuthenticatorAssuranceLevel:async()=>({data:{currentLevel:'aal1',nextLevel:'aal1'}})},
       onAuthStateChange:f=>{m.listener=f;return {data:{subscription:{unsubscribe(){}}}}},
       getSession:async()=>{if(m.event==='PASSWORD_RECOVERY'){m.session={user};m.listener?.(m.event,m.session)}return {data:{session:m.session}}},
       signUp:async a=>({...await call('signup',a),data:{session:null}}),

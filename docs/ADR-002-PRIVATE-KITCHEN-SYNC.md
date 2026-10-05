@@ -113,11 +113,11 @@ public production. Unsynced edits can still be lost if browser storage is cleare
 - [x] Implement previewed transfer, privacy labels and conflict recovery.
 - [x] Test real PostgreSQL policies and browser/IndexedDB RPC integration.
 - [x] Preserve local app and existing update/backup regression suites.
-- [ ] Create/configure user-owned staging project and apply migrations.
-- [ ] Test actual Supabase Auth, REST grants, two accounts and parallel clients.
+- [x] Create/configure user-owned staging project and apply migrations.
+- [x] Test actual Supabase Auth, REST grants, two accounts and parallel clients (2026-10-05).
 - [ ] Test email verification/reset on phones and installed PWAs.
 - [ ] Configure independent backups; verify restoration in a separate project.
-- [ ] Complete MFA/recovery and account deletion before offering public signup.
+- [x] Complete TOTP/backup authenticator, database enforcement and account deletion; all-factors-lost recovery remains operator-assisted.
 - [ ] Review public-release limits, quotas, abuse controls and operation retention.
 
 Relevant vendor guidance: [RLS](https://supabase.com/docs/guides/database/postgres/row-level-security),

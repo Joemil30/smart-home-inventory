@@ -3,6 +3,7 @@
    This separate account preview never reads the legacy per-device config. */
 window.STOCKED_CLOUD_CONFIG = Object.freeze({
   enabled: false,
-  supabaseUrl: '',
-  publishableKey: '',
+  accountDeletion: true,
+  supabaseUrl: 'https://qeqgxuubasxvpdvmvvda.supabase.co',
+  publishableKey: 'sb_publishable_Mi13bdiCZRDwuh2vQFLhfg_SGPGnBKN',
 });

@@ -4,6 +4,14 @@ Read this first, every session. It's the standing context: what this app is,
 how it's built, and what's already been decided — so decisions don't get
 re-litigated and old bugs don't get re-introduced.
 
+**2026-10-05 account work:** Read the latest section of `HANDOFF.md` and
+`docs/CLOUD_VERIFICATION.md` first. Live is v62; verified staging account work
+is on `codex/accounts-foundation`. Private/shared sync, TOTP, server MFA and
+account deletion are now implemented and hosted-tested. Email sender/domain,
+phone callbacks and independent backup/restore remain rollout dependencies.
+Do not apply the legacy schemas/functions mentioned in the historical notes to
+the new staging project. Accounts remain disabled in production config.
+
 Deep history and reasoning live in `notes/` (Obsidian-compatible, linked with
 `[[wikilinks]]`). This file is the index + the load-bearing facts; `notes/`
 is the narrative.

@@ -8,6 +8,14 @@ production email delivery or live multi-device sync. The database suite requires
 PGlite. Run both account suites separately before an account release; the regular
 browser runner covers the deployed pantry application, not these staged features.
 
+`account-security-db-test.js` checks server MFA enforcement and transactional
+account deletion. `account-deletion-function-test.js` executes the actual Edge
+Function handler against controlled upstream responses (requires Node 22.13+).
+The three `hosted-*-test.js` scripts are opt-in staging tests that write synthetic
+data and delete their disposable test accounts. They are never included in the
+ordinary local runner. See `docs/ACCOUNT_SETUP.md` for credentials, sequencing,
+cleanup and the limits of hosted verification.
+
 ```sh
 sh test/run.sh
 ```

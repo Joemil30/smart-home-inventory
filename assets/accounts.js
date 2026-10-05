@@ -46,9 +46,10 @@
     const text=String(error?.message || '');
     if(/invalid login credentials/i.test(text)) return 'That email and password didn’t work. Try again or reset your password.';
     if(/email not confirmed/i.test(text)) return 'Verify your email first. You can request another verification email below.';
+    if(/mfa.*(invalid|verification)|invalid.*(totp|code)|verification.*failed/i.test(text)) return 'That code didn’t work. Enter the current six-digit code from your authenticator.';
     if(/rate|too many|seconds|429/i.test(text)) return 'Too many attempts. Wait a moment before trying again.';
     if(/fetch|network/i.test(text)) return 'Couldn’t reach Stocked accounts. Check your connection and try again.';
-    if(/invitation|household|ownership|member|Verify your email|Enter |Paste |Use a Stocked|Passwords|Password must/i.test(text)) return text;
+    if(/invitation|household|ownership|member|Verify your email|Enter |Paste |Use a Stocked|Passwords|Password must|Account deletion|Deletion did not|Re-enter your password|Complete two-step/i.test(text)) return text;
     return 'That didn’t finish. Please try again. If it keeps happening, the account service needs attention.';
   }
   async function rpc(name,args={}) {
@@ -61,12 +62,13 @@
   async function task(fn) {
     if(state.busy) return;
     state.busy=true;
-    root.querySelectorAll('button,input').forEach(node=>node.disabled=true);
+    root.querySelectorAll('button,input,select').forEach(node=>node.disabled=true);
     status('Working…');
     try { await fn(); } catch(error) { status(errorText(error),true); }
-    finally { state.busy=false;root.querySelectorAll('button,input').forEach(node=>node.disabled=false); }
+    finally { state.busy=false;root.querySelectorAll('button,input,select').forEach(node=>node.disabled=false); }
   }
   function shell(html) { root.innerHTML=`<div class="panel">${html}<p id="account-status" class="notice" role="status"></p></div>`; }
+  const security=window.StockedSecurity({root,state,shell,field,esc,task,status,loadHome,bindSignOut});
   function selectMode(mode) { if(state.busy)return;state.mode=mode;renderAuth();root.querySelector('input')?.focus(); }
   function renderAuth() {
     const mode=state.recovery?'password':state.mode;
@@ -119,6 +121,10 @@
   async function loadHome() {
     const epoch=++state.epoch,user=state.user?.id;
     if(!user)return renderAuth();
+    const assurance=await state.client.auth.mfa.getAuthenticatorAssuranceLevel();
+    if(assurance.error)throw assurance.error;
+    if(epoch!==state.epoch || user!==state.user?.id)return;
+    if(assurance.data.nextLevel==='aal2'&&assurance.data.currentLevel!=='aal2')return security.challenge();
     if(state.recovery)return renderAuth();
     const availability=await rpc('stocked_cloud_status');
     state.syncReady=availability?.inventorySync===true&&availability?.syncProtocol===1;
@@ -141,7 +147,7 @@
       <form id="home-create">${field('homeName','Household name','text','maxlength="80" placeholder="Our home"')}${field('displayName','Your name','text',`maxlength="60" autocomplete="name" value="${esc(state.user.user_metadata?.display_name||'')}"`)}<button class="primary" type="submit">Create household</button></form>
       <hr class="separator"><h2>Have an invitation?</h2><form id="home-join">${field('invite','Invitation link','text',`autocomplete="off" spellcheck="false" value="${esc(state.invite)}"`)}${field('displayName','Your name in this home','text',`maxlength="60" value="${esc(state.user.user_metadata?.display_name||'')}"`)}<button type="submit" class="primary">Review & join household</button></form>
       <p class="note">Joining changes your cloud membership only. Nothing from this device is uploaded or merged.</p><button id="signout" class="text-button">Sign out</button>`);
-    bindSignOut();
+    bindSignOut();security.bind();
     root.querySelector('#home-create').onsubmit=e=>{e.preventDefault();const data=new FormData(e.currentTarget);task(async()=>{state.home=await rpc('stocked_create_home',{home_name:data.get('homeName').trim(),member_name:data.get('displayName').trim()});renderHome();status(state.syncReady?'Household created. Open Kitchens & sharing to choose what belongs there. Nothing was uploaded automatically.':'Household created. Inventory is still local; transfer is not enabled in this preview.');});};
     root.querySelector('#home-join').onsubmit=e=>{e.preventDefault();const data=new FormData(e.currentTarget);task(async()=>{
       const token=tokenFrom(data.get('invite'));
@@ -159,7 +165,7 @@
       ${owner?'<button class="primary" id="invite-create">Invite someone</button><p class="note">One person · expires in 48 hours. A new invitation replaces the previous unused link. Only share it with someone you want in your household.</p><div id="invite-result"></div><button id="invite-revoke" class="text-button">Revoke unused invitation</button>':'<button id="leave-home" class="text-button danger">Leave household</button>'}
       ${owner&&h.members.length>1?`<details><summary>Transfer household ownership</summary><p class="note">The new owner can invite and remove people, including you.</p>${h.members.filter(m=>m.user_id!==state.user.id).map(m=>`<button data-transfer="${esc(m.user_id)}">Make ${esc(m.name)} the owner</button>`).join('')}</details>`:''}
       <footer><button id="refresh-home">Refresh household</button><button id="signout" class="text-button">Sign out on this device</button></footer>`);
-    bindSignOut();root.querySelector('#refresh-home').onclick=()=>task(loadHome);
+    bindSignOut();security.bind();root.querySelector('#refresh-home').onclick=()=>task(loadHome);
     root.querySelector('#invite-create')?.addEventListener('click',()=>task(async()=>{
       const invite=await rpc('stocked_create_invite');
       if(!/^[a-f0-9]{64}$/.test(invite?.token||''))throw new Error('Invalid invitation response.');
@@ -183,7 +189,7 @@
     state.client.auth.onAuthStateChange((event,session)=>{
       const changed=state.user?.id!==session?.user?.id;state.user=session?.user||null;
       if(event==='PASSWORD_RECOVERY')state.recovery=true;
-      if(event==='SIGNED_OUT'){state.home=null;state.recovery=false;state.epoch++;if(state.ready)setTimeout(renderAuth,0);}
+      if(event==='SIGNED_OUT'){state.home=null;state.recovery=false;state.epoch++;if(state.ready&&!state.deleted)setTimeout(renderAuth,0);}
       // Never await Supabase calls inside its auth callback (auth lock deadlock).
       if(state.ready && !state.busy && (changed||event==='PASSWORD_RECOVERY')) setTimeout(()=>loadHome().catch(e=>status(errorText(e),true)),0);
     });

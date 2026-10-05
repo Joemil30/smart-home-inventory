@@ -8,6 +8,18 @@ and why.
 
 **Started:** 2026-10-04. Development branch only; v62 remains live.
 
+**2026-10-05 continuation:** Connected and tested the real staging backend.
+26 hosted sync checks, 9 hosted MFA checks and 8 hosted deletion checks passed.
+Added authenticator setup/sign-in, a backup authenticator, database MFA enforcement,
+and account deletion with recent-password verification. Shared contributions survive
+member deletion; household owners must transfer ownership before deleting themselves
+while others remain. Added 15 database security/deletion checks and actual Edge
+Function handler tests. Both disposable accounts were removed through the app.
+Configured exact email callbacks, 12-character server password minimum, secure
+email/password change. Updated privacy copy to describe real cloud behavior.
+Production accounts remain off pending email sender/domain, real delivery/mobile
+callback tests and independent backup/restore setup. Code history is not a data backup.
+
 - Added a separate, light-mode account preview with email/password signup,
   verification resend, sign-in, password recovery, session handling and sign-out.
 - Added server-enforced household membership, owner/member roles, one-person
@@ -18,13 +30,13 @@ and why.
   protection and recovery export. The original device kitchen stays separate.
 - The app storage adapter uses an account-scoped database only after deliberate
   cloud selection. Account configuration still defaults off; no real food was
-  uploaded and no hosted project has been configured by this development build.
+  uploaded. The staging project is now configured; see the October 5 entry above.
 - Added real PostgreSQL + browser/IndexedDB integration tests, including second
   device loading, account isolation, stale tabs, interrupted acknowledgements,
   original data preservation, selected sharing and member removal.
-- Real email delivery and hosted Auth verification require a user-controlled
-  Supabase staging project. Hosted sync verification, MFA and account deletion
-  remain release gates. No new version is deployed yet; v62 remains live.
+- Real email delivery needs a verified sender/domain. Hosted sync, MFA and account
+  deletion verification are complete; email delivery, mobile callbacks and backup
+  restoration remain release gates. No new app version is deployed yet; v62 remains live.
 
 See [account setup and release gates](docs/ACCOUNT_SETUP.md) and
 [architecture decision](docs/ADR-001-ACCOUNTS.md).
