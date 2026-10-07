@@ -2182,7 +2182,7 @@ function shoppingToPantry(s, after) {
   dlg.showModal();
 }
 
-async function addItem({ name, cat, loc, qty = 1, barcode = null, packSize = null, brand = '', image = null, expires = null, dateConfirmed = false, store = '', price = null, low = null }) {
+async function addItem({ name, cat, loc, qty = 1, barcode = null, packSize = null, brand = '', image = null, expires = null, dateConfirmed = false, store = '', price = null, low = null, importId = null }) {
   name = String(name || '').trim();
   if (!name) throw new Error('Food needs a name');
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(String(cat || ''))) cat = guessCat(name);
@@ -2190,9 +2190,17 @@ async function addItem({ name, cat, loc, qty = 1, barcode = null, packSize = nul
   qty = Math.max(1, Number.isFinite(+qty) ? Math.floor(+qty) : 1);
   packSize = Number.isFinite(+packSize) && +packSize > 0 ? Math.floor(+packSize) : null;
   if (expires != null && !Number.isFinite(+expires)) { expires = null; dateConfirmed = false; }
+  // A receipt retry may follow a successful item write but failed catalog write.
+  // Reuse the review row's id instead of creating the same grocery twice.
+  const existing = importId && S.items.find(i => i.id === importId);
+  if (existing) {
+    await recordCatalog({ name:existing.name, brand:existing.brand, cat:existing.cat, image:existing.image, packSize:existing.packSize, barcode:existing.barcode },
+      { store, loc:existing.loc, bump:!S.catalog.some(c=>c.id===catId(existing.name,existing.barcode)) });
+    return existing;
+  }
   const mode = packSize ? 'pack' : unitModeFor(cat);
   const it = {
-    id: uid(), name, brand, cat, loc, barcode, image,
+    id: importId || uid(), name, brand, cat, loc, barcode, image,
     mode,
     qty: mode === 'level' ? null : qty,
     level: mode === 'level' ? 4 : null,
@@ -5506,12 +5514,12 @@ function verifyNudge(items) {
   const iso = ts => new Date(ts).toISOString().slice(0, 10);
   dlg.innerHTML = `<div class="eyebrow">Worth a quick check</div>
     <h1 style="margin:6px 0 6px">${need.length} perishable${need.length > 1 ? 's' : ''}</h1>
-    <p class="note" style="margin:0 0 14px">These spoil fast and no printed date was visible, so the date below is a guess. Glance at the package and fix any that are off — or just trust them.</p>
+    <p class="note" style="margin:0 0 14px">These spoil fast and no printed date was visible, so the date below is an estimate. Check the package and storage instructions. Keeping an estimate does not confirm that food is safe.</p>
     ${need.map((i, k) => `<label style="display:block;margin-bottom:12px">
       <span class="lbl">${esc(i.name)}</span>
       <input type="date" data-k="${k}" value="${iso(i.expires)}"></label>`).join('')}
     <button class="btn cold" data-a="save">Save dates</button>
-    <button class="btn ghost" data-a="trust" style="margin-top:8px">Trust the estimates</button>`;
+    <button class="btn ghost" data-a="trust" style="margin-top:8px">Keep estimates for now</button>`;
   dlg.querySelector('[data-a=save]').onclick = async () => {
     for (const inp of dlg.querySelectorAll('input[type=date]')) {
       const i = need[+inp.dataset.k];
@@ -5534,9 +5542,11 @@ async function addReceiptItems(items, sel) {
   const added = [];
   for (const f of items) {
     const cat = CATS.includes(f.cat) ? f.cat : 'other';
-    const loc = sel === 'auto' ? defaultLoc(cat) : sel;
+    const remembered = catalogList(CAT_PRODUCT).find(c => canon(c.name) === canon(f.name));
+    const preferred = f.loc || remembered?.lastLoc;
+    const loc = sel === 'auto' ? ((S.household.locations || []).some(l => l.id === preferred) ? preferred : defaultLoc(cat)) : sel;
     added.push(await addItem({ name: f.name, cat, loc, qty: f.count || 1, expires: parseExpiry(f.expiry),
-      store: S.store || '' }));
+      image: remembered?.image || null, brand: remembered?.brand || '', store: S.store || '', importId:f.importId || null }));
   }
   return added;
 }
@@ -5557,26 +5567,47 @@ async function receiptFlow(file) {
         <button class="btn ghost" onclick="document.getElementById('dlg').close()">Close</button>`;
       return;
     }
+    reviewReceipt(found);
+  } catch (e) {
+    dlg.innerHTML = `<h1 style="margin:0 0 10px">Couldn't read it</h1><div class="warn" style="margin-bottom:14px">${esc(e.message)}</div>
+      <button class="btn ghost" onclick="document.getElementById('dlg').close()">Close</button>`;
+  }
+}
+
+/* Shared review surface: extraction never writes food without a human check. */
+function reviewReceipt(found) {
+    const dlg = document.getElementById('dlg');
+    const importIds = found.map(() => uid());
     const catOpts = sel => CATS.map(c => `<option value="${c}"${c === sel ? ' selected' : ''}>${esc(CAT_LABEL(c))}</option>`).join('');
     dlg.innerHTML = `<div class="eyebrow">From your receipt</div>
-      <h1 style="margin:6px 0 6px">Found ${found.length}</h1>
-      <p class="note" style="margin:0 0 12px">Check the reads — <b>tap any name to fix a typo</b>, tweak the count, untick non-food. Expiry is set automatically by type.</p>
+      <h1 style="margin:6px 0 6px">Put your groceries away.</h1>
+      <p class="note" style="margin:0 0 12px">${found.length} items found. Fix names and counts, then untick anything you don’t want to track. Dates are estimates—not dates read from packaging.</p>
+      <div class="receipt-memory">${icon('book',20)}<span><b>Your catalog builds itself.</b> Every saved food is remembered for next time, including its shelf. Already added this trip? Untick it here.</span></div>
       <div id="rlist">${found.map((f, i) => `<div class="card" data-row="${i}" style="padding:10px;margin-bottom:8px;display:flex;gap:9px;align-items:center">
-        <input type="checkbox" checked data-i="${i}" style="width:20px;height:20px;flex:0 0 auto">
+        <input type="checkbox" checked data-i="${i}" aria-label="Include ${esc(f.name)}" style="width:20px;height:20px;flex:0 0 auto">
         <div style="flex:1;min-width:0">
-          <input class="rnm" data-i="${i}" value="${esc(f.name)}" style="padding:7px 9px;font-size:14px;font-weight:600;margin-bottom:5px">
+          <input class="rnm" data-i="${i}" aria-label="Food name" value="${esc(f.name)}" style="padding:7px 9px;font-size:14px;font-weight:600;margin-bottom:5px">
           <div style="display:flex;gap:6px">
-            <select class="rcat" data-i="${i}" style="flex:1;padding:6px 8px;font-size:12px">${catOpts(CATS.includes(f.cat) ? f.cat : 'other')}</select>
+            <select class="rcat" data-i="${i}" aria-label="Food category" style="flex:1;min-width:0;padding:6px 8px;font-size:12px">${catOpts(CATS.includes(f.cat) ? f.cat : 'other')}</select>
             <input class="rqty" data-i="${i}" type="number" min="1" value="${f.count || 1}" style="width:60px;padding:6px 8px;font-size:12px" aria-label="Quantity">
 
-          </div>
+          </div><p class="receipt-stock note" data-i="${i}" style="margin:6px 0 0"></p>
         </div></div>`).join('')}</div>
       <label style="margin-top:2px"><span class="lbl">Put them on</span><select id="loc">
-        <option value="auto" selected>Auto — by food type</option>
+        <option value="auto" selected>Remembered shelf, or by food type</option>
         ${locOptions()}</select></label>
+      <p class="note" id="receipt-status" role="status"></p>
       <button class="btn cold" data-a="go">Add to inventory</button>
       <button class="btn ghost" data-a="c" style="margin-top:8px;border:none;color:var(--vapor)">Cancel</button>`;
+    const updateHints = () => dlg.querySelectorAll('.receipt-stock').forEach(p => {
+      const name = dlg.querySelector(`.rnm[data-i="${p.dataset.i}"]`).value;
+      const matches = S.items.filter(i => !i.deleted && canon(i.name) === canon(name));
+      p.textContent = matches.length ? `Already at home · ${[...new Set(matches.map(i => locName(i.loc)))].join(', ')}. This adds a separate purchase.` : '';
+    });
+    dlg.querySelectorAll('.rnm').forEach(input => input.oninput = updateHints); updateHints();
+    let busy = false;
     dlg.querySelector('[data-a=go]').onclick = async () => {
+      if (busy) return;
       const picks = [...dlg.querySelectorAll('#rlist input[type=checkbox]:checked')].map(c => {
         const i = +c.dataset.i;
         return {
@@ -5584,17 +5615,33 @@ async function receiptFlow(file) {
           cat: dlg.querySelector(`.rcat[data-i="${i}"]`).value,
           count: parseInt(dlg.querySelector(`.rqty[data-i="${i}"]`).value) || 1,
           expiry: found[i].expiry,
+          importId: importIds[i],
+          row: c,
         };
       }).filter(p => p.name);
-      const added = await addReceiptItems(picks, dlg.querySelector('#loc').value);
-      toast(`${added.length} added from receipt`);
-      if (!verifyNudge(added)) { dlg.close(); render(); }   // nudge replaces the sheet when there's something risky to check
+      if (!picks.length) { dlg.querySelector('#receipt-status').textContent = 'Select at least one food to save.'; return; }
+      busy = true;
+      const controls = [...dlg.querySelectorAll('button,input,select')];
+      controls.forEach(c => c.disabled = true);
+      const preventClose = e => e.preventDefault(); dlg.addEventListener('cancel', preventClose);
+      const added = [];
+      try {
+        for (const pick of picks) {
+          added.push(...await addReceiptItems([pick], dlg.querySelector('#loc').value));
+          pick.row.checked = false; pick.row.dataset.saved = '1';
+          pick.row.closest('[data-row]').classList.add('receipt-saved');
+        }
+        toast(`${added.length} saved · find them again in Your catalog`);
+        if (!verifyNudge(added)) { dlg.close(); render(); }
+      } catch (e) {
+        dlg.querySelector('#receipt-status').textContent = `${added.length} saved. The remaining items could not be saved: ${e.message}. Try again without re-adding the saved rows.`;
+      } finally {
+        busy = false; dlg.removeEventListener('cancel', preventClose);
+        controls.forEach(c => c.disabled = c.closest('[data-row]')?.querySelector('[data-saved]') != null);
+      }
     };
     dlg.querySelector('[data-a=c]').onclick = () => dlg.close();
-  } catch (e) {
-    dlg.innerHTML = `<h1 style="margin:0 0 10px">Couldn't read it</h1><div class="warn" style="margin-bottom:14px">${esc(e.message)}</div>
-      <button class="btn ghost" onclick="document.getElementById('dlg').close()">Close</button>`;
-  }
+    if (!dlg.open) dlg.showModal();
 }
 
 function manualSheet() {
@@ -5635,13 +5682,13 @@ function manualSheet() {
    need identifying once. This is the browsable face of that memory —
    it gets bigger and smarter the more the house gets used. */
 function viewCatalog(app) {
-  const total = S.catalog.length;
-  app.appendChild(el(`<p class="note" style="margin:0 0 12px">Everything you've scanned, remembered forever — <b>${total}</b> product${total === 1 ? '' : 's'} and counting. Recognised instantly next time, even offline.</p>`));
+  const total = catalogList(CAT_PRODUCT).length;
+  app.appendChild(el(`<h1>Your catalog.</h1><p class="note" style="margin:0 0 12px"><b>${total}</b> remembered foods from receipts, barcodes and manual entries. Tap a food to buy it again or put a new purchase away. This is your history—not your current inventory.</p>`));
 
   if (!total) {
     app.appendChild(el(`<div class="empty">
       <div class="big">Nothing learned yet</div>
-      <div class="sub">Scan a barcode in the Scan tab. Every product you scan lands here — including the Kirkland ones you teach it once.</div></div>`));
+      <div class="sub">Add a food or review a receipt. Your catalog fills itself as you use Stocked.</div></div>`));
     return;
   }
 
@@ -5659,7 +5706,7 @@ function viewCatalog(app) {
 function paintCatalog(box) {
   if (!box) return;
   box.innerHTML = '';
-  let list = [...S.catalog].sort((a, b) => (b.learned || 0) - (a.learned || 0));   // newest first
+  let list = catalogList(CAT_PRODUCT);
   if (S.cq?.trim()) {
     list = list
       .map(c => ({ c, s: Math.max(fuzzyScore(S.cq, c.name), fuzzyScore(S.cq, c.brand || '') * 0.9) }))
@@ -5671,7 +5718,7 @@ function paintCatalog(box) {
     return box.appendChild(el(`<div class="empty"><div class="ei">${icon('search', 34)}</div><div class="big">No match for "${esc(S.cq)}"</div>
       <div class="sub">It's not in the scan memory yet. Scan it once and it's yours forever.</div></div>`));
   }
-  const inStock = c => S.items.some(i => !i.deleted && i.barcode === c.id);
+  const inStock = c => S.items.some(i => !i.deleted && (i.barcode === c.id || canon(i.name) === canon(c.name)));
   list.slice(0, 200).forEach(c => {
     const sub = c.brand ? esc(c.brand) : CAT_LABEL(c.cat || 'other');
     const stock = inStock(c)
@@ -5687,8 +5734,8 @@ function paintCatalog(box) {
     </div>`);
     const img = c.image && row.querySelector('.thumb img');
     if (img) img.onerror = () => { img.parentNode.innerHTML = `<span class="ph">${firstLetter(c.name)}</span>`; };
-    row.querySelector('[data-a=add]').onclick = () => confirmAdd({ ...c, source: 'yours' }, c.id);   // restock without re-scanning
-    row.querySelector('[data-a=info]').onclick = () => catalogSheet(c);
+    row.querySelector('[data-a=add]').onclick = () => restockSheet(c);
+    row.querySelector('[data-a=info]').onclick = () => restockSheet(c);
     box.appendChild(row);
   });
   if (list.length > 200) box.appendChild(el(`<div class="note" style="text-align:center;padding:10px">+${list.length - 200} more — keep typing</div>`));
@@ -5804,6 +5851,10 @@ function renderAuthCard(box) {
 function renderSyncCard(sc) {
   if (window.CloudKitchen?.active || window.CloudKitchen?.validConfig()) {
     sc.innerHTML = '<p class="note">Use your Stocked account to keep a private kitchen or share selected food and recipes with your household. Family members don’t need developer keys or project codes.</p><a class="btn ghost" href="kitchens.html">Kitchens & sharing</a><a class="btn ghost" href="account.html">Account & family</a>';
+    return;
+  }
+  if (!SYNC.configured()) {
+    sc.innerHTML = `<h3>On this device for now</h3><p class="note">Family accounts are not enabled yet. Use one household device; opening Stocked on another phone will not share your food. Email delivery and final rollout checks are still being completed.</p><a class="btn ghost" href="guide.html">Read the family starter guide</a>`;
     return;
   }
   const c = S.cfg;
@@ -6978,7 +7029,7 @@ function viewSet(app) {
     } catch (e) {}
     s.innerHTML = persisted
       ? `<b style="color:var(--chill)">✓ Protected.</b> This device is set to keep Stocked's data through routine cleanup${usage}. Still worth saving a copy now and then, in case the phone is reset or lost.`
-      : `<b style="color:var(--thaw)">⚠ At risk.</b> Your phone can wipe Stocked's on-device data when it's unused or low on space${usage}. Two fixes: <b>Family sync</b> (above — backs up every change as you make it, the reliable one), or save a copy below and keep it somewhere safe.`;
+      : `<b style="color:var(--thaw)">Save a backup.</b> Your browser may clear on-device data when storage is low or the app is unused${usage}. Save a copy below and keep it somewhere safe. App updates preserve the database, but clearing browser data or losing this device can erase your local copy. Sync is not a substitute for an independent backup.`;
   })();
 
   app.appendChild(el(`<div class="note" style="margin:10px 0 8px">
@@ -7381,14 +7432,96 @@ function viewHome(app) {
   qa.querySelector('#hrcpt').onchange = e => { const f = e.target.files[0]; if (f) receiptFlow(f); };
   app.appendChild(qa);
 
+  const check = el(`<button class="today-link">${icon('check',22)}<span><b>Quick kitchen check</b><small>No need to log every bite. Clear what’s gone, one shelf at a time.</small></span>${icon('chevron',18)}</button>`);
+  check.onclick = kitchenCheck; app.appendChild(check);
+  app.appendChild(el(`<a class="today-link family-guide-link" href="./guide.html">${icon('help',22)}<span><b>Make it work for your family</b><small>A simple first week. No perfect inventory required.</small></span>${icon('chevron',18)}</a>`));
+
   setTimeout(hydrateLocalRecipePhotos, 100);
 }
 
 /* ---------------- view: PANTRY (what's in the house) ---------------- */
+/* Reconciliation is not consumption. Unknown disappearances must never inflate
+   meals eaten, waste or rescue statistics. Unreviewed items stay untouched. */
+function kitchenCheck() {
+  const dlg = document.getElementById('dlg');
+  const choices = new Map();
+  let loc = 'all', q = '', busy = false;
+  dlg.innerHTML = `<div class="eyebrow">A little reset</div><h1>What’s still here?</h1>
+    <p class="note">Look at one shelf. Mark only what you checked. “Gone” removes the whole entry, not one serving. Dates stay unchanged; this is not a food-safety check.</p>
+    <div class="check-filters"><label><span class="lbl">Where</span><select id="check-loc"><option value="all">All places</option>${locOptions()}</select></label><label><span class="lbl">Find food</span><input id="check-search" placeholder="Milk, apples…" type="search"></label></div>
+    <div id="check-list"></div><p id="check-count" class="note" role="status"></p>
+    <div class="check-footer"><button class="btn cold" data-a="save" disabled>Save check</button><button class="btn ghost" data-a="cancel">Not now</button></div>`;
+  const count = () => {
+    const gone = [...choices.values()].filter(v => v.action === 'gone').length;
+    dlg.querySelector('#check-count').textContent = `${choices.size} checked · ${gone} to remove. Unchecked foods stay as they are.`;
+    dlg.querySelector('[data-a=save]').disabled = !choices.size;
+  };
+  const paint = () => {
+    const box = dlg.querySelector('#check-list'); box.innerHTML = '';
+    const items = S.items.filter(i => !i.deleted && (loc === 'all' || i.loc === loc) && (!q || fuzzyHit(q, i.name)));
+    if (!items.length) box.appendChild(el('<p class="note">No foods here to check. Try another place, or add your first groceries.</p>'));
+    items.slice(0,80).forEach(it => {
+      const row = el(`<div class="check-food"><div class="check-food-name"><span>${foodEmoji(it.name,it.cat) || '•'}</span><div><b>${esc(it.name)}</b><small>${esc(locName(it.loc))} · ${esc(it.mode === 'level' ? LEVELS[it.level] || 'unknown level' : String(it.qty || 0) + (it.mode === 'pack' ? ' packs' : ' items'))}</small></div></div><div class="check-options"><button data-a="here" aria-pressed="${choices.get(it.id)?.action === 'here'}">Still here</button><button data-a="gone" aria-pressed="${choices.get(it.id)?.action === 'gone'}">Gone</button></div></div>`);
+      row.querySelectorAll('button').forEach(b => b.onclick = () => {
+        if (busy) return;
+        if (choices.get(it.id)?.action === b.dataset.a) choices.delete(it.id);
+        else choices.set(it.id,{action:b.dataset.a, before:JSON.stringify(it)});
+        row.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(choices.get(it.id)?.action === x.dataset.a))); count();
+      });
+      box.appendChild(row);
+    });
+    if (items.length > 80) box.appendChild(el('<p class="note">Showing 80 foods. Choose a shelf or search to narrow your check.</p>'));
+    count();
+  };
+  dlg.querySelector('#check-loc').onchange = e => { loc=e.target.value; paint(); };
+  dlg.querySelector('#check-search').oninput = e => { q=e.target.value; paint(); };
+  dlg.querySelector('[data-a=cancel]').onclick = () => { if (!busy) dlg.close(); };
+  dlg.querySelector('[data-a=save]').onclick = async () => {
+    if (busy || !choices.size) return;
+    busy = true;
+    const controls = [...dlg.querySelectorAll('button,input,select')]; controls.forEach(c => c.disabled=true);
+    const preventClose = e => e.preventDefault(); dlg.addEventListener('cancel',preventClose);
+    const restored = []; let skipped = 0, failed = false;
+    try {
+      const gone = [...choices.values()].filter(v => v.action === 'gone').length;
+      if (gone && !await confirmed({ title:`Remove ${gone} food ${gone===1?'entry':'entries'}?`, body:'Only foods you marked Gone are removed. Your catalog keeps them for buying again. This does not record food as eaten or wasted.', yes:'Save kitchen check' })) return;
+      for (const [id, choice] of choices) {
+        const current = S.items.find(i => i.id === id);
+        if (!current || current.deleted || JSON.stringify(current) !== choice.before) { choices.delete(id); skipped++; continue; }
+        const after = {...current, checkedAt:Date.now(), ...(choice.action==='gone' ? {deleted:true, reconciledAt:Date.now()} : {})};
+        await saveItem(after);
+        restored.push({before:JSON.parse(choice.before), after:JSON.stringify(after)}); choices.delete(id);
+      }
+      dlg.close(); render();
+    } catch (e) {
+      failed = true;
+      dlg.querySelector('#check-count').textContent = `${restored.length} saved. The rest are still selected. Could not save: ${e.message}`;
+    } finally {
+      busy=false; dlg.removeEventListener('cancel',preventClose); controls.forEach(c=>c.disabled=false);
+      if (!failed && dlg.open) count();
+      if (restored.length) toast(`${restored.length} checked${skipped ? ` · ${skipped} changed elsewhere; check again` : ''}. Gone foods stay in Your catalog.`, async () => {
+        let changed = 0;
+        for (const entry of restored) {
+          const current = S.items.find(i => i.id === entry.before.id);
+          if (JSON.stringify(current) !== entry.after) { changed++; continue; }
+          await saveItem(entry.before);
+        }
+        if (changed) toast('Some foods changed since this check and were left untouched.');
+      });
+      else if (skipped) toast('Those foods changed while you were checking. Open a fresh check.');
+    }
+  };
+  paint(); if (!dlg.open) dlg.showModal();
+}
+
 function viewPantry(app) {
   const live = S.items.filter(i => !i.deleted);
   const heading = el(`<div class="inventory-heading"><div><h1>Your kitchen.</h1><p>${live.length} foods · ${topLocations().length} places</p></div><button aria-label="Open kitchen map">${icon('map',20)}</button></div>`);
   heading.querySelector('button').onclick = () => { S.view='map'; render(); }; app.appendChild(heading);
+  const tools = el(`<div class="kitchen-tools"><button class="btn ghost" data-a="check">${icon('check',18)}Quick kitchen check</button><button class="btn ghost" data-a="catalog">${icon('book',18)}Your catalog</button></div>`);
+  tools.querySelector('[data-a=check]').onclick = kitchenCheck;
+  tools.querySelector('[data-a=catalog]').onclick = () => { S.cq=''; S.view='cat'; render(); };
+  app.appendChild(tools);
   if (!live.length) {
     app.appendChild(el(`<div class="empty" style="padding-top:40px">
       <div class="ei">${icon('box', 34)}</div>
@@ -7475,9 +7608,13 @@ function restockSheet(c) {
     toast(`Forgot ${c.name}`, async () => { await saveCatalog({ ...c, deleted: false }); render(); });
   };
   dlg.querySelector('[data-a=stock]').onclick = async () => {
-    await addItem({ name: c.name, cat: c.cat || guessCat(c.name), loc: dlg.querySelector('#rloc2').value,
-      qty: parseInt(dlg.querySelector('#rq').value) || 1, image: c.image || null, packSize: c.packSize || null });
-    dlg.close(); render(); toast(`${c.name} back in the pantry`);
+    const b = dlg.querySelector('[data-a=stock]'); if (b.disabled) return; b.disabled=true;
+    try {
+      await addItem({ name: c.name, cat: c.cat || guessCat(c.name), loc: dlg.querySelector('#rloc2').value,
+        qty: parseInt(dlg.querySelector('#rq').value) || 1, image: c.image || null, packSize: c.packSize || null,
+        brand:c.brand || '', barcode:c.id && !c.id.startsWith('n:') && !c.id.startsWith('m:') ? c.id : null });
+      dlg.close(); render(); toast(`${c.name} back in the pantry`);
+    } catch (e) { toast(`Could not save: ${e.message}`); } finally { b.disabled=false; }
   };
   dlg.querySelector('[data-a=list]').onclick = async () => {
     await addToList(c.name, '', S.store || ''); dlg.close(); render(); toast(`${c.name} on the list`);

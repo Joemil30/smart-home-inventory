@@ -8,13 +8,13 @@
    phone that already installed the app keeps serving the shell it cached
    until this string changes — if sw.js is byte-identical the browser never
    even re-registers, and shipped fixes silently never arrive. */
-const CACHE = 'stocked-v62';      // app shell — wiped on each version bump
+const CACHE = 'stocked-v63';      // app shell — wiped on each version bump
 // Deliberately still 'shelflife-' after the rename: this cache holds every
 // product thumbnail already downloaded. Renaming it would orphan the lot and
 // blank out photos for anyone offline.
 const IMG = 'shelflife-img';        // product thumbnails — kept across app updates
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg', './apple-touch-icon.png', './zxing.min.js',
-  './cloud-config.js', './assets/cloud-kitchen.js',
+  './cloud-config.js', './assets/cloud-kitchen.js', './guide.html',
   './assets/household.css', './assets/recipes/chicken-spinach-pasta.webp',
   ...['burrito-bowls','honey-garlic-chicken','egg-fried-rice','creamy-tomato-pasta','chickpea-curry',
     'black-bean-tacos','salmon-rice-bowls','veggie-omelet','sheet-pan-chicken','banana-pancakes',

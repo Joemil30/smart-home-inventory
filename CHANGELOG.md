@@ -4,9 +4,50 @@ This is the human-readable record of changes to Stocked. Release branches preser
 exact files for every deployed version, while this log explains what changed
 and why.
 
-## Unreleased — Accounts and household foundation
+## v63 — The low-effort household pilot
 
-**Started:** 2026-10-04. Development branch only; v62 remains live.
+**Release date:** 2026-10-07
+
+**Previous version:** `release/stocked-v62`
+
+**Preserved version:** branch `release/stocked-v63`, tag `stocked-v63`
+
+- Added Quick kitchen check to Today and Inventory. Filter by shelf or search,
+  mark Still here / Gone, save together, confirm removals and undo. Skipped food
+  is untouched; changed entries are not overwritten. Reconciliation never
+  invents meals eaten, waste or rescued-food statistics, or extends dates.
+- Put Your catalog directly in Inventory. It now includes receipt/manual
+  purchases, correctly identifies their stock, and excludes forgotten records
+  and meals. Repeat purchases reuse the shelf, photo and product information.
+- Redesigned receipt review with clearer labels, existing-food warnings and
+  automatic catalog/shelf memory. Busy guards prevent repeat taps; row identities
+  let interrupted saves retry without duplicating an already-written item.
+  Separate purchases remain separate, preserving different dates.
+- Added an offline family starter guide, copyable family message and practical
+  one-helper / one-shelf / weekly-check routine. No logging every bite required.
+- Kept warm light defaults and existing visual design. Added responsive controls,
+  readable receipt status and thumb-sized kitchen-check actions.
+- Made the single-device limitation explicit in Settings instead of directing
+  new families into legacy project-key setup. Existing configured legacy setups
+  are not silently removed. Receipt AI still needs internet and a user-owned key.
+- Account/sync/MFA/deletion implementation is included but **cloud activation
+  remains OFF**. Verified hosted work is described below; sender/domain, real
+  email delivery, phone callbacks and independent backup/restore still gate rollout.
+- Service-worker cache bumped; no IndexedDB reset or migration. Code versions
+  are recoverable in Git, but household data still needs its own backups.
+
+Verification: all 25 local app suites (including the new household-pilot suite),
+six account/database/sync suites, syntax checks and responsive screenshots.
+The pilot suite verifies exact v62-to-v63 preservation across all eight stores,
+storage-failure retry, duplicate taps, cancellation, undo and stale-edit safety.
+Hosted cloud tests were performed before this release; no real household cloud
+upload or family email delivery is claimed. Deployment evidence is recorded in
+`docs/RELEASE_V63.md`.
+
+## Account foundation — included in v63, activation gated
+
+**Started:** 2026-10-04. Built on the account development branch; bundled in v63
+without enabling public cloud accounts.
 
 **2026-10-05 continuation:** Connected and tested the real staging backend.
 26 hosted sync checks, 9 hosted MFA checks and 8 hosted deletion checks passed.
@@ -36,7 +77,7 @@ callback tests and independent backup/restore setup. Code history is not a data 
   original data preservation, selected sharing and member removal.
 - Real email delivery needs a verified sender/domain. Hosted sync, MFA and account
   deletion verification are complete; email delivery, mobile callbacks and backup
-  restoration remain release gates. No new app version is deployed yet; v62 remains live.
+  restoration remain cloud-activation gates, not a block on the device-only pilot.
 
 See [account setup and release gates](docs/ACCOUNT_SETUP.md) and
 [architecture decision](docs/ADR-001-ACCOUNTS.md).

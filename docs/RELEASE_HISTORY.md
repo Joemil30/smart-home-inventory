@@ -9,6 +9,7 @@ Every production deployment must leave two records:
 
 | Version | Git tag / snapshot branch | Summary |
 |---|---|---|
+| v63 | `stocked-v63` / `release/stocked-v63` | Receipt/catalog reliability, quick kitchen checks and family starter guide; accounts included but disabled |
 | v62 | `stocked-v62` / `release/stocked-v62` | Household design, local recipe imagery, clearer inventory and shopping, portable backup updates |
 | v61 | `stocked-v61` / `release/stocked-v61` | Recipe studio, serving scaling, conversions, cooking mode, light default |
 | v60 | `stocked-v60` / `release/stocked-v60` | Connected food experience |

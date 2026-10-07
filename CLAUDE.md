@@ -4,6 +4,11 @@ Read this first, every session. It's the standing context: what this app is,
 how it's built, and what's already been decided — so decisions don't get
 re-litigated and old bugs don't get re-introduced.
 
+**2026-10-07:** v63 household pilot includes kitchen checks, catalog/receipt
+improvements and a family guide. See `docs/RELEASE_V63.md` for deployment evidence.
+Cloud remains disabled pending the documented email/mobile/backup gates.
+The older live-v62 statement below describes the previous checkpoint.
+
 **2026-10-05 account work:** Read the latest section of `HANDOFF.md` and
 `docs/CLOUD_VERIFICATION.md` first. Live is v62; verified staging account work
 is on `codex/accounts-foundation`. Private/shared sync, TOTP, server MFA and

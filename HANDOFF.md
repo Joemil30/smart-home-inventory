@@ -1,5 +1,26 @@
 # Context handoff — paste this into a new chat
 
+## Household pilot release — 2026-10-07
+
+v63 is the device-only household pilot release, preserving v62 data and visual
+design. See `docs/RELEASE_V63.md` for release verification and deployment evidence.
+New features: Quick kitchen check, directly accessible corrected catalog,
+receipt retry protection and shelf memory, `guide.html` with a family routine.
+The guide explicitly says one household device for now; no false promise of
+cross-device sharing. AI receipt reading still requires the user's provider key.
+New families no longer see unsafe/confusing legacy project-key setup instructions.
+Existing legacy-configured devices are preserved. Do not clear browser data to
+get an update. Bump the service worker on every release and retain release tags.
+
+All account implementation below is bundled but cloud-config.js remains disabled.
+The sender/domain question is unanswered. No authority to buy a domain or email
+subscription was inferred. Complete the real email, phone and backup/restore gates
+before enabling family signup. User has authorized normal implementation,
+testing, Git pushes and deployment; don't repeatedly ask for that authorization.
+
+The October 5 statement that production remains v62 is historical after v63
+deployment. Check the release evidence and live service worker to confirm status.
+
 ## Latest continuation — 2026-10-05
 
 Live remains **v62** on `claude/cold-room-pwa-mpph5h`. New account/cloud work is

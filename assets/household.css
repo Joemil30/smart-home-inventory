@@ -9,6 +9,21 @@
   --shadow:0 2px 8px #252d2706; --shadow-sm:none; --r:16px; --r-sm:12px;
 }
 :root { --editorial:Georgia,'Times New Roman',serif; --pad:20px; }
+.kitchen-tools { display:flex;gap:8px;margin:0 0 20px;flex-wrap:wrap; }
+.kitchen-tools .btn { flex:1;min-width:135px;font-size:12px;padding:10px; }
+.receipt-memory { display:flex;gap:12px;background:var(--cold-soft);padding:14px;border-radius:12px;margin-bottom:16px;font-size:13px;line-height:1.5;color:var(--cold); }
+.receipt-memory svg { flex-shrink:0;margin-top:2px; }.receipt-memory b { display:block; }
+.receipt-saved { opacity:.55; }.receipt-saved::after { content:'Saved';font-size:12px; }
+.check-filters { display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:20px 0 8px; }
+.check-filters label { min-width:0; }.check-filters input,.check-filters select { width:100%; }
+.check-food { padding:14px 0;border-bottom:1px solid var(--rime); }
+.check-food-name { display:flex;gap:12px;align-items:center; }.check-food-name>span { font-size:27px; }
+.check-food-name>div { min-width:0; }.check-food-name b { display:block;font-size:15px;overflow-wrap:anywhere; }.check-food-name small { display:block;font-size:12px;color:var(--vapor);margin-top:4px; }
+.check-options { display:flex;gap:8px;margin:12px 0 0 39px; }.check-options button { flex:1;border:1px solid var(--rime);border-radius:10px;min-height:44px;font-size:13px; }
+.check-options button[aria-pressed="true"] { background:var(--cold);color:white;border-color:var(--cold); }
+.check-options button[data-a="gone"][aria-pressed="true"] { background:var(--thaw);border-color:var(--thaw); }
+.check-footer { position:sticky;bottom:-1px;display:flex;gap:8px;padding:12px 0;background:var(--shelf); }.check-footer .btn { flex:1; }
+.family-guide-link { color:inherit;text-decoration:none; }.family-guide-link small { line-height:1.5; }
 body { padding-bottom:calc(80px + env(safe-area-inset-bottom)); }
 main { max-width:800px; padding-top:24px; }
 header { padding:calc(env(safe-area-inset-top) + 12px) max(20px,calc((100% - 760px)/2)) 12px; border:0; gap:10px; }
